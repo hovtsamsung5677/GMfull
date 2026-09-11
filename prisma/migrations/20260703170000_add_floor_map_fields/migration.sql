@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "Floor" ADD COLUMN "mapImageUrl" TEXT,
+ADD COLUMN "width" DOUBLE PRECISION,
+ADD COLUMN "height" DOUBLE PRECISION;
