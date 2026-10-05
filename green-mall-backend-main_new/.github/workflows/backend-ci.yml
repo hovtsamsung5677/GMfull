@@ -1,0 +1,64 @@
+name: Backend CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backend-checks:
+    name: Build and FileAsset e2e
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: green_mall_ci
+          POSTGRES_PASSWORD: green_mall_ci_password
+          POSTGRES_DB: green_mall_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U green_mall_ci -d green_mall_ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      CI: 'true'
+      NODE_ENV: test
+      DATABASE_URL: postgresql://green_mall_ci:green_mall_ci_password@localhost:5432/green_mall_ci?schema=public
+      JWT_SECRET: green-mall-ci-${{ github.run_id }}-${{ github.run_attempt }}
+      JWT_EXPIRES_IN: 15m
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      - name: Apply database migrations
+        run: npx prisma migrate deploy
+
+      - name: Build backend
+        run: npm run build
+
+      - name: Run FileAsset e2e tests
+        run: npm run test:e2e
