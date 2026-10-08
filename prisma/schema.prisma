@@ -219,6 +219,7 @@ model Floor {
   panels       Panel[]
   routeNodes   RouteNode[]
   routeEdges   RouteEdge[]
+  floorTextures FloorTexture[]
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
 
@@ -493,6 +494,7 @@ model FileAsset {
   storeCovers      Store[]       @relation("StoreCoverAsset")
   floorMaps        Floor[]       @relation("FloorMapAsset")
   floorModels      Floor[]       @relation("FloorModelAsset")
+  floorTextures    FloorTexture[]
   promotionImages  Promotion[]   @relation("PromotionImageAsset")
   adCreativeAssets AdCreative[]  @relation("AdCreativeFileAsset")
   createdAt        DateTime      @default(now())
@@ -503,6 +505,32 @@ model FileAsset {
   @@index([isActive])
   @@index([kind])
   @@index([createdAt])
+}
+
+model FloorTexture {
+  id            String       @id @default(cuid())
+  floorId       String
+  floor         Floor        @relation(fields: [floorId], references: [id], onDelete: Cascade)
+  assetId       String
+  asset         FileAsset    @relation(fields: [assetId], references: [id], onDelete: Restrict)
+  targetMesh    String
+  materialSlot  String?
+  opacity       Float?       @default(1)
+  blendMode     String?      @default("normal")
+  positionX     Float?       @default(0)
+  positionY     Float?       @default(0)
+  scaleX        Float?       @default(1)
+  scaleY        Float?       @default(1)
+  rotation      Float?       @default(0)
+  sortOrder     Int          @default(0)
+  isActive      Boolean      @default(true)
+  metadata      Json?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([floorId])
+  @@index([assetId])
+  @@index([floorId, isActive, sortOrder])
 }
 
 model SystemSetting {

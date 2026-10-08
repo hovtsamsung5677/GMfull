@@ -4,6 +4,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { CategoriesModule } from './modules/categories/categories.module';
 import { FileAssetsModule } from './modules/file-assets/file-assets.module';
 import { FloorsModule } from './modules/floors/floors.module';
+import { FloorTexturesModule } from './modules/floor-textures/floor-textures.module';
 import { HealthModule } from './modules/health/health.module';
 import { MapObjectsModule } from './modules/map-objects/map-objects.module';
 import { PromotionsModule } from './modules/promotions/promotions.module';
@@ -28,6 +29,7 @@ import { UsersModule } from './modules/users/users.module';
     TenantsModule,
     StoresModule,
     FloorsModule,
+    FloorTexturesModule,
     MapObjectsModule,
     PromotionsModule,
     RouteEdgesModule,

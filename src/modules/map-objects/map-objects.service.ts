@@ -12,6 +12,7 @@ import { PrismaService } from "../../database/prisma.service";
 import {
   publicFileAssetSelect,
   toActivePublicFileAssetResponse,
+  toPublicFileAssetResponse,
 } from "../file-assets/public-file-asset.projection";
 import { FloorResponseDto } from "../floors/dto/floor-response.dto";
 import { CreateMapObjectDto } from "./dto/create-map-object.dto";
@@ -26,6 +27,7 @@ import {
   PublicMapSceneRouteNodeDto,
   PublicMapSceneStoreDto,
 } from "./dto/public-map-scene-response.dto";
+import { FloorTexturesService } from "../floor-textures/floor-textures.service";
 import { PublicMapResponseDto } from "./dto/public-map-response.dto";
 import { UpdateMapObjectDto } from "./dto/update-map-object.dto";
 
@@ -93,7 +95,10 @@ type MapObjectReferenceIds = {
 
 @Injectable()
 export class MapObjectsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly floorTexturesService: FloorTexturesService,
+  ) {}
 
   async findPublic(query: MapObjectQueryDto): Promise<MapObjectResponseDto[]> {
     const objects = await this.prisma.mapObject.findMany({
@@ -260,6 +265,9 @@ export class MapObjectsService {
         }),
       ]);
 
+    const floorTextures =
+      await this.floorTexturesService.findByFloor(floor.id);
+
     return {
       floor: this.toSceneFloor(floor),
       objects: objects.map((object) => this.toSceneObject(object)),
@@ -276,6 +284,7 @@ export class MapObjectsService {
       stores: stores.map((store) =>
         this.toSceneStore(store, objects, routeNodes),
       ),
+      textures: floorTextures,
       meta: {
         schemaVersion: "green-mall-map-scene/v1",
         generatedAt: new Date().toISOString(),
