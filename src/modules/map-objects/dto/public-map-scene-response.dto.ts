@@ -1,6 +1,6 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { MapObjectType, RouteNodeType } from '@prisma/client';
-import { PublicFileAssetResponseDto } from '../../file-assets/dto/public-file-asset-response.dto';
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { MapObjectType, RouteNodeType } from "@prisma/client";
+import { PublicFileAssetResponseDto } from "../../file-assets/dto/public-file-asset-response.dto";
 
 export class PublicFloorTextureDto {
   @ApiProperty()
@@ -77,14 +77,14 @@ export class PublicMapSceneFloorDto {
   @ApiPropertyOptional({
     type: PublicFileAssetResponseDto,
     nullable: true,
-    description: 'Active public 2D floor-map asset, or null.',
+    description: "Active public 2D floor-map asset, or null.",
   })
   mapAsset!: PublicFileAssetResponseDto | null;
 
   @ApiPropertyOptional({
     type: PublicFileAssetResponseDto,
     nullable: true,
-    description: 'Active public 3D floor-model asset, or null.',
+    description: "Active public 3D floor-model asset, or null.",
   })
   modelAsset!: PublicFileAssetResponseDto | null;
 
@@ -299,14 +299,14 @@ export class PublicMapSceneStoreDto {
   @ApiPropertyOptional({
     type: PublicFileAssetResponseDto,
     nullable: true,
-    description: 'Active public store logo asset, or null.',
+    description: "Active public store logo asset, or null.",
   })
   logoAsset!: PublicFileAssetResponseDto | null;
 
   @ApiPropertyOptional({
     type: PublicFileAssetResponseDto,
     nullable: true,
-    description: 'Active public store cover asset, or null.',
+    description: "Active public store cover asset, or null.",
   })
   coverAsset!: PublicFileAssetResponseDto | null;
 
@@ -318,7 +318,7 @@ export class PublicMapSceneStoreDto {
 }
 
 export class PublicMapSceneMetaDto {
-  @ApiProperty({ example: 'green-mall-map-scene/v1' })
+  @ApiProperty({ example: "green-mall-map-scene/v1" })
   schemaVersion!: string;
 
   @ApiProperty()
@@ -326,7 +326,7 @@ export class PublicMapSceneMetaDto {
 
   @ApiProperty({
     example:
-      'Frontend-ready 2D/3D mall map scene payload with navigation graph.',
+      "Frontend-ready 2D/3D mall map scene payload with navigation graph.",
   })
   purpose!: string;
 }

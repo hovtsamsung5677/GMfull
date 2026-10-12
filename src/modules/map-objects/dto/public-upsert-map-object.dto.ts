@@ -1,6 +1,12 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { MapObjectType } from '@prisma/client';
-import { IsEnum, IsOptional, IsString, IsNumber, MaxLength } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { MapObjectType } from "@prisma/client";
+import {
+  IsEnum,
+  IsOptional,
+  IsString,
+  IsNumber,
+  MaxLength,
+} from "class-validator";
 
 // Временный DTO для публичного (без авторизации) сохранения точек магазинов.
 // TODO: убрать вместе с PublicMapObjectsController после включения авторизации.

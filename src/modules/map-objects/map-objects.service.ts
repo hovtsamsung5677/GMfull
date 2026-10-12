@@ -14,6 +14,7 @@ import {
   toActivePublicFileAssetResponse,
   toPublicFileAssetResponse,
 } from "../file-assets/public-file-asset.projection";
+import { FloorPublicResponseDto } from "../floors/dto/floor-public-response.dto";
 import { FloorResponseDto } from "../floors/dto/floor-response.dto";
 import { CreateMapObjectDto } from "./dto/create-map-object.dto";
 import { MapObjectQueryDto } from "./dto/map-object-query.dto";
@@ -153,7 +154,7 @@ export class MapObjectsService {
     ]);
 
     return {
-      floors: floors as FloorResponseDto[],
+      floors: floors.map((floor) => this.toPublicFloor(floor)),
       objects: objects.map((object) => this.toResponse(object)),
     };
   }
@@ -265,8 +266,7 @@ export class MapObjectsService {
         }),
       ]);
 
-    const floorTextures =
-      await this.floorTexturesService.findByFloor(floor.id);
+    const floorTextures = await this.floorTexturesService.findByFloor(floor.id);
 
     return {
       floor: this.toSceneFloor(floor),
@@ -328,7 +328,10 @@ export class MapObjectsService {
         scaleZ: dto.scaleZ,
         externalObjectId: dto.externalObjectId,
         geometry: this.getGeometryInput(dto),
-        metadata: dto.metadata as Prisma.InputJsonValue | undefined,
+        metadata:
+          dto.metadata === null
+            ? Prisma.DbNull
+            : (dto.metadata as Prisma.InputJsonValue | undefined),
         sortOrder: dto.sortOrder ?? 0,
         isActive: dto.isActive ?? true,
       },
@@ -376,12 +379,14 @@ export class MapObjectsService {
         externalObjectId: dto.externalObjectId,
         geometry: this.getGeometryInput(dto),
         metadata:
-          dto.metadata === undefined
-            ? undefined
-            : preserveStorePrimaryRelationMetadata(
-                existing.metadata,
-                dto.metadata,
-              ),
+          dto.metadata === null
+            ? Prisma.DbNull
+            : dto.metadata === undefined
+              ? undefined
+              : preserveStorePrimaryRelationMetadata(
+                  existing.metadata,
+                  dto.metadata,
+                ),
         sortOrder: dto.sortOrder,
         isActive: dto.isActive,
       },
@@ -546,7 +551,7 @@ export class MapObjectsService {
   }
 
   private getGeometryInput(
-    dto: Pick<CreateMapObjectDto, "polygonData" | "geometry">,
+    dto: Pick<Partial<CreateMapObjectDto>, "polygonData" | "geometry">,
   ): Prisma.InputJsonValue | undefined {
     if (dto.polygonData !== undefined && dto.geometry !== undefined) {
       throw new BadRequestException(
@@ -614,21 +619,32 @@ export class MapObjectsService {
   }
 
   private toSceneFloor(floor: SceneFloor): PublicMapSceneFloorDto {
-    return {
-      id: floor.id,
-      number: floor.number,
-      name: floor.name,
-      width: floor.width,
-      height: floor.height,
-      depth: floor.depth,
-      unit: floor.unit,
-      mapImageUrl: floor.mapImageUrl,
-      mapAssetId: floor.mapAssetId,
-      modelAssetId: floor.modelAssetId,
-      mapAsset: toActivePublicFileAssetResponse(floor.mapAsset),
-      modelAsset: toActivePublicFileAssetResponse(floor.modelAsset),
-      metadata: floor.metadata,
+    const { isActive: _isActive, ...publicFloor } = floor as SceneFloor & {
+      isActive: boolean;
     };
+
+    return {
+      id: publicFloor.id,
+      number: publicFloor.number,
+      name: publicFloor.name,
+      width: publicFloor.width,
+      height: publicFloor.height,
+      depth: publicFloor.depth,
+      unit: publicFloor.unit,
+      mapImageUrl: publicFloor.mapImageUrl,
+      mapAssetId: publicFloor.mapAssetId,
+      modelAssetId: publicFloor.modelAssetId,
+      mapAsset: toActivePublicFileAssetResponse(publicFloor.mapAsset),
+      modelAsset: toActivePublicFileAssetResponse(publicFloor.modelAsset),
+      metadata: publicFloor.metadata,
+    };
+  }
+
+  private toPublicFloor(floor: FloorResponseDto): FloorPublicResponseDto {
+    const { isActive: _isActive, ...publicFloor } =
+      floor as FloorResponseDto & { isActive: boolean };
+
+    return publicFloor as FloorPublicResponseDto;
   }
 
   private toSceneObject(

@@ -1,14 +1,22 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
-import { MapObjectType } from '@prisma/client';
-import { Transform } from 'class-transformer';
-import { IsBoolean, IsEnum, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import { ApiPropertyOptional } from "@nestjs/swagger";
+import { MapObjectType } from "@prisma/client";
+import { Transform } from "class-transformer";
+import {
+  IsBoolean,
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  Max,
+  Min,
+} from "class-validator";
 import {
   toOptionalBoolean,
   toOptionalNumber,
-} from '../../../common/transformers/query.transformers';
+} from "../../../common/transformers/query.transformers";
 
 export class MapObjectQueryDto {
-  @ApiPropertyOptional({ example: 'entrance' })
+  @ApiPropertyOptional({ example: "entrance" })
   @IsOptional()
   @IsString()
   search?: string;
