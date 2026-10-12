@@ -1,5 +1,5 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { FileAssetKind } from '@prisma/client';
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { FileAssetKind } from "@prisma/client";
 
 export class PublicPromotionStoreResponseDto {
   @ApiProperty()
@@ -28,10 +28,10 @@ export class PublicPromotionImageAssetResponseDto {
   @ApiPropertyOptional({ nullable: true })
   mimeType!: string | null;
 
-  @ApiPropertyOptional({ nullable: true, description: 'File size in bytes.' })
+  @ApiPropertyOptional({ nullable: true, description: "File size in bytes." })
   size!: number | null;
 
-  @ApiProperty({ description: 'Frontend-accessible image URL.' })
+  @ApiProperty({ description: "Frontend-accessible image URL." })
   url!: string;
 
   @ApiProperty({ enum: FileAssetKind })
@@ -40,10 +40,10 @@ export class PublicPromotionImageAssetResponseDto {
   @ApiPropertyOptional({ type: Object, nullable: true })
   metadata!: unknown | null;
 
-  @ApiProperty({ format: 'date-time' })
+  @ApiProperty({ format: "date-time" })
   createdAt!: Date;
 
-  @ApiProperty({ format: 'date-time' })
+  @ApiProperty({ format: "date-time" })
   updatedAt!: Date;
 }
 
@@ -69,14 +69,14 @@ export class PublicPromotionResponseDto {
   @ApiPropertyOptional({ nullable: true })
   buttonUrl!: string | null;
 
-  @ApiPropertyOptional({ nullable: true, format: 'date-time' })
+  @ApiPropertyOptional({ nullable: true, format: "date-time" })
   startsAt!: Date | null;
 
   @ApiPropertyOptional({
     nullable: true,
-    format: 'date-time',
+    format: "date-time",
     description:
-      'Exclusive validity boundary: the promotion is hidden when current time is equal to endsAt.',
+      "Exclusive validity boundary: the promotion is hidden when current time is equal to endsAt.",
   })
   endsAt!: Date | null;
 
@@ -85,7 +85,7 @@ export class PublicPromotionResponseDto {
 
   @ApiProperty({
     type: () => PublicPromotionStoreResponseDto,
-    description: 'Active and visible store linked to the promotion.',
+    description: "Active and visible store linked to the promotion.",
   })
   store!: PublicPromotionStoreResponseDto;
 
@@ -93,7 +93,7 @@ export class PublicPromotionResponseDto {
     type: () => PublicPromotionImageAssetResponseDto,
     nullable: true,
     description:
-      'Safe image projection, or null when the linked asset is inactive or not IMAGE.',
+      "Safe image projection, or null when the linked asset is inactive or not IMAGE.",
   })
   imageAsset!: PublicPromotionImageAssetResponseDto | null;
 }

@@ -1,5 +1,5 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { FileAssetKind } from '@prisma/client';
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { FileAssetKind } from "@prisma/client";
 
 export class PromotionAdminStoreResponseDto {
   @ApiProperty()
@@ -97,10 +97,10 @@ export class PromotionAdminResponseDto {
   @ApiPropertyOptional({ nullable: true })
   imageAssetId!: string | null;
 
-  @ApiPropertyOptional({ nullable: true, format: 'date-time' })
+  @ApiPropertyOptional({ nullable: true, format: "date-time" })
   startsAt!: Date | null;
 
-  @ApiPropertyOptional({ nullable: true, format: 'date-time' })
+  @ApiPropertyOptional({ nullable: true, format: "date-time" })
   endsAt!: Date | null;
 
   @ApiProperty()
@@ -112,7 +112,7 @@ export class PromotionAdminResponseDto {
   @ApiPropertyOptional({ type: Object, nullable: true })
   metadata!: unknown | null;
 
-  @ApiPropertyOptional({ nullable: true, format: 'date-time' })
+  @ApiPropertyOptional({ nullable: true, format: "date-time" })
   deletedAt!: Date | null;
 
   @ApiPropertyOptional({ nullable: true })
@@ -151,9 +151,9 @@ export class PromotionAdminResponseDto {
   })
   updatedBy!: PromotionAdminUserResponseDto | null;
 
-  @ApiProperty({ format: 'date-time' })
+  @ApiProperty({ format: "date-time" })
   createdAt!: Date;
 
-  @ApiProperty({ format: 'date-time' })
+  @ApiProperty({ format: "date-time" })
   updatedAt!: Date;
 }

@@ -70,6 +70,7 @@ interface PromotionReferenceInput {
   imageAssetId: string | null;
   isActive: boolean;
   deriveTenantFromStore: boolean;
+  isSuperAdmin: boolean;
 }
 
 @Injectable()
@@ -140,6 +141,7 @@ export class PromotionsService {
   async create(
     dto: CreatePromotionDto,
     userId: string,
+    isSuperAdmin: boolean,
   ): Promise<PromotionAdminResponseDto> {
     const slug = slugify(dto.slug);
     await this.ensureSlugAvailable(slug);
@@ -155,6 +157,7 @@ export class PromotionsService {
       imageAssetId: dto.imageAssetId ?? null,
       isActive: dto.isActive ?? true,
       deriveTenantFromStore: storeId !== null && dto.tenantId === undefined,
+      isSuperAdmin,
     });
 
     try {
@@ -191,6 +194,7 @@ export class PromotionsService {
     id: string,
     dto: UpdatePromotionDto,
     userId: string,
+    isSuperAdmin: boolean,
   ): Promise<PromotionAdminResponseDto> {
     const existing = await this.findExisting(id);
     const slug = dto.slug === undefined ? undefined : slugify(dto.slug);
@@ -219,6 +223,7 @@ export class PromotionsService {
       tenantId: requestedTenantId,
       imageAssetId,
       isActive,
+      isSuperAdmin,
       deriveTenantFromStore:
         dto.storeId !== undefined &&
         dto.storeId !== null &&
@@ -382,6 +387,12 @@ export class PromotionsService {
   ): Promise<string | null> {
     let tenantId = input.tenantId;
 
+    if (!input.isSuperAdmin && input.tenantId !== null) {
+      throw new BadRequestException(
+        "Non-admin users cannot specify tenantId; it is derived from the store",
+      );
+    }
+
     if (input.isActive && input.storeId === null) {
       throw new BadRequestException("Active promotion requires storeId");
     }
@@ -464,7 +475,18 @@ export class PromotionsService {
       return value;
     }
 
-    return new Date(value);
+    // Normalize naive local datetimes (no timezone offset) to UTC so the
+    // stored value and the visibility comparison against server UTC `now`
+    // are always consistent regardless of client timezone.
+    const hasTimezone = /([zZ])$|([+-]\d{2}:\d{2})$/.test(value.trim());
+    const normalized = hasTimezone ? value : `${value.trim()}Z`;
+
+    const date = new Date(normalized);
+    if (Number.isNaN(date.getTime())) {
+      throw new BadRequestException("Invalid date value");
+    }
+
+    return date;
   }
 
   private ensureValidDateRange(

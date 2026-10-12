@@ -1,5 +1,5 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Transform } from 'class-transformer';
+import { ApiPropertyOptional } from "@nestjs/swagger";
+import { Transform } from "class-transformer";
 import {
   IsBoolean,
   IsInt,
@@ -8,16 +8,16 @@ import {
   Max,
   MaxLength,
   Min,
-} from 'class-validator';
+} from "class-validator";
 import {
   toOptionalBoolean,
   toOptionalNumber,
-} from '../../../common/transformers/query.transformers';
+} from "../../../common/transformers/query.transformers";
 
 export class PromotionQueryDto {
   @ApiPropertyOptional({
-    example: 'sportmaster',
-    description: 'Case-insensitive search by title, slug or description.',
+    example: "sportmaster",
+    description: "Case-insensitive search by title, slug or description.",
   })
   @IsOptional()
   @IsString()
