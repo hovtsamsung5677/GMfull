@@ -2,14 +2,17 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
-} from '@nestjs/common';
-import { Prisma } from '@prisma/client';
-import * as bcrypt from 'bcrypt';
-import { AuthenticatedUser } from '../../common/types/authenticated-user.type';
-import { PrismaService } from '../../database/prisma.service';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
-import { UserResponseDto } from './dto/user-response.dto';
+} from "@nestjs/common";
+import { Prisma } from "@prisma/client";
+import * as bcrypt from "bcrypt";
+import {
+  AuthenticatedUser,
+  SUPER_ADMIN_ROLE,
+} from "../../common/types/authenticated-user.type";
+import { PrismaService } from "../../database/prisma.service";
+import { CreateUserDto } from "./dto/create-user.dto";
+import { UpdateUserDto } from "./dto/update-user.dto";
+import { UserResponseDto } from "./dto/user-response.dto";
 
 const userWithRole = {
   role: true,
@@ -26,7 +29,7 @@ export class UsersService {
   async findAll(): Promise<UserResponseDto[]> {
     const users = await this.prisma.user.findMany({
       include: userWithRole,
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
     });
 
     return users.map((user) => this.toResponse(user));
@@ -39,7 +42,7 @@ export class UsersService {
     });
 
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException("User not found");
     }
 
     return this.toResponse(user);
@@ -138,6 +141,7 @@ export class UsersService {
       email: user.email,
       fullName: user.name,
       role: user.role.name,
+      isSuperAdmin: user.role.name === SUPER_ADMIN_ROLE,
     };
   }
 
@@ -166,7 +170,7 @@ export class UsersService {
     });
 
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException("User not found");
     }
   }
 
@@ -177,16 +181,16 @@ export class UsersService {
     });
 
     if (!role) {
-      throw new NotFoundException('Role not found');
+      throw new NotFoundException("Role not found");
     }
   }
 
   private handlePrismaError(error: unknown): never {
     if (
       error instanceof Prisma.PrismaClientKnownRequestError &&
-      error.code === 'P2002'
+      error.code === "P2002"
     ) {
-      throw new ConflictException('User with this email already exists');
+      throw new ConflictException("User with this email already exists");
     }
 
     throw error;

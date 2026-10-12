@@ -1,7 +1,7 @@
-import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
-import { Reflector } from '@nestjs/core';
-import { ROLES_KEY } from '../decorators/roles.decorator';
-import { AuthenticatedUser } from '../types/authenticated-user.type';
+import { CanActivate, ExecutionContext, Injectable } from "@nestjs/common";
+import { Reflector } from "@nestjs/core";
+import { ROLES_KEY } from "../decorators/roles.decorator";
+import { AuthenticatedUser } from "../types/authenticated-user.type";
 
 @Injectable()
 export class RolesGuard implements CanActivate {
@@ -20,12 +20,18 @@ export class RolesGuard implements CanActivate {
     const request = context
       .switchToHttp()
       .getRequest<{ user?: AuthenticatedUser }>();
-    const userRole = request.user?.role;
+    const user = request.user;
 
-    if (!userRole) {
+    if (!user) {
       return false;
     }
 
-    return userRole === 'SUPER_ADMIN' || requiredRoles.includes(userRole);
+    // SUPER_ADMIN bypass is only granted when the role claim was verified
+    // against the database by JwtStrategy.validate, never from the raw token.
+    if (user.isSuperAdmin) {
+      return true;
+    }
+
+    return requiredRoles.includes(user.role);
   }
 }
