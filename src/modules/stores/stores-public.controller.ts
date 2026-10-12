@@ -1,13 +1,13 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
-import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
-import { StoreSearchQueryDto } from './dto/store-search-query.dto';
-import { StoreSearchResponseDto } from './dto/store-search-response.dto';
-import { StoreQueryDto } from './dto/store-query.dto';
-import { StoreResponseDto } from './dto/store-response.dto';
-import { StoresService } from './stores.service';
+import { Controller, Get, Param, Query } from "@nestjs/common";
+import { ApiOkResponse, ApiTags } from "@nestjs/swagger";
+import { StoreSearchQueryDto } from "./dto/store-search-query.dto";
+import { StoreSearchResponseDto } from "./dto/store-search-response.dto";
+import { StoreQueryDto } from "./dto/store-query.dto";
+import { StoreResponseDto } from "./dto/store-response.dto";
+import { StoresService } from "./stores.service";
 
-@ApiTags('public/stores')
-@Controller('public/stores')
+@ApiTags("public/stores")
+@Controller("public/stores")
 export class StoresPublicController {
   constructor(private readonly storesService: StoresService) {}
 
@@ -17,7 +17,7 @@ export class StoresPublicController {
     return this.storesService.findPublic(query);
   }
 
-  @Get('search')
+  @Get("search")
   @ApiOkResponse({ type: [StoreSearchResponseDto] })
   search(
     @Query() query: StoreSearchQueryDto,
@@ -25,9 +25,9 @@ export class StoresPublicController {
     return this.storesService.searchPublic(query);
   }
 
-  @Get(':id')
+  @Get(":id")
   @ApiOkResponse({ type: StoreResponseDto })
-  findOne(@Param('id') id: string): Promise<StoreResponseDto> {
+  findOne(@Param("id") id: string): Promise<StoreResponseDto> {
     return this.storesService.findPublicOne(id);
   }
 }

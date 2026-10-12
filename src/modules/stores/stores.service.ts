@@ -226,8 +226,11 @@ export class StoresService {
     return this.toAdminResponse(store);
   }
 
-  async create(dto: CreateStoreDto): Promise<StoreAdminResponseDto> {
-    await this.ensureReferencesExist(dto, dto.isActive ?? true);
+  async create(
+    dto: CreateStoreDto,
+    isSuperAdmin: boolean,
+  ): Promise<StoreAdminResponseDto> {
+    await this.ensureReferencesExist(dto, dto.isActive ?? true, isSuperAdmin);
     const slug = await this.resolveSlug(dto.slug, dto.name);
 
     try {
@@ -290,6 +293,7 @@ export class StoresService {
     id: string,
     dto: UpdateStoreDto,
     userId: string,
+    isSuperAdmin: boolean,
   ): Promise<StoreAdminResponseDto> {
     const existing = await this.ensureExists(id);
     const tenantChanged =
@@ -302,6 +306,7 @@ export class StoresService {
     await this.ensureReferencesExist(
       dto,
       tenantChanged && (dto.isActive ?? existing.isActive),
+      isSuperAdmin,
     );
     const slug = dto.slug
       ? await this.resolveSlug(dto.slug, dto.slug, id, true)
@@ -502,7 +507,14 @@ export class StoresService {
       "tenantId" | "categoryId" | "floorId" | "logoAssetId" | "coverAssetId"
     >,
     requireActiveTenant = false,
+    isSuperAdmin = false,
   ): Promise<void> {
+    if (!isSuperAdmin && dto.tenantId !== null && dto.tenantId !== undefined) {
+      throw new BadRequestException(
+        "Non-admin users cannot specify tenantId; it is derived from the store context",
+      );
+    }
+
     if (dto.tenantId !== null && dto.tenantId !== undefined) {
       const tenant = await this.prisma.tenant.findUnique({
         where: { id: dto.tenantId },
@@ -774,6 +786,50 @@ export class StoresService {
     }
   }
 
+  private async applyMetadataUpdates(
+    tx: Prisma.TransactionClient,
+    model: "mapObject" | "routeNode",
+    updates: Array<{ id: string; metadata: Prisma.InputJsonValue | undefined }>,
+  ): Promise<void> {
+    if (updates.length === 0) {
+      return;
+    }
+
+    const groups = new Map<string, string[]>();
+
+    for (const { id, metadata } of updates) {
+      const key =
+        metadata === undefined ? "__noop__" : JSON.stringify(metadata);
+
+      if (key === "__noop__") {
+        continue;
+      }
+
+      const ids = groups.get(key);
+      if (ids) {
+        ids.push(id);
+      } else {
+        groups.set(key, [id]);
+      }
+    }
+
+    for (const [key, ids] of groups) {
+      const metadata = JSON.parse(key) as Prisma.InputJsonValue;
+
+      if (model === "mapObject") {
+        await tx.mapObject.updateMany({
+          where: { id: { in: ids } },
+          data: { metadata },
+        });
+      } else {
+        await tx.routeNode.updateMany({
+          where: { id: { in: ids } },
+          data: { metadata },
+        });
+      }
+    }
+  }
+
   private async clearPrimaryMarkersForDetachedMapObjects(
     tx: Prisma.TransactionClient,
     storeId: string,
@@ -794,6 +850,15 @@ export class StoresService {
       },
     });
 
+    const mapObjectUpdates: Array<{
+      id: string;
+      metadata: Prisma.InputJsonValue | undefined;
+    }> = [];
+    const routeNodeUpdates: Array<{
+      id: string;
+      metadata: Prisma.InputJsonValue | undefined;
+    }> = [];
+
     for (const object of mapObjects) {
       const objectMetadata = updatePrimaryStoreRelationMetadata({
         metadata: object.metadata,
@@ -803,10 +868,7 @@ export class StoresService {
       });
 
       if (objectMetadata !== undefined) {
-        await tx.mapObject.update({
-          where: { id: object.id },
-          data: { metadata: objectMetadata },
-        });
+        mapObjectUpdates.push({ id: object.id, metadata: objectMetadata });
       }
 
       for (const node of object.routeNodes) {
@@ -818,13 +880,13 @@ export class StoresService {
         });
 
         if (nodeMetadata !== undefined) {
-          await tx.routeNode.update({
-            where: { id: node.id },
-            data: { metadata: nodeMetadata },
-          });
+          routeNodeUpdates.push({ id: node.id, metadata: nodeMetadata });
         }
       }
     }
+
+    await this.applyMetadataUpdates(tx, "mapObject", mapObjectUpdates);
+    await this.applyMetadataUpdates(tx, "routeNode", routeNodeUpdates);
   }
 
   private async syncPrimaryMapObject(
@@ -846,6 +908,11 @@ export class StoresService {
       );
     }
 
+    const updates: Array<{
+      id: string;
+      metadata: Prisma.InputJsonValue | undefined;
+    }> = [];
+
     for (const object of mapObjects) {
       const metadata = updatePrimaryStoreRelationMetadata({
         metadata: object.metadata,
@@ -855,12 +922,11 @@ export class StoresService {
       });
 
       if (metadata !== undefined) {
-        await tx.mapObject.update({
-          where: { id: object.id },
-          data: { metadata },
-        });
+        updates.push({ id: object.id, metadata });
       }
     }
+
+    await this.applyMetadataUpdates(tx, "mapObject", updates);
   }
 
   private async syncPrimaryRouteNode(
@@ -1087,7 +1153,3 @@ export class StoresService {
     throw error;
   }
 }
-
-
-
-

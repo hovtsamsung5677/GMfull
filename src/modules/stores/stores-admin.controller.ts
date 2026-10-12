@@ -23,6 +23,7 @@ import { Roles } from "../../common/decorators/roles.decorator";
 import { CurrentUser } from "../../common/decorators/current-user.decorator";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { RolesGuard } from "../../common/guards/roles.guard";
+import { AuthenticatedUser } from "../../common/types/authenticated-user.type";
 import { CreateStoreDto } from "./dto/create-store.dto";
 import { StoreAdminResponseDto } from "./dto/store-admin-response.dto";
 import { StoreQueryDto } from "./dto/store-query.dto";
@@ -65,8 +66,11 @@ export class StoresAdminController {
     description:
       "Referenced tenant, category, floor, map object or route node was not found.",
   })
-  create(@Body() dto: CreateStoreDto): Promise<StoreAdminResponseDto> {
-    return this.storesService.create(dto);
+  create(
+    @Body() dto: CreateStoreDto,
+    @CurrentUser("isSuperAdmin") isSuperAdmin: boolean,
+  ): Promise<StoreAdminResponseDto> {
+    return this.storesService.create(dto, isSuperAdmin);
   }
 
   @Patch(":id")
@@ -90,8 +94,9 @@ export class StoresAdminController {
     @Param("id") id: string,
     @Body() dto: UpdateStoreDto,
     @CurrentUser("id") userId: string,
+    @CurrentUser("isSuperAdmin") isSuperAdmin: boolean,
   ): Promise<StoreAdminResponseDto> {
-    return this.storesService.update(id, dto, userId);
+    return this.storesService.update(id, dto, userId, isSuperAdmin);
   }
 
   @Delete(":id")
