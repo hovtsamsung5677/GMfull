@@ -1,4 +1,4 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiPropertyOptional } from "@nestjs/swagger";
 import {
   IsInt,
   IsNotEmpty,
@@ -6,13 +6,15 @@ import {
   IsOptional,
   Max,
   Min,
-} from 'class-validator';
+} from "class-validator";
 
 export class CreateSharedRouteBodyDto {
   @IsNotEmpty()
   payload!: unknown;
 
-  @ApiPropertyOptional({ description: 'TTL in minutes before the link expires.' })
+  @ApiPropertyOptional({
+    description: "TTL in minutes before the link expires.",
+  })
   @IsOptional()
   @IsNumber()
   @IsInt()

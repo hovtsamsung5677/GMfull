@@ -1,15 +1,17 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../../database/prisma.service';
+import { Injectable, NotFoundException } from "@nestjs/common";
+import * as crypto from "node:crypto";
+import { PrismaService } from "../../database/prisma.service";
 
 const TOKEN_LENGTH = 16;
 const DEFAULT_TTL_MINUTES = 60;
 
+const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
+
 function randomToken(length: number): string {
-  const alphabet =
-    'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
-  let token = '';
+  const bytes = crypto.randomBytes(length);
+  let token = "";
   for (let i = 0; i < length; i += 1) {
-    token += alphabet[Math.floor(Math.random() * alphabet.length)];
+    token += ALPHABET[bytes[i] % ALPHABET.length];
   }
   return token;
 }
@@ -42,11 +44,11 @@ export class SharedRoutesService {
     });
 
     if (!record) {
-      throw new NotFoundException('Shared route not found');
+      throw new NotFoundException("Shared route not found");
     }
 
     if (record.expiresAt.getTime() < Date.now()) {
-      throw new NotFoundException('Shared route expired');
+      throw new NotFoundException("Shared route expired");
     }
 
     return record.payload;
