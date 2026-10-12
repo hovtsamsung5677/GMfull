@@ -1,14 +1,15 @@
 ﻿import {
   BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
-} from '@nestjs/common';
-import { Prisma } from '@prisma/client';
-import { PrismaService } from '../../database/prisma.service';
-import { CreateRouteEdgeDto } from './dto/create-route-edge.dto';
-import { RouteEdgeQueryDto } from './dto/route-edge-query.dto';
-import { RouteEdgeResponseDto } from './dto/route-edge-response.dto';
-import { UpdateRouteEdgeDto } from './dto/update-route-edge.dto';
+} from "@nestjs/common";
+import { Prisma } from "@prisma/client";
+import { PrismaService } from "../../database/prisma.service";
+import { CreateRouteEdgeDto } from "./dto/create-route-edge.dto";
+import { RouteEdgeQueryDto } from "./dto/route-edge-query.dto";
+import { RouteEdgeResponseDto } from "./dto/route-edge-response.dto";
+import { UpdateRouteEdgeDto } from "./dto/update-route-edge.dto";
 
 const routeEdgeInclude = {
   floor: {
@@ -40,7 +41,7 @@ export class RouteEdgesService {
     const edges = await this.prisma.routeEdge.findMany({
       where: this.buildWhere(query, true),
       include: routeEdgeInclude,
-      orderBy: [{ createdAt: 'asc' }],
+      orderBy: [{ createdAt: "asc" }],
       ...this.getPagination(query),
     });
 
@@ -51,7 +52,7 @@ export class RouteEdgesService {
     const edges = await this.prisma.routeEdge.findMany({
       where: this.buildWhere(query),
       include: routeEdgeInclude,
-      orderBy: [{ createdAt: 'asc' }],
+      orderBy: [{ createdAt: "asc" }],
       ...this.getPagination(query),
     });
 
@@ -78,21 +79,25 @@ export class RouteEdgesService {
       toNodeId: dto.toNodeId,
     });
 
-    const edge = await this.prisma.routeEdge.create({
-      data: {
-        floorId: dto.floorId,
-        fromNodeId: dto.fromNodeId,
-        toNodeId: dto.toNodeId,
-        distance: dto.distance,
-        weight: dto.weight,
-        isBidirectional: dto.isBidirectional ?? true,
-        metadata: dto.metadata as Prisma.InputJsonValue | undefined,
-        isActive: dto.isActive ?? true,
-      },
-      include: routeEdgeInclude,
-    });
+    try {
+      const edge = await this.prisma.routeEdge.create({
+        data: {
+          floorId: dto.floorId,
+          fromNodeId: dto.fromNodeId,
+          toNodeId: dto.toNodeId,
+          distance: dto.distance,
+          weight: dto.weight,
+          isBidirectional: dto.isBidirectional ?? true,
+          metadata: dto.metadata as Prisma.InputJsonValue | undefined,
+          isActive: dto.isActive ?? true,
+        },
+        include: routeEdgeInclude,
+      });
 
-    return this.toResponse(edge);
+      return this.toResponse(edge);
+    } catch (error) {
+      this.handlePrismaError(error);
+    }
   }
 
   async update(
@@ -106,22 +111,26 @@ export class RouteEdgesService {
       toNodeId: dto.toNodeId ?? existing.toNodeId,
     });
 
-    const edge = await this.prisma.routeEdge.update({
-      where: { id },
-      data: {
-        floorId: dto.floorId,
-        fromNodeId: dto.fromNodeId,
-        toNodeId: dto.toNodeId,
-        distance: dto.distance,
-        weight: dto.weight,
-        isBidirectional: dto.isBidirectional,
-        metadata: dto.metadata as Prisma.InputJsonValue | undefined,
-        isActive: dto.isActive,
-      },
-      include: routeEdgeInclude,
-    });
+    try {
+      const edge = await this.prisma.routeEdge.update({
+        where: { id },
+        data: {
+          floorId: dto.floorId,
+          fromNodeId: dto.fromNodeId,
+          toNodeId: dto.toNodeId,
+          distance: dto.distance,
+          weight: dto.weight,
+          isBidirectional: dto.isBidirectional,
+          metadata: dto.metadata as Prisma.InputJsonValue | undefined,
+          isActive: dto.isActive,
+        },
+        include: routeEdgeInclude,
+      });
 
-    return this.toResponse(edge);
+      return this.toResponse(edge);
+    } catch (error) {
+      this.handlePrismaError(error);
+    }
   }
 
   async remove(id: string): Promise<RouteEdgeResponseDto> {
@@ -169,7 +178,7 @@ export class RouteEdgesService {
     });
 
     if (!edge) {
-      throw new NotFoundException('Route edge not found');
+      throw new NotFoundException("Route edge not found");
     }
 
     return this.toResponse(edge);
@@ -187,7 +196,7 @@ export class RouteEdgesService {
     });
 
     if (!edge) {
-      throw new NotFoundException('Route edge not found');
+      throw new NotFoundException("Route edge not found");
     }
 
     return edge;
@@ -210,32 +219,32 @@ export class RouteEdgesService {
     ]);
 
     if (!floor) {
-      throw new NotFoundException('Floor not found');
+      throw new NotFoundException("Floor not found");
     }
 
     if (!fromNode) {
-      throw new NotFoundException('From route node not found');
+      throw new NotFoundException("From route node not found");
     }
 
     if (!toNode) {
-      throw new NotFoundException('To route node not found');
+      throw new NotFoundException("To route node not found");
     }
 
     if (fromNode.id === toNode.id) {
       throw new BadRequestException(
-        'Route edge must connect two different route nodes',
+        "Route edge must connect two different route nodes",
       );
     }
 
     if (fromNode.floorId !== refs.floorId) {
       throw new BadRequestException(
-        'From route node must belong to the selected floor',
+        "From route node must belong to the selected floor",
       );
     }
 
     if (toNode.floorId !== refs.floorId) {
       throw new BadRequestException(
-        'To route node must belong to the selected floor',
+        "To route node must belong to the selected floor",
       );
     }
   }
@@ -247,8 +256,26 @@ export class RouteEdgesService {
     });
 
     if (!floor) {
-      throw new NotFoundException('Floor not found');
+      throw new NotFoundException("Floor not found");
     }
+  }
+
+  private handlePrismaError(error: unknown): never {
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === "P2002") {
+        throw new ConflictException(
+          "Route edge already exists between these route nodes",
+        );
+      }
+
+      if (error.code === "P2003") {
+        throw new BadRequestException(
+          "A referenced route edge entity no longer exists",
+        );
+      }
+    }
+
+    throw error;
   }
 
   private getPagination(query: RouteEdgeQueryDto) {
@@ -287,4 +314,3 @@ export class RouteEdgesService {
     };
   }
 }
-

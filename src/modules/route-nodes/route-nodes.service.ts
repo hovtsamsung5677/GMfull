@@ -3,16 +3,17 @@
   ConflictException,
   Injectable,
   NotFoundException,
-} from '@nestjs/common';
-import { MapObjectType, Prisma, RouteNodeType } from '@prisma/client';
-import { preserveStorePrimaryRelationMetadata } from '../../common/utils/store-primary.util';
-import { PrismaService } from '../../database/prisma.service';
-import { CreateRouteNodeDto } from './dto/create-route-node.dto';
-import { RouteGraphResponseDto } from './dto/route-graph-response.dto';
-import { RouteEdgeResponseDto } from '../route-edges/dto/route-edge-response.dto';
-import { RouteNodeQueryDto } from './dto/route-node-query.dto';
-import { RouteNodeResponseDto } from './dto/route-node-response.dto';
-import { UpdateRouteNodeDto } from './dto/update-route-node.dto';
+} from "@nestjs/common";
+import { MapObjectType, Prisma, RouteNodeType } from "@prisma/client";
+import { preserveStorePrimaryRelationMetadata } from "../../common/utils/store-primary.util";
+import { PrismaService } from "../../database/prisma.service";
+import { FloorPublicResponseDto } from "../floors/dto/floor-public-response.dto";
+import { CreateRouteNodeDto } from "./dto/create-route-node.dto";
+import { RouteGraphResponseDto } from "./dto/route-graph-response.dto";
+import { RouteEdgeResponseDto } from "../route-edges/dto/route-edge-response.dto";
+import { RouteNodeQueryDto } from "./dto/route-node-query.dto";
+import { RouteNodeResponseDto } from "./dto/route-node-response.dto";
+import { UpdateRouteNodeDto } from "./dto/update-route-node.dto";
 
 const routeNodeInclude = {
   floor: {
@@ -30,7 +31,7 @@ type RouteNodeWithFloor = Prisma.RouteNodeGetPayload<{
 
 type RouteNodeWriteClient = Pick<
   Prisma.TransactionClient,
-  'floor' | 'mapObject' | 'panel' | 'routeEdge' | 'routeNode'
+  "floor" | "mapObject" | "panel" | "routeEdge" | "routeNode"
 >;
 
 const routeGraphEdgeInclude = {
@@ -57,7 +58,7 @@ export class RouteNodesService {
     const nodes = await this.prisma.routeNode.findMany({
       where: this.buildWhere(query, true),
       include: routeNodeInclude,
-      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
       ...this.getPagination(query),
     });
 
@@ -68,7 +69,7 @@ export class RouteNodesService {
     const nodes = await this.prisma.routeNode.findMany({
       where: this.buildWhere(query),
       include: routeNodeInclude,
-      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
       ...this.getPagination(query),
     });
 
@@ -90,24 +91,24 @@ export class RouteNodesService {
     });
 
     if (!floor) {
-      throw new NotFoundException('Floor not found');
+      throw new NotFoundException("Floor not found");
     }
 
     const [nodes, edges] = await this.prisma.$transaction([
       this.prisma.routeNode.findMany({
         where: { floorId, isActive: true },
         include: routeNodeInclude,
-        orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+        orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
       }),
       this.prisma.routeEdge.findMany({
         where: { floorId, isActive: true },
         include: routeGraphEdgeInclude,
-        orderBy: [{ createdAt: 'asc' }],
+        orderBy: [{ createdAt: "asc" }],
       }),
     ]);
 
     return {
-      floor,
+      floor: this.toPublicFloor(floor),
       nodes: nodes.map((node) => this.toResponse(node)),
       edges: edges.map((edge) => this.toRouteEdgeResponse(edge)),
     };
@@ -118,54 +119,60 @@ export class RouteNodesService {
   }
 
   async create(dto: CreateRouteNodeDto): Promise<RouteNodeResponseDto> {
-    await this.ensureFloorExists(dto.floorId);
-    await this.ensureMapObjectExists(dto.mapObjectId, dto.floorId);
+    return this.prisma.$transaction(async (tx) => {
+      await this.ensureFloorExists(dto.floorId, tx);
+      await this.ensureMapObjectExists(dto.mapObjectId, dto.floorId, tx);
 
-    const node = await this.prisma.routeNode.create({
-      data: {
-        floorId: dto.floorId,
-        type: dto.type,
-        name: dto.name,
-        code: dto.code,
-        x: dto.x,
-        y: dto.y,
-        z: dto.z,
-        rotationX: dto.rotationX,
-        rotationY: dto.rotationY,
-        rotationZ: dto.rotationZ,
-        scaleX: dto.scaleX,
-        scaleY: dto.scaleY,
-        scaleZ: dto.scaleZ,
-        mapObjectId: dto.mapObjectId,
-        metadata: dto.metadata as Prisma.InputJsonValue | undefined,
-        sortOrder: dto.sortOrder ?? 0,
-        isActive: dto.isActive ?? true,
-      },
-      include: routeNodeInclude,
-    });
-
-    if (
-      (node.type === 'ELEVATOR' ||
-        node.type === 'ESCALATOR' ||
-        node.type === 'STAIRS') &&
-      !node.mapObjectId
-    ) {
-      const mapObject = await this.prisma.mapObject.create({
+      const node = await tx.routeNode.create({
         data: {
-          type: MapObjectType.ELEVATOR,
-          name: node.name || node.type,
-          floorId: node.floorId,
-          storeId: null,
+          floorId: dto.floorId,
+          type: dto.type,
+          name: dto.name,
+          code: dto.code,
+          x: dto.x,
+          y: dto.y,
+          z: dto.z,
+          rotationX: dto.rotationX,
+          rotationY: dto.rotationY,
+          rotationZ: dto.rotationZ,
+          scaleX: dto.scaleX,
+          scaleY: dto.scaleY,
+          scaleZ: dto.scaleZ,
+          mapObjectId: dto.mapObjectId,
+          metadata:
+            dto.metadata === null
+              ? Prisma.DbNull
+              : (dto.metadata as Prisma.InputJsonValue | undefined),
+          sortOrder: dto.sortOrder ?? 0,
+          isActive: dto.isActive ?? true,
         },
+        include: routeNodeInclude,
       });
-      await this.prisma.routeNode.update({
-        where: { id: node.id },
-        data: { mapObjectId: mapObject.id },
-      });
-      node.mapObjectId = mapObject.id;
-    }
 
-    return this.toResponse(node);
+      if (
+        (node.type === "ELEVATOR" ||
+          node.type === "ESCALATOR" ||
+          node.type === "STAIRS") &&
+        !node.mapObjectId
+      ) {
+        const mapObject = await tx.mapObject.create({
+          data: {
+            type: MapObjectType.ELEVATOR,
+            name: node.name || node.type,
+            floorId: node.floorId,
+            storeId: null,
+          },
+        });
+        const updated = await tx.routeNode.update({
+          where: { id: node.id },
+          data: { mapObjectId: mapObject.id },
+          include: routeNodeInclude,
+        });
+        return this.toResponse(updated);
+      }
+
+      return this.toResponse(node);
+    });
   }
 
   async update(
@@ -177,85 +184,91 @@ export class RouteNodesService {
     const mapObjectId =
       dto.mapObjectId === undefined ? existing.mapObjectId : dto.mapObjectId;
 
-    await this.ensureFloorExists(floorId);
-    await this.ensureMapObjectExists(mapObjectId, floorId);
-    await this.ensureActivePanelInvariant(
-      id,
-      floorId,
-      dto.type ?? existing.type,
-      dto.isActive ?? existing.isActive,
-    );
+    return this.prisma.$transaction(async (tx) => {
+      await this.ensureFloorExists(floorId, tx);
+      await this.ensureMapObjectExists(mapObjectId, floorId, tx);
+      await this.ensureActivePanelInvariant(
+        id,
+        floorId,
+        dto.type ?? existing.type,
+        dto.isActive ?? existing.isActive,
+        tx,
+      );
 
-    let effectiveMapObjectId = mapObjectId;
-    if (
-      (dto.type === 'ELEVATOR' ||
-        dto.type === 'ESCALATOR' ||
-        dto.type === 'STAIRS') &&
-      !effectiveMapObjectId
-    ) {
-      const created = await this.prisma.mapObject.create({
+      let effectiveMapObjectId = mapObjectId;
+      if (
+        (dto.type === "ELEVATOR" ||
+          dto.type === "ESCALATOR" ||
+          dto.type === "STAIRS") &&
+        !effectiveMapObjectId
+      ) {
+        const created = await tx.mapObject.create({
+          data: {
+            type: MapObjectType.ELEVATOR,
+            name: dto.name || dto.type || "Elevator",
+            floorId: floorId,
+            storeId: null,
+          },
+        });
+        effectiveMapObjectId = created.id;
+      }
+
+      const node = await tx.routeNode.update({
+        where: { id },
         data: {
-          type: MapObjectType.ELEVATOR,
-          name: dto.name || dto.type || 'Elevator',
-          floorId: floorId,
-          storeId: null,
+          floorId: dto.floorId,
+          type: dto.type,
+          name: dto.name,
+          code: dto.code,
+          x: dto.x,
+          y: dto.y,
+          z: dto.z,
+          rotationX: dto.rotationX,
+          rotationY: dto.rotationY,
+          rotationZ: dto.rotationZ,
+          scaleX: dto.scaleX,
+          scaleY: dto.scaleY,
+          scaleZ: dto.scaleZ,
+          mapObjectId: effectiveMapObjectId ?? undefined,
+          metadata:
+            dto.metadata === null
+              ? Prisma.DbNull
+              : dto.metadata === undefined
+                ? undefined
+                : preserveStorePrimaryRelationMetadata(
+                    existing.metadata,
+                    dto.metadata,
+                  ),
+          sortOrder: dto.sortOrder,
+          isActive: dto.isActive,
         },
+        include: routeNodeInclude,
       });
-      effectiveMapObjectId = created.id;
-    }
 
-    const node = await this.prisma.routeNode.update({
-      where: { id },
-      data: {
-        floorId: dto.floorId,
-        type: dto.type,
-        name: dto.name,
-        code: dto.code,
-        x: dto.x,
-        y: dto.y,
-        z: dto.z,
-        rotationX: dto.rotationX,
-        rotationY: dto.rotationY,
-        rotationZ: dto.rotationZ,
-        scaleX: dto.scaleX,
-        scaleY: dto.scaleY,
-        scaleZ: dto.scaleZ,
-        mapObjectId: effectiveMapObjectId ?? undefined,
-        metadata:
-          dto.metadata === undefined
-            ? undefined
-            : preserveStorePrimaryRelationMetadata(
-                existing.metadata,
-                dto.metadata,
-              ),
-        sortOrder: dto.sortOrder,
-        isActive: dto.isActive,
-      },
-      include: routeNodeInclude,
+      if (
+        (node.type === "ELEVATOR" ||
+          node.type === "ESCALATOR" ||
+          node.type === "STAIRS") &&
+        !node.mapObjectId
+      ) {
+        const mapObject = await tx.mapObject.create({
+          data: {
+            type: MapObjectType.ELEVATOR,
+            name: node.name || node.type,
+            floorId: node.floorId,
+            storeId: null,
+          },
+        });
+        const updated = await tx.routeNode.update({
+          where: { id: node.id },
+          data: { mapObjectId: mapObject.id },
+          include: routeNodeInclude,
+        });
+        return this.toResponse(updated);
+      }
+
+      return this.toResponse(node);
     });
-
-    if (
-      (node.type === 'ELEVATOR' ||
-        node.type === 'ESCALATOR' ||
-        node.type === 'STAIRS') &&
-      !node.mapObjectId
-    ) {
-      const mapObject = await this.prisma.mapObject.create({
-        data: {
-          type: MapObjectType.ELEVATOR,
-          name: node.name || node.type,
-          floorId: node.floorId,
-          storeId: null,
-        },
-      });
-      await this.prisma.routeNode.update({
-        where: { id: node.id },
-        data: { mapObjectId: mapObject.id },
-      });
-      node.mapObjectId = mapObject.id;
-    }
-
-    return this.toResponse(node);
   }
 
   async remove(id: string): Promise<RouteNodeResponseDto> {
@@ -291,8 +304,8 @@ export class RouteNodesService {
 
     if (query.search) {
       where.OR = [
-        { name: { contains: query.search, mode: 'insensitive' } },
-        { code: { contains: query.search, mode: 'insensitive' } },
+        { name: { contains: query.search, mode: "insensitive" } },
+        { code: { contains: query.search, mode: "insensitive" } },
       ];
     }
 
@@ -306,7 +319,7 @@ export class RouteNodesService {
     });
 
     if (!node) {
-      throw new NotFoundException('Route node not found');
+      throw new NotFoundException("Route node not found");
     }
 
     return this.toResponse(node);
@@ -315,47 +328,58 @@ export class RouteNodesService {
   private async ensureExists(id: string) {
     const node = await this.prisma.routeNode.findUnique({
       where: { id },
-      select: { id: true, floorId: true, type: true, isActive: true, mapObjectId: true, metadata: true },
+      select: {
+        id: true,
+        floorId: true,
+        type: true,
+        isActive: true,
+        mapObjectId: true,
+        metadata: true,
+      },
     });
 
     if (!node) {
-      throw new NotFoundException('Route node not found');
+      throw new NotFoundException("Route node not found");
     }
 
     return node;
   }
 
-  private async ensureFloorExists(floorId: string): Promise<void> {
-    const floor = await this.prisma.floor.findUnique({
+  private async ensureFloorExists(
+    floorId: string,
+    db: RouteNodeWriteClient = this.prisma,
+  ): Promise<void> {
+    const floor = await db.floor.findUnique({
       where: { id: floorId },
       select: { id: true },
     });
 
     if (!floor) {
-      throw new NotFoundException('Floor not found');
+      throw new NotFoundException("Floor not found");
     }
   }
 
   private async ensureMapObjectExists(
     mapObjectId?: string | null,
     floorId?: string,
+    db: RouteNodeWriteClient = this.prisma,
   ): Promise<void> {
     if (mapObjectId === undefined || mapObjectId === null) {
       return;
     }
 
-    const mapObject = await this.prisma.mapObject.findUnique({
+    const mapObject = await db.mapObject.findUnique({
       where: { id: mapObjectId },
       select: { id: true, floorId: true },
     });
 
     if (!mapObject) {
-      throw new NotFoundException('Map object not found');
+      throw new NotFoundException("Map object not found");
     }
 
     if (floorId !== undefined && mapObject.floorId !== floorId) {
       throw new BadRequestException(
-        'Route node and map object must belong to the same floor',
+        "Route node and map object must belong to the same floor",
       );
     }
   }
@@ -432,6 +456,17 @@ export class RouteNodesService {
     };
   }
 
+  private toPublicFloor(
+    floor: Prisma.FloorGetPayload<Record<string, never>>,
+  ): FloorPublicResponseDto {
+    const { isActive: _isActive, ...publicFloor } =
+      floor as Prisma.FloorGetPayload<Record<string, never>> & {
+        isActive: boolean;
+      };
+
+    return publicFloor as FloorPublicResponseDto;
+  }
+
   private toRouteEdgeResponse(
     edge: RouteGraphEdgeWithRelations,
   ): RouteEdgeResponseDto {
@@ -453,11 +488,3 @@ export class RouteNodesService {
     };
   }
 }
-
-
-
-
-
-
-
-

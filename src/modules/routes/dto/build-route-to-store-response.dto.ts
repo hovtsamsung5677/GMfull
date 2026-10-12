@@ -1,6 +1,6 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { RouteEdgeResponseDto } from '../../route-edges/dto/route-edge-response.dto';
-import { RouteNodeResponseDto } from '../../route-nodes/dto/route-node-response.dto';
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { RouteEdgeResponseDto } from "../../route-edges/dto/route-edge-response.dto";
+import { RouteNodeResponseDto } from "../../route-nodes/dto/route-node-response.dto";
 import {
   RouteFloorChangeDto,
   RouteFloorSegmentDto,
@@ -8,7 +8,7 @@ import {
   RoutePathPointDto,
   RouteRenderingMetaDto,
   RouteSegmentDto,
-} from './build-route-response.dto';
+} from "./build-route-response.dto";
 
 class RouteToStoreCategoryDto {
   @ApiProperty()
@@ -60,14 +60,14 @@ export class RouteToStoreTargetStoreDto {
 }
 
 export class RouteToStoreMetaDto {
-  @ApiProperty({ example: 'green-mall-route-to-store-v2' })
+  @ApiProperty({ example: "green-mall-route-to-store-v2" })
   schemaVersion!: string;
 
   @ApiProperty()
   generatedAt!: string;
 
   @ApiProperty({
-    example: 'Frontend-ready route from navigation node to selected store',
+    example: "Frontend-ready route from navigation node to selected store",
   })
   purpose!: string;
 

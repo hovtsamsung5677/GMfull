@@ -199,10 +199,10 @@ export class RoutesService {
     const nodeById = new Map(nodes.map((node) => [node.id, node]));
     const edgeById = new Map(edges.map((edge) => [edge.id, edge]));
 
-    console.log('[routes] build graph loaded', {
+    console.log("[routes] build graph loaded", {
       fromNodeId: fromNode.id,
       toNodeId: toNode.id,
-      floorId: query.floorId ?? 'all',
+      floorId: query.floorId ?? "all",
       nodesCount: nodes.length,
       edgesCount: edges.length,
       fromNodeInGraph: nodeById.has(fromNode.id),
@@ -216,9 +216,14 @@ export class RoutesService {
     const verticalEdges = this.buildVerticalEdges(nodes);
     const allEdges = edges.concat(verticalEdges);
 
-    console.log('[routes] build vertical edges', {
+    console.log("[routes] build vertical edges", {
       count: verticalEdges.length,
-      items: verticalEdges.map((e) => ({ id: e.id, from: e.fromNodeId, to: e.toNodeId, distance: e.distance })),
+      items: verticalEdges.map((e) => ({
+        id: e.id,
+        from: e.fromNodeId,
+        to: e.toNodeId,
+        distance: e.distance,
+      })),
     });
 
     const path = this.findShortestPath({
@@ -228,7 +233,7 @@ export class RoutesService {
       toNodeId: toNode.id,
     });
 
-    console.log('[routes] build shortestPath result', {
+    console.log("[routes] build shortestPath result", {
       fromNodeId: fromNode.id,
       toNodeId: toNode.id,
       pathFound: Boolean(path),
@@ -238,10 +243,25 @@ export class RoutesService {
     });
 
     if (!path) {
-      console.log('[routes] build graph debug', {
-        nodes: nodes.map((n) => ({ id: n.id, floorId: n.floorId, type: n.type, code: n.code })),
-        edges: edges.map((e) => ({ id: e.id, from: e.fromNodeId, to: e.toNodeId, floorId: e.floorId })),
-        verticalEdges: verticalEdges.map((e) => ({ id: e.id, from: e.fromNodeId, to: e.toNodeId, floorId: e.floorId })),
+      console.log("[routes] build graph debug", {
+        nodes: nodes.map((n) => ({
+          id: n.id,
+          floorId: n.floorId,
+          type: n.type,
+          code: n.code,
+        })),
+        edges: edges.map((e) => ({
+          id: e.id,
+          from: e.fromNodeId,
+          to: e.toNodeId,
+          floorId: e.floorId,
+        })),
+        verticalEdges: verticalEdges.map((e) => ({
+          id: e.id,
+          from: e.fromNodeId,
+          to: e.toNodeId,
+          floorId: e.floorId,
+        })),
       });
       throw new NotFoundException(
         `Route not found between ${fromNode.id} (floor ${fromNode.floorId}) and ${toNode.id} (floor ${toNode.floorId}). ` +
@@ -281,8 +301,8 @@ export class RoutesService {
   async buildToStore(
     query: BuildRouteToStoreQueryDto,
   ): Promise<BuildRouteToStoreResponseDto> {
-    const trimmedSlug = (query.storeSlug ?? '').trim();
-    console.log('[routes] buildToStore start', {
+    const trimmedSlug = (query.storeSlug ?? "").trim();
+    console.log("[routes] buildToStore start", {
       fromNodeId: query.fromNodeId,
       storeSlug: trimmedSlug,
       storeId: query.storeId,
@@ -296,7 +316,7 @@ export class RoutesService {
       include: routeTargetStoreInclude,
     });
 
-    console.log('[routes] buildToStore store lookup', {
+    console.log("[routes] buildToStore store lookup", {
       found: Boolean(store),
       storeId: store?.id,
       floorId: store?.floorId,
@@ -309,9 +329,12 @@ export class RoutesService {
       );
     }
 
-    const targetNode = await this.findStoreRouteNode(store.id, store.floorId ?? undefined);
+    const targetNode = await this.findStoreRouteNode(
+      store.id,
+      store.floorId ?? undefined,
+    );
 
-    console.log('[routes] buildToStore targetNode', {
+    console.log("[routes] buildToStore targetNode", {
       storeId: store.id,
       floorId: store.floorId,
       targetNodeId: targetNode?.id,
@@ -324,7 +347,7 @@ export class RoutesService {
         select: { id: true, floorId: true },
       });
       throw new NotFoundException(
-        `Store route node not found for store ${store.id} on floor ${store.floorId ?? 'any'}. Store mapObjects: ${JSON.stringify(storeMapObjects)}`,
+        `Store route node not found for store ${store.id} on floor ${store.floorId ?? "any"}. Store mapObjects: ${JSON.stringify(storeMapObjects)}`,
       );
     }
 
@@ -333,7 +356,7 @@ export class RoutesService {
       toNodeId: targetNode.id,
     });
 
-    console.log('[routes] buildToStore success', {
+    console.log("[routes] buildToStore success", {
       fromNodeId: query.fromNodeId,
       toNodeId: targetNode.id,
       totalDistance: route.totalDistance,
@@ -427,8 +450,7 @@ export class RoutesService {
     const exactPrimary =
       exact.find((node) =>
         isPrimaryStoreRelation(node.metadata, "routeNode", storeId),
-      ) ??
-      exact[0];
+      ) ?? exact[0];
 
     if (exactPrimary) {
       return exactPrimary;
@@ -460,15 +482,17 @@ export class RoutesService {
     return store?.floorId ?? undefined;
   }
 
-  private buildVerticalEdges(nodes: RouteNodeWithFloor[]): RouteEdgeWithRelations[] {
+  private buildVerticalEdges(
+    nodes: RouteNodeWithFloor[],
+  ): RouteEdgeWithRelations[] {
     const VERTICAL_COST = 50;
-    const VERTICAL_TYPES = new Set(['ELEVATOR', 'ESCALATOR', 'STAIRS']);
+    const VERTICAL_TYPES = new Set(["ELEVATOR", "ESCALATOR", "STAIRS"]);
     const vertical: RouteEdgeWithRelations[] = [];
     const seenPairs = new Set<string>();
 
     const addPair = (a: RouteNodeWithFloor, b: RouteNodeWithFloor) => {
       if (a.floorId === b.floorId) return;
-      const key = [a.id, b.id].sort().join('|');
+      const key = [a.id, b.id].sort().join("|");
       if (seenPairs.has(key)) return;
       seenPairs.add(key);
       vertical.push(this.makeVerticalEdge(a, b));
@@ -547,13 +571,21 @@ export class RoutesService {
   private splitIntoFloorSegments(
     nodes: RouteNodeWithFloor[],
   ): { floorNumber: number; floorId: string; points: RoutePathPointDto[] }[] {
-    const segments: { floorNumber: number; floorId: string; points: RoutePathPointDto[] }[] = [];
+    const segments: {
+      floorNumber: number;
+      floorId: string;
+      points: RoutePathPointDto[];
+    }[] = [];
     for (const node of nodes) {
       const floorNumber = node.floor?.number ?? 0;
       const floorId = node.floorId;
       const last = segments[segments.length - 1];
       const point = this.toRoutePath([node])[0];
-      if (last && last.floorNumber === floorNumber && last.floorId === floorId) {
+      if (
+        last &&
+        last.floorNumber === floorNumber &&
+        last.floorId === floorId
+      ) {
         last.points.push(point);
       } else {
         segments.push({ floorNumber, floorId, points: [point] });
@@ -562,10 +594,22 @@ export class RoutesService {
     return segments;
   }
 
-  private buildFloorChanges(
-    nodes: RouteNodeWithFloor[],
-  ): { fromFloor: number; toFloor: number; fromFloorId: string | null; toFloorId: string | null; nodeCode: string; type: string }[] {
-    const changes: { fromFloor: number; toFloor: number; fromFloorId: string | null; toFloorId: string | null; nodeCode: string; type: string }[] = [];
+  private buildFloorChanges(nodes: RouteNodeWithFloor[]): {
+    fromFloor: number;
+    toFloor: number;
+    fromFloorId: string | null;
+    toFloorId: string | null;
+    nodeCode: string;
+    type: string;
+  }[] {
+    const changes: {
+      fromFloor: number;
+      toFloor: number;
+      fromFloorId: string | null;
+      toFloorId: string | null;
+      nodeCode: string;
+      type: string;
+    }[] = [];
     for (let i = 1; i < nodes.length; i++) {
       const prev = nodes[i - 1];
       const cur = nodes[i];
@@ -613,7 +657,7 @@ export class RoutesService {
       }
 
       const distance = edge.distance ?? 1;
-      const cost = distance;
+      const cost = edge.weight ?? distance;
 
       adjacency.get(edge.fromNodeId)?.push({
         toNodeId: edge.toNodeId,
@@ -954,12 +998,3 @@ export class RoutesService {
     };
   }
 }
-
-
-
-
-
-
-
-
-

@@ -1,5 +1,5 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Transform } from 'class-transformer';
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { Transform } from "class-transformer";
 import {
   IsBoolean,
   IsInt,
@@ -7,29 +7,29 @@ import {
   IsOptional,
   IsString,
   Min,
-} from 'class-validator';
+} from "class-validator";
 import {
   toOptionalBoolean,
   toOptionalNumber,
-} from '../../../common/transformers/query.transformers';
+} from "../../../common/transformers/query.transformers";
 
 export class CreateRouteEdgeDto {
-  @ApiProperty({ description: 'Existing floor id shared by both route nodes.' })
+  @ApiProperty({ description: "Existing floor id shared by both route nodes." })
   @IsString()
   floorId!: string;
 
-  @ApiProperty({ description: 'Existing source RouteNode id.' })
+  @ApiProperty({ description: "Existing source RouteNode id." })
   @IsString()
   fromNodeId!: string;
 
-  @ApiProperty({ description: 'Existing target RouteNode id.' })
+  @ApiProperty({ description: "Existing target RouteNode id." })
   @IsString()
   toNodeId!: string;
 
   @ApiPropertyOptional({
     example: 120,
     minimum: 1,
-    description: 'Positive segment distance. Used when weight is not set.',
+    description: "Positive segment distance. Used when weight is not set.",
   })
   @Transform(toOptionalNumber)
   @IsOptional()
@@ -40,7 +40,7 @@ export class CreateRouteEdgeDto {
   @ApiPropertyOptional({
     example: 1,
     minimum: 1,
-    description: 'Positive Dijkstra cost. Takes precedence over distance.',
+    description: "Positive Dijkstra cost. Takes precedence over distance.",
   })
   @Transform(toOptionalNumber)
   @IsOptional()
@@ -52,7 +52,7 @@ export class CreateRouteEdgeDto {
     example: true,
     default: true,
     description:
-      'When true, the route can traverse this edge in both directions.',
+      "When true, the route can traverse this edge in both directions.",
   })
   @Transform(toOptionalBoolean)
   @IsOptional()

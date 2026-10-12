@@ -1,5 +1,5 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { RouteNodeResponseDto } from '../../route-nodes/dto/route-node-response.dto';
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { RouteNodeResponseDto } from "../../route-nodes/dto/route-node-response.dto";
 
 class RouteEdgeFloorResponseDto {
   @ApiProperty()

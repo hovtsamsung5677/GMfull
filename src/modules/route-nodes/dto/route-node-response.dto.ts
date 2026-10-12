@@ -1,5 +1,5 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { RouteNodeType } from '@prisma/client';
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { RouteNodeType } from "@prisma/client";
 
 class RouteNodeFloorResponseDto {
   @ApiProperty()
