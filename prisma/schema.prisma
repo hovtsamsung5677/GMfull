@@ -110,6 +110,7 @@ model User {
   role              Role        @relation(fields: [roleId], references: [id], onDelete: Restrict)
   lastLoginAt       DateTime?
   files             FileAsset[] @relation("UploadedFiles")
+  refreshTokens     RefreshToken[]
   createdPromotions Promotion[] @relation("PromotionCreatedBy")
   updatedPromotions Promotion[] @relation("PromotionUpdatedBy")
   createdAt         DateTime    @default(now())
@@ -340,6 +341,7 @@ model RouteEdge {
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
+  @@unique([fromNodeId, toNodeId])
   @@index([floorId])
   @@index([fromNodeId])
   @@index([toNodeId])
@@ -508,29 +510,46 @@ model FileAsset {
 }
 
 model FloorTexture {
-  id            String       @id @default(cuid())
-  floorId       String
-  floor         Floor        @relation(fields: [floorId], references: [id], onDelete: Cascade)
-  assetId       String
-  asset         FileAsset    @relation(fields: [assetId], references: [id], onDelete: Restrict)
-  targetMesh    String
-  materialSlot  String?
-  opacity       Float?       @default(1)
-  blendMode     String?      @default("normal")
-  positionX     Float?       @default(0)
-  positionY     Float?       @default(0)
-  scaleX        Float?       @default(1)
-  scaleY        Float?       @default(1)
-  rotation      Float?       @default(0)
-  sortOrder     Int          @default(0)
-  isActive      Boolean      @default(true)
-  metadata      Json?
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+  id        String         @id @default(cuid())
+  floorId   String
+  floor     Floor          @relation(fields: [floorId], references: [id], onDelete: Cascade)
+  assetId   String
+  asset     FileAsset      @relation(fields: [assetId], references: [id])
+  targetMesh String
+  materialSlot String?
+  opacity   Float         @default(1)
+  blendMode String         @default("normal")
+  positionX Float         @default(0)
+  positionY Float         @default(0)
+  scaleX    Float         @default(1)
+  scaleY    Float         @default(1)
+  rotation  Float         @default(0)
+  sortOrder Int           @default(0)
+  isActive  Boolean       @default(true)
+  metadata  Json?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
 
   @@index([floorId])
   @@index([assetId])
   @@index([floorId, isActive, sortOrder])
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  revokedAt DateTime?
+  userAgent String?
+  ip        String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@index([revokedAt])
 }
 
 model SystemSetting {
