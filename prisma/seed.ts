@@ -8,6 +8,32 @@ import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
+function getSuperAdminCredentials() {
+  const adminEmail = process.env.ADMIN_EMAIL?.trim();
+  const adminPassword = process.env.ADMIN_PASSWORD;
+
+  if (!adminEmail) {
+    throw new Error(
+      'ADMIN_EMAIL is required to seed the SUPER_ADMIN user',
+    );
+  }
+
+  if (!adminPassword || adminPassword.length < 8) {
+    throw new Error(
+      'ADMIN_PASSWORD is required and must be at least 8 characters long to seed the SUPER_ADMIN user',
+    );
+  }
+
+  const nodeEnv = process.env.NODE_ENV ?? 'development';
+  if (nodeEnv === 'production' && adminPassword === 'Admin12345!') {
+    throw new Error(
+      'Default ADMIN_PASSWORD "Admin12345!" is not allowed in production',
+    );
+  }
+
+  return { adminEmail, adminPassword };
+}
+
 type TenantSeed = {
   name: string;
   description?: string;
@@ -825,10 +851,12 @@ async function main() {
   const superAdminRole = await prisma.role.findUniqueOrThrow({
     where: { name: 'SUPER_ADMIN' },
   });
-  const passwordHash = await bcrypt.hash('Admin12345!', 10);
+
+  const { adminEmail, adminPassword } = getSuperAdminCredentials();
+  const passwordHash = await bcrypt.hash(adminPassword, 10);
 
   const superAdmin = await prisma.user.upsert({
-    where: { email: 'admin@greenmall.local' },
+    where: { email: adminEmail },
     update: {
       passwordHash,
       name: 'Super Admin',
@@ -836,7 +864,7 @@ async function main() {
       isActive: true,
     },
     create: {
-      email: 'admin@greenmall.local',
+      email: adminEmail,
       passwordHash,
       name: 'Super Admin',
       roleId: superAdminRole.id,
