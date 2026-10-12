@@ -1,4 +1,4 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 
 export class FloorResponseDto {
   @ApiProperty()
@@ -27,13 +27,13 @@ export class FloorResponseDto {
 
   @ApiPropertyOptional({
     nullable: true,
-    description: 'FileAsset id of the 2D map prepared for frontend rendering.',
+    description: "FileAsset id of the 2D map prepared for frontend rendering.",
   })
   mapAssetId!: string | null;
 
   @ApiPropertyOptional({
     nullable: true,
-    description: 'FileAsset id of the future 3D floor model.',
+    description: "FileAsset id of the future 3D floor model.",
   })
   modelAssetId!: string | null;
 

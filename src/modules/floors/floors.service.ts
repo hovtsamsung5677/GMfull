@@ -2,36 +2,39 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
-} from '@nestjs/common';
-import { Prisma } from '@prisma/client';
-import { PrismaService } from '../../database/prisma.service';
-import { CreateFloorDto } from './dto/create-floor.dto';
-import { FloorQueryDto } from './dto/floor-query.dto';
-import { FloorResponseDto } from './dto/floor-response.dto';
-import { UpdateFloorDto } from './dto/update-floor.dto';
+} from "@nestjs/common";
+import { Prisma } from "@prisma/client";
+import { PrismaService } from "../../database/prisma.service";
+import { CreateFloorDto } from "./dto/create-floor.dto";
+import { FloorQueryDto } from "./dto/floor-query.dto";
+import { FloorPublicResponseDto } from "./dto/floor-public-response.dto";
+import { FloorResponseDto } from "./dto/floor-response.dto";
+import { UpdateFloorDto } from "./dto/update-floor.dto";
 
 @Injectable()
 export class FloorsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findPublic(query: FloorQueryDto): Promise<FloorResponseDto[]> {
-    return this.prisma.floor.findMany({
+  async findPublic(query: FloorQueryDto): Promise<FloorPublicResponseDto[]> {
+    const floors = await this.prisma.floor.findMany({
       where: this.buildWhere(query, true),
-      orderBy: [{ sortOrder: 'asc' }, { number: 'asc' }],
+      orderBy: [{ sortOrder: "asc" }, { number: "asc" }],
       ...this.getPagination(query),
     });
+
+    return floors.map((floor) => this.toPublicFloor(floor));
   }
 
   async findAdmin(query: FloorQueryDto): Promise<FloorResponseDto[]> {
     return this.prisma.floor.findMany({
       where: this.buildWhere(query),
-      orderBy: [{ sortOrder: 'asc' }, { number: 'asc' }],
+      orderBy: [{ sortOrder: "asc" }, { number: "asc" }],
       ...this.getPagination(query),
     });
   }
 
-  async findPublicOne(id: string): Promise<FloorResponseDto> {
-    return this.findOneOrThrow(id, true);
+  async findPublicOne(id: string): Promise<FloorPublicResponseDto> {
+    return this.toPublicFloor(await this.findOneOrThrow(id, true));
   }
 
   async findAdminOne(id: string): Promise<FloorResponseDto> {
@@ -39,8 +42,8 @@ export class FloorsService {
   }
 
   async create(dto: CreateFloorDto): Promise<FloorResponseDto> {
-    await this.ensureAssetExists(dto.mapAssetId, 'Map asset');
-    await this.ensureAssetExists(dto.modelAssetId, 'Model asset');
+    await this.ensureAssetExists(dto.mapAssetId, "Map asset");
+    await this.ensureAssetExists(dto.modelAssetId, "Model asset");
 
     try {
       return await this.prisma.floor.create({
@@ -67,8 +70,8 @@ export class FloorsService {
 
   async update(id: string, dto: UpdateFloorDto): Promise<FloorResponseDto> {
     await this.ensureExists(id);
-    await this.ensureAssetExists(dto.mapAssetId, 'Map asset');
-    await this.ensureAssetExists(dto.modelAssetId, 'Model asset');
+    await this.ensureAssetExists(dto.mapAssetId, "Map asset");
+    await this.ensureAssetExists(dto.modelAssetId, "Model asset");
 
     try {
       return await this.prisma.floor.update({
@@ -121,8 +124,8 @@ export class FloorsService {
 
     if (query.search) {
       where.OR = [
-        { name: { contains: query.search, mode: 'insensitive' } },
-        { description: { contains: query.search, mode: 'insensitive' } },
+        { name: { contains: query.search, mode: "insensitive" } },
+        { description: { contains: query.search, mode: "insensitive" } },
       ];
     }
 
@@ -141,10 +144,17 @@ export class FloorsService {
     });
 
     if (!floor) {
-      throw new NotFoundException('Floor not found');
+      throw new NotFoundException("Floor not found");
     }
 
     return floor;
+  }
+
+  private toPublicFloor(floor: FloorResponseDto): FloorPublicResponseDto {
+    const { isActive: _isActive, ...publicFloor } =
+      floor as FloorResponseDto & { isActive: boolean };
+
+    return publicFloor as FloorPublicResponseDto;
   }
 
   private async ensureExists(id: string): Promise<void> {
@@ -154,7 +164,7 @@ export class FloorsService {
     });
 
     if (!floor) {
-      throw new NotFoundException('Floor not found');
+      throw new NotFoundException("Floor not found");
     }
   }
 
@@ -189,9 +199,9 @@ export class FloorsService {
   private handlePrismaError(error: unknown): never {
     if (
       error instanceof Prisma.PrismaClientKnownRequestError &&
-      error.code === 'P2002'
+      error.code === "P2002"
     ) {
-      throw new ConflictException('Floor number already exists');
+      throw new ConflictException("Floor number already exists");
     }
 
     throw error;
