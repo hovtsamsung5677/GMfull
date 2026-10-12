@@ -1,4 +1,4 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 
 class StoreTenantResponseDto {
   @ApiProperty()
@@ -40,13 +40,13 @@ class StoreFileAssetResponseDto {
   @ApiPropertyOptional({ nullable: true })
   originalName!: string | null;
 
-  @ApiProperty({ description: 'Frontend-accessible URL of the file.' })
+  @ApiProperty({ description: "Frontend-accessible URL of the file." })
   url!: string;
 
   @ApiPropertyOptional({ nullable: true })
   mimeType!: string | null;
 
-  @ApiPropertyOptional({ nullable: true, description: 'File size in bytes.' })
+  @ApiPropertyOptional({ nullable: true, description: "File size in bytes." })
   size!: number | null;
 
   @ApiProperty()

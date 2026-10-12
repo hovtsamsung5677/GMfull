@@ -2,17 +2,17 @@ import {
   BadRequestException,
   Injectable,
   NotFoundException,
-} from '@nestjs/common';
-import { Prisma, FileAssetKind } from '@prisma/client';
-import { PrismaService } from '../../database/prisma.service';
-import { CreateFloorTextureDto } from './dto/create-floor-texture.dto';
-import { FloorTextureResponseDto } from './dto/floor-texture-response.dto';
-import { UpdateFloorTextureDto } from './dto/update-floor-texture.dto';
-import { PublicFloorTextureDto } from './dto/public-floor-texture.dto';
+} from "@nestjs/common";
+import { Prisma, FileAssetKind } from "@prisma/client";
+import { PrismaService } from "../../database/prisma.service";
+import { CreateFloorTextureDto } from "./dto/create-floor-texture.dto";
+import { FloorTextureResponseDto } from "./dto/floor-texture-response.dto";
+import { UpdateFloorTextureDto } from "./dto/update-floor-texture.dto";
+import { PublicFloorTextureDto } from "./dto/public-floor-texture.dto";
 import {
   publicFileAssetSelect,
   toPublicFileAssetResponse,
-} from '../file-assets/public-file-asset.projection';
+} from "../file-assets/public-file-asset.projection";
 
 type FloorTextureWithAsset = Prisma.FloorTextureGetPayload<{
   include: { asset: { select: typeof publicFileAssetSelect } };
@@ -33,7 +33,7 @@ export class FloorTexturesService {
           },
         },
       },
-      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
     });
 
     return textures
@@ -41,7 +41,9 @@ export class FloorTexturesService {
       .map((t) => this.toPublicDto(t));
   }
 
-  async findAll(query: { floorId?: string }): Promise<FloorTextureResponseDto[]> {
+  async findAll(query: {
+    floorId?: string;
+  }): Promise<FloorTextureResponseDto[]> {
     const textures = await this.prisma.floorTexture.findMany({
       where: {
         ...(query.floorId ? { floorId: query.floorId } : {}),
@@ -49,7 +51,7 @@ export class FloorTexturesService {
       include: {
         asset: { select: publicFileAssetSelect },
       },
-      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
     });
 
     return textures.map((t) => this.toAdminDto(t));
@@ -60,9 +62,7 @@ export class FloorTexturesService {
     return this.toAdminDto(texture);
   }
 
-  async create(
-    dto: CreateFloorTextureDto,
-  ): Promise<FloorTextureResponseDto> {
+  async create(dto: CreateFloorTextureDto): Promise<FloorTextureResponseDto> {
     await this.ensureFloorExists(dto.floorId);
     await this.ensureImageAsset(dto.assetId);
 
@@ -73,7 +73,7 @@ export class FloorTexturesService {
         targetMesh: dto.targetMesh,
         materialSlot: dto.materialSlot,
         opacity: dto.opacity ?? 1,
-        blendMode: dto.blendMode ?? 'normal',
+        blendMode: dto.blendMode ?? "normal",
         positionX: dto.positionX ?? 0,
         positionY: dto.positionY ?? 0,
         scaleX: dto.scaleX ?? 1,
@@ -148,7 +148,7 @@ export class FloorTexturesService {
     });
 
     if (!texture) {
-      throw new NotFoundException('Floor texture not found');
+      throw new NotFoundException("Floor texture not found");
     }
 
     return texture;
@@ -161,7 +161,7 @@ export class FloorTexturesService {
     });
 
     if (!floor) {
-      throw new NotFoundException('Floor not found');
+      throw new NotFoundException("Floor not found");
     }
   }
 
@@ -172,15 +172,15 @@ export class FloorTexturesService {
     });
 
     if (!asset) {
-      throw new NotFoundException('File asset not found');
+      throw new NotFoundException("File asset not found");
     }
 
     if (asset.kind !== FileAssetKind.IMAGE) {
-      throw new BadRequestException('Asset must be of kind IMAGE');
+      throw new BadRequestException("Asset must be of kind IMAGE");
     }
 
     if (!asset.isActive) {
-      throw new BadRequestException('File asset is not active');
+      throw new BadRequestException("File asset is not active");
     }
   }
 

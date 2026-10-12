@@ -1,7 +1,7 @@
-import { Module } from '@nestjs/common';
-import { DatabaseModule } from '../../database/database.module';
-import { TenantsAdminController } from './tenants-admin.controller';
-import { TenantsService } from './tenants.service';
+import { Module } from "@nestjs/common";
+import { DatabaseModule } from "../../database/database.module";
+import { TenantsAdminController } from "./tenants-admin.controller";
+import { TenantsService } from "./tenants.service";
 
 @Module({
   imports: [DatabaseModule],

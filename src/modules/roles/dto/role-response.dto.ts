@@ -1,10 +1,10 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 
 export class RoleResponseDto {
-  @ApiProperty({ example: 'clx0000000000000000000000' })
+  @ApiProperty({ example: "clx0000000000000000000000" })
   id!: string;
 
-  @ApiProperty({ example: 'SUPER_ADMIN' })
+  @ApiProperty({ example: "SUPER_ADMIN" })
   name!: string;
 
   @ApiPropertyOptional({ nullable: true })

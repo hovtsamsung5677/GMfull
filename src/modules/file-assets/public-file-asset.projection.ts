@@ -1,5 +1,5 @@
-import { Prisma } from '@prisma/client';
-import { PublicFileAssetResponseDto } from './dto/public-file-asset-response.dto';
+import { Prisma } from "@prisma/client";
+import { PublicFileAssetResponseDto } from "./dto/public-file-asset-response.dto";
 
 export const publicFileAssetSelect = {
   id: true,

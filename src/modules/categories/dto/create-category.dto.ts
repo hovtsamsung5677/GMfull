@@ -1,5 +1,5 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Transform } from 'class-transformer';
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { Transform } from "class-transformer";
 import {
   IsBoolean,
   IsInt,
@@ -7,18 +7,18 @@ import {
   IsString,
   MaxLength,
   Min,
-} from 'class-validator';
-import { toOptionalBoolean } from '../../../common/transformers/query.transformers';
+} from "class-validator";
+import { toOptionalBoolean } from "../../../common/transformers/query.transformers";
 
 export class CreateCategoryDto {
-  @ApiProperty({ example: 'Clothing' })
+  @ApiProperty({ example: "Clothing" })
   @IsString()
   @MaxLength(120)
   name!: string;
 
   @ApiPropertyOptional({
-    example: 'clothing',
-    description: 'Unique URL-safe slug. Generated from name when omitted.',
+    example: "clothing",
+    description: "Unique URL-safe slug. Generated from name when omitted.",
   })
   @IsOptional()
   @IsString()
@@ -30,7 +30,7 @@ export class CreateCategoryDto {
   @IsString()
   description?: string;
 
-  @ApiPropertyOptional({ example: 'shirt' })
+  @ApiPropertyOptional({ example: "shirt" })
   @IsOptional()
   @IsString()
   @MaxLength(80)
@@ -45,7 +45,7 @@ export class CreateCategoryDto {
   @ApiPropertyOptional({
     example: true,
     default: true,
-    description: 'Controls visibility in public category responses.',
+    description: "Controls visibility in public category responses.",
   })
   @Transform(toOptionalBoolean)
   @IsOptional()

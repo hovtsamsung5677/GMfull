@@ -1,10 +1,10 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 
 class UserRoleResponseDto {
-  @ApiProperty({ example: 'clx0000000000000000000000' })
+  @ApiProperty({ example: "clx0000000000000000000000" })
   id!: string;
 
-  @ApiProperty({ example: 'SUPER_ADMIN' })
+  @ApiProperty({ example: "SUPER_ADMIN" })
   name!: string;
 
   @ApiPropertyOptional({ nullable: true })
@@ -12,16 +12,16 @@ class UserRoleResponseDto {
 }
 
 export class UserResponseDto {
-  @ApiProperty({ example: 'clx0000000000000000000000' })
+  @ApiProperty({ example: "clx0000000000000000000000" })
   id!: string;
 
-  @ApiProperty({ example: 'admin@greenmall.local' })
+  @ApiProperty({ example: "admin@greenmall.local" })
   email!: string;
 
-  @ApiPropertyOptional({ example: 'Super Admin', nullable: true })
+  @ApiPropertyOptional({ example: "Super Admin", nullable: true })
   fullName!: string | null;
 
-  @ApiPropertyOptional({ example: '+79990000000', nullable: true })
+  @ApiPropertyOptional({ example: "+79990000000", nullable: true })
   phone!: string | null;
 
   @ApiProperty({ example: true })

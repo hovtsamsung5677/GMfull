@@ -1,5 +1,5 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { FileAssetKind } from '@prisma/client';
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { FileAssetKind } from "@prisma/client";
 
 export class PublicFileAssetResponseDto {
   @ApiProperty()
@@ -11,13 +11,13 @@ export class PublicFileAssetResponseDto {
   @ApiPropertyOptional({ nullable: true })
   originalName!: string | null;
 
-  @ApiProperty({ description: 'Frontend-accessible URL of the file.' })
+  @ApiProperty({ description: "Frontend-accessible URL of the file." })
   url!: string;
 
   @ApiPropertyOptional({ nullable: true })
   mimeType!: string | null;
 
-  @ApiPropertyOptional({ nullable: true, description: 'File size in bytes.' })
+  @ApiPropertyOptional({ nullable: true, description: "File size in bytes." })
   size!: number | null;
 
   @ApiPropertyOptional({ nullable: true })

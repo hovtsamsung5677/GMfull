@@ -1,11 +1,11 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Transform } from 'class-transformer';
-import { IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
-import { toOptionalNumber } from '../../../common/transformers/query.transformers';
+import { ApiPropertyOptional } from "@nestjs/swagger";
+import { Transform } from "class-transformer";
+import { IsInt, IsOptional, IsString, Max, Min } from "class-validator";
+import { toOptionalNumber } from "../../../common/transformers/query.transformers";
 
 export class StoreSearchQueryDto {
-  @ApiPropertyOptional({ example: 'sport' })
-  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  @ApiPropertyOptional({ example: "sport" })
+  @Transform(({ value }) => (typeof value === "string" ? value.trim() : value))
   @IsOptional()
   @IsString()
   query?: string;

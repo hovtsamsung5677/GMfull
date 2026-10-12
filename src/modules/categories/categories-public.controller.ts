@@ -1,11 +1,11 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
-import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
-import { CategoriesService } from './categories.service';
-import { CategoryQueryDto } from './dto/category-query.dto';
-import { CategoryResponseDto } from './dto/category-response.dto';
+import { Controller, Get, Param, Query } from "@nestjs/common";
+import { ApiOkResponse, ApiTags } from "@nestjs/swagger";
+import { CategoriesService } from "./categories.service";
+import { CategoryQueryDto } from "./dto/category-query.dto";
+import { CategoryResponseDto } from "./dto/category-response.dto";
 
-@ApiTags('public/categories')
-@Controller('public/categories')
+@ApiTags("public/categories")
+@Controller("public/categories")
 export class CategoriesPublicController {
   constructor(private readonly categoriesService: CategoriesService) {}
 
@@ -15,9 +15,9 @@ export class CategoriesPublicController {
     return this.categoriesService.findPublic(query);
   }
 
-  @Get(':id')
+  @Get(":id")
   @ApiOkResponse({ type: CategoryResponseDto })
-  findOne(@Param('id') id: string): Promise<CategoryResponseDto> {
+  findOne(@Param("id") id: string): Promise<CategoryResponseDto> {
     return this.categoriesService.findPublicOne(id);
   }
 }

@@ -1,17 +1,17 @@
-import { Prisma } from '@prisma/client';
+import { Prisma } from "@prisma/client";
 
-export type StorePrimaryRelation = 'mapObject' | 'routeNode';
+export type StorePrimaryRelation = "mapObject" | "routeNode";
 
-const metadataNamespace = 'greenMall';
+const metadataNamespace = "greenMall";
 const relationKeys: Record<StorePrimaryRelation, string> = {
-  mapObject: 'primaryMapObjectForStoreId',
-  routeNode: 'primaryRouteNodeForStoreId',
+  mapObject: "primaryMapObjectForStoreId",
+  routeNode: "primaryRouteNodeForStoreId",
 };
 
 function isJsonObject(
   value: Prisma.JsonValue | null | undefined,
 ): value is Prisma.JsonObject {
-  return value !== null && typeof value === 'object' && !Array.isArray(value);
+  return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
 export function isPrimaryStoreRelation(

@@ -1,6 +1,6 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
-import { FileAssetKind } from '@prisma/client';
-import { Transform } from 'class-transformer';
+import { ApiPropertyOptional } from "@nestjs/swagger";
+import { FileAssetKind } from "@prisma/client";
+import { Transform } from "class-transformer";
 import {
   IsBoolean,
   IsEnum,
@@ -10,19 +10,19 @@ import {
   Max,
   MaxLength,
   Min,
-} from 'class-validator';
+} from "class-validator";
 import {
   toOptionalBoolean,
   toOptionalNumber,
-} from '../../../common/transformers/query.transformers';
+} from "../../../common/transformers/query.transformers";
 
 const trimString = ({ value }: { value: unknown }) =>
-  typeof value === 'string' ? value.trim() : value;
+  typeof value === "string" ? value.trim() : value;
 
 export class FileAssetQueryDto {
   @ApiPropertyOptional({
-    example: 'first floor',
-    description: 'Searches filename, originalName and URL.',
+    example: "first floor",
+    description: "Searches filename, originalName and URL.",
   })
   @Transform(trimString)
   @IsOptional()
@@ -30,14 +30,14 @@ export class FileAssetQueryDto {
   @MaxLength(255)
   search?: string;
 
-  @ApiPropertyOptional({ example: 'model/gltf-binary' })
+  @ApiPropertyOptional({ example: "model/gltf-binary" })
   @Transform(trimString)
   @IsOptional()
   @IsString()
   @MaxLength(255)
   mimeType?: string;
 
-  @ApiPropertyOptional({ example: 'external-cdn' })
+  @ApiPropertyOptional({ example: "external-cdn" })
   @Transform(trimString)
   @IsOptional()
   @IsString()
@@ -50,7 +50,7 @@ export class FileAssetQueryDto {
   kind?: FileAssetKind;
 
   @ApiPropertyOptional({
-    description: 'User id recorded when the asset was created.',
+    description: "User id recorded when the asset was created.",
   })
   @Transform(trimString)
   @IsOptional()

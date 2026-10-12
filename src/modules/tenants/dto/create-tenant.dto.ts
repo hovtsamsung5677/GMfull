@@ -1,21 +1,21 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Transform } from 'class-transformer';
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { Transform } from "class-transformer";
 import {
   IsBoolean,
   IsEmail,
   IsOptional,
   IsString,
   MaxLength,
-} from 'class-validator';
-import { toOptionalBoolean } from '../../../common/transformers/query.transformers';
+} from "class-validator";
+import { toOptionalBoolean } from "../../../common/transformers/query.transformers";
 
 export class CreateTenantDto {
-  @ApiProperty({ example: 'GREEN Fashion' })
+  @ApiProperty({ example: "GREEN Fashion" })
   @IsString()
   @MaxLength(160)
   name!: string;
 
-  @ApiPropertyOptional({ example: 'GREEN Fashion LLC' })
+  @ApiPropertyOptional({ example: "GREEN Fashion LLC" })
   @IsOptional()
   @IsString()
   @MaxLength(200)
@@ -26,18 +26,18 @@ export class CreateTenantDto {
   @IsString()
   description?: string;
 
-  @ApiPropertyOptional({ example: '+79990000000' })
+  @ApiPropertyOptional({ example: "+79990000000" })
   @IsOptional()
   @IsString()
   @MaxLength(32)
   phone?: string;
 
-  @ApiPropertyOptional({ example: 'manager@example.com' })
+  @ApiPropertyOptional({ example: "manager@example.com" })
   @IsOptional()
   @IsEmail()
   email?: string;
 
-  @ApiPropertyOptional({ example: 'https://example.com' })
+  @ApiPropertyOptional({ example: "https://example.com" })
   @IsOptional()
   @IsString()
   @MaxLength(255)

@@ -1,5 +1,5 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { PublicFileAssetResponseDto } from '../../file-assets/dto/public-file-asset-response.dto';
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { PublicFileAssetResponseDto } from "../../file-assets/dto/public-file-asset-response.dto";
 
 export class PublicFloorTextureDto {
   @ApiProperty()

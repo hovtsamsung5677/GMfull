@@ -1,6 +1,6 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../database/prisma.service';
-import { RoleResponseDto } from './dto/role-response.dto';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../../database/prisma.service";
+import { RoleResponseDto } from "./dto/role-response.dto";
 
 @Injectable()
 export class RolesService {
@@ -8,7 +8,7 @@ export class RolesService {
 
   findAll(): Promise<RoleResponseDto[]> {
     return this.prisma.role.findMany({
-      orderBy: { name: 'asc' },
+      orderBy: { name: "asc" },
     });
   }
 }
