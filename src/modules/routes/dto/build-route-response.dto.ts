@@ -163,6 +163,29 @@ export class RouteMetaDto {
 
   @ApiProperty({ type: RouteRenderingMetaDto })
   rendering!: RouteRenderingMetaDto;
+
+  @ApiProperty({
+    enum: ["normal", "emergency"],
+    example: "normal",
+    description: "Routing mode used for this build.",
+  })
+  mode!: "normal" | "emergency";
+
+  @ApiPropertyOptional({
+    nullable: true,
+    description:
+      "Active exit node id used as the target when mode=emergency.",
+  })
+  emergencyExitUsed!: string | null;
+
+  @ApiPropertyOptional({
+    nullable: true,
+    description:
+      "Per-edge adaptive routing report: base vs effective weight and load count.",
+    type: "object",
+    additionalProperties: true,
+  })
+  routingReport!: Record<string, unknown> | null;
 }
 
 export class BuildRouteResponseDto {

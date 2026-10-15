@@ -19,7 +19,8 @@ export class RoutesPublicController {
 
   @Get("build")
   @ApiOperation({
-    summary: "Build route between two route nodes using active route graph.",
+    summary:
+      "Build route between two route nodes using active route graph. Supports emergencyMode for evacuation routing.",
   })
   @ApiOkResponse({ type: BuildRouteResponseDto })
   @ApiNotFoundResponse({
@@ -35,7 +36,7 @@ export class RoutesPublicController {
   })
   @ApiOkResponse({ type: BuildRouteToStoreResponseDto })
   @ApiBadRequestResponse({
-    description: "Provide one of storeId, storeSlug, storeCode.",
+    description: "Provide one of storeId, storeSlug or storeCode.",
   })
   @ApiNotFoundResponse({
     description: "Store, store route node, floor, or route path was not found.",

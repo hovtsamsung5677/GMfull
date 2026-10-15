@@ -32,6 +32,7 @@ enum MapObjectType {
 enum RouteNodeType {
   ROUTE_POINT
   ENTRANCE
+  EXIT
   PANEL
   STORE_ANCHOR
   ELEVATOR
@@ -340,6 +341,7 @@ model RouteEdge {
   isActive        Boolean   @default(true)
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
+  usage           RouteEdgeUsage[]
 
   @@unique([fromNodeId, toNodeId])
   @@index([floorId])
@@ -347,6 +349,20 @@ model RouteEdge {
   @@index([toNodeId])
   @@index([floorId, isActive])
   @@index([isActive])
+}
+
+model RouteEdgeUsage {
+  id           String      @id @default(cuid())
+  edgeId       String      @unique
+  edge         RouteEdge   @relation(fields: [edgeId], references: [id], onDelete: Cascade)
+  count        Int         @default(0)
+  windowStart  DateTime
+  lastUsedAt   DateTime
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@index([windowStart])
+  @@index([lastUsedAt])
 }
 
 model Promotion {

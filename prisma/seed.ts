@@ -740,10 +740,10 @@ async function main() {
     sortOrder: 40,
     metadata: { sceneRole: 'vertical-transport' },
   });
-  const toiletNode = await upsertRouteNodeByCode({
+const toiletNode = await upsertRouteNodeByCode({
     floorId: firstFloor.id,
     type: RouteNodeType.TOILET,
-    name: '\u0422\u0443\u0430\u043b\u0435\u0442',
+    name: 'Туалет',
     code: 'TOILET_1',
     x: 500,
     y: 500,
@@ -751,6 +751,32 @@ async function main() {
     mapObjectId: toiletObject.id,
     sortOrder: 50,
     metadata: { sceneRole: 'amenity' },
+  });
+  const emergencyExitObject = await upsertMapObjectByExternalId({
+    externalObjectId: 'floor-1-emergency-exit-1',
+    floorId: firstFloor.id,
+    type: MapObjectType.EXIT,
+    name: 'Аварийный выход',
+    categoryId: infrastructureCategory.id,
+    x: 760,
+    y: 560,
+    z: 0,
+    width: 60,
+    height: 40,
+    sortOrder: 90,
+    metadata: { sceneRole: 'emergency-exit' },
+  });
+  const emergencyExitNode = await upsertRouteNodeByCode({
+    floorId: firstFloor.id,
+    type: RouteNodeType.EXIT,
+    name: 'Аварийный выход',
+    code: 'EMERGENCY_EXIT_1',
+    x: 760,
+    y: 560,
+    z: 0,
+    mapObjectId: emergencyExitObject.id,
+    sortOrder: 90,
+    metadata: { sceneRole: 'emergency-exit', evacuation: true },
   });
   const sportmasterNode = await upsertRouteNodeByCode({
     floorId: firstFloor.id,
@@ -846,7 +872,63 @@ async function main() {
       distance: 230,
       label: 'lift-to-sportmaster',
     }),
+    upsertRouteEdge({
+      floorId: firstFloor.id,
+      fromNodeId: toiletNode.id,
+      toNodeId: emergencyExitNode.id,
+      distance: 280,
+      label: 'toilet-to-emergency-exit',
+    }),
+    upsertRouteEdge({
+      floorId: firstFloor.id,
+      fromNodeId: technoparkNode.id,
+      toNodeId: emergencyExitNode.id,
+      distance: 180,
+      label: 'technopark-to-emergency-exit',
+    }),
   ]);
+
+  // Default adaptive routing configuration.
+  await prisma.systemSetting.upsert({
+    where: { key: 'routing.adaptive' },
+    update: {
+      value: {
+        overloadThreshold: 30,
+        overloadPenalty: 50,
+        penaltyMultiplier: 1.5,
+        enabled: true,
+      },
+      description: 'Adaptive routing overload threshold and penalty settings.',
+      isPublic: true,
+    },
+    create: {
+      key: 'routing.adaptive',
+      value: {
+        overloadThreshold: 30,
+        overloadPenalty: 50,
+        penaltyMultiplier: 1.5,
+        enabled: true,
+      },
+      description: 'Adaptive routing overload threshold and penalty settings.',
+      isPublic: true,
+    },
+  });
+
+  // Example maintenance block on the lift edge (escalator/lift on maintenance).
+  await prisma.routeEdge.updateMany({
+    where: {
+      floorId: firstFloor.id,
+      fromNodeId: liftNode.id,
+      toNodeId: toiletNode.id,
+    },
+    data: {
+      metadata: {
+        blocked: true,
+        blockReason: 'Техническое обслуживание лифта',
+        blockedAt: new Date().toISOString(),
+      },
+    },
+  });
 
   const superAdminRole = await prisma.role.findUniqueOrThrow({
     where: { name: 'SUPER_ADMIN' },

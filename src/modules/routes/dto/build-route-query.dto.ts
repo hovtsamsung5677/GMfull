@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { Transform } from "class-transformer";
-import { IsOptional, IsString } from "class-validator";
+import { IsBoolean, IsOptional, IsString } from "class-validator";
 
 export class BuildRouteQueryDto {
   @ApiProperty({
@@ -28,4 +28,21 @@ export class BuildRouteQueryDto {
   @IsOptional()
   @IsString()
   floorId?: string;
+
+  @ApiPropertyOptional({
+    description:
+      "Enable emergency evacuation mode: route to the nearest active exit node instead of toNodeId.",
+    example: false,
+    default: false,
+  })
+  @Transform(({ value }) => {
+    if (typeof value === "boolean") return value;
+    if (typeof value === "string") {
+      return value.trim().toLowerCase() === "true";
+    }
+    return false;
+  })
+  @IsOptional()
+  @IsBoolean()
+  emergencyMode?: boolean;
 }

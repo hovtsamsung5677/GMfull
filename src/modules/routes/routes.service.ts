@@ -6,6 +6,7 @@
 import { Prisma, RouteNodeType } from "@prisma/client";
 import { isPrimaryStoreRelation } from "../../common/utils/store-primary.util";
 import { PrismaService } from "../../database/prisma.service";
+import { AnalyticsService } from "../analytics/analytics.service";
 import { RouteEdgeResponseDto } from "../route-edges/dto/route-edge-response.dto";
 import { RouteNodeResponseDto } from "../route-nodes/dto/route-node-response.dto";
 import { BuildRouteToStoreQueryDto } from "./dto/build-route-to-store-query.dto";
@@ -122,9 +123,13 @@ const routeRenderingMeta = {
 
 @Injectable()
 export class RoutesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly analyticsService: AnalyticsService,
+  ) {}
 
   async build(query: BuildRouteQueryDto): Promise<BuildRouteResponseDto> {
+    const mode = query.emergencyMode ? "emergency" : "normal";
     const [fromNode, toNode] = await this.prisma.$transaction([
       this.prisma.routeNode.findUnique({
         where: { id: query.fromNodeId },
@@ -140,7 +145,7 @@ export class RoutesService {
       throw new NotFoundException("From route node not found");
     }
 
-    if (!toNode || !toNode.isActive) {
+    if (mode !== "emergency" && (!toNode || !toNode.isActive)) {
       throw new NotFoundException("To route node not found");
     }
 
@@ -196,8 +201,11 @@ export class RoutesService {
       }),
     ]);
 
+    // Exclude edges temporarily blocked for maintenance (metadata.blocked=true).
+    const activeEdges = edges.filter((edge) => !this.isBlockedEdge(edge));
+
     const nodeById = new Map(nodes.map((node) => [node.id, node]));
-    const edgeById = new Map(edges.map((edge) => [edge.id, edge]));
+    const edgeById = new Map(activeEdges.map((edge) => [edge.id, edge]));
 
     console.log("[routes] build graph loaded", {
       fromNodeId: fromNode.id,
@@ -209,12 +217,12 @@ export class RoutesService {
       toNodeInGraph: nodeById.has(toNode.id),
     });
 
-    if (!nodeById.has(fromNode.id) || !nodeById.has(toNode.id)) {
+    if (!nodeById.has(fromNode.id)) {
       throw new NotFoundException("Route not found for selected floor");
     }
 
     const verticalEdges = this.buildVerticalEdges(nodes);
-    const allEdges = edges.concat(verticalEdges);
+    const allEdges = activeEdges.concat(verticalEdges);
 
     console.log("[routes] build vertical edges", {
       count: verticalEdges.length,
@@ -226,16 +234,51 @@ export class RoutesService {
       })),
     });
 
+    // Effective target: in emergency mode we route to the nearest active exit node.
+    let effectiveToNode = toNode;
+    let emergencyExitUsed: string | null = null;
+
+    if (mode === "emergency") {
+      const exitNode = this.findNearestExitNode(
+        fromNode,
+        nodes,
+        allEdges,
+      );
+      if (!exitNode) {
+        throw new NotFoundException(
+          "No active emergency exit node found for evacuation routing",
+        );
+      }
+      effectiveToNode = exitNode;
+      emergencyExitUsed = exitNode.id;
+    }
+
+    if (!nodeById.has(effectiveToNode.id)) {
+      throw new NotFoundException("Route not found for selected floor");
+    }
+
+    // Adaptive routing: compute per-edge load and effective weights.
+    const usageMap = await this.analyticsService.getEdgeUsageMap(
+      query.floorId,
+    );
+    const routingConfig = await this.loadRoutingConfig();
+    const { effectiveEdges, routingReport } = this.applyAdaptiveWeights(
+      allEdges,
+      usageMap,
+      routingConfig,
+    );
+
     const path = this.findShortestPath({
       nodes,
-      edges: allEdges,
+      edges: effectiveEdges,
       fromNodeId: fromNode.id,
-      toNodeId: toNode.id,
+      toNodeId: effectiveToNode.id,
     });
 
     console.log("[routes] build shortestPath result", {
       fromNodeId: fromNode.id,
-      toNodeId: toNode.id,
+      toNodeId: effectiveToNode.id,
+      mode,
       pathFound: Boolean(path),
       pathNodeIds: path?.nodeIds,
       pathEdgeIds: path?.edgeIds,
@@ -250,7 +293,7 @@ export class RoutesService {
           type: n.type,
           code: n.code,
         })),
-        edges: edges.map((e) => ({
+        edges: activeEdges.map((e) => ({
           id: e.id,
           from: e.fromNodeId,
           to: e.toNodeId,
@@ -264,9 +307,9 @@ export class RoutesService {
         })),
       });
       throw new NotFoundException(
-        `Route not found between ${fromNode.id} (floor ${fromNode.floorId}) and ${toNode.id} (floor ${toNode.floorId}). ` +
-          `Graph: ${nodes.length} nodes, ${edges.length} edges, ${verticalEdges.length} vertical edges. ` +
-          `From node in graph: ${nodeById.has(fromNode.id)}, To node in graph: ${nodeById.has(toNode.id)}`,
+        `Route not found between ${fromNode.id} (floor ${fromNode.floorId}) and ${effectiveToNode.id} (floor ${effectiveToNode.floorId}). ` +
+          `Graph: ${nodes.length} nodes, ${activeEdges.length} edges, ${verticalEdges.length} vertical edges. ` +
+          `From node in graph: ${nodeById.has(fromNode.id)}, To node in graph: ${nodeById.has(effectiveToNode.id)}`,
       );
     }
 
@@ -279,9 +322,25 @@ export class RoutesService {
     const segments = this.splitIntoFloorSegments(routeNodes);
     const floorChanges = this.buildFloorChanges(routeNodes);
 
+    // Record analytics for the built route.
+    await this.analyticsService.recordRouteBuilt({
+      payload: {
+        fromNodeId: fromNode.id,
+        toNodeId: effectiveToNode.id,
+        floorId: query.floorId ?? null,
+        totalDistance: path.totalDistance,
+        totalWeight: path.totalWeight,
+        edgeIds: path.edgeIds,
+        mode,
+      },
+    });
+
+    // Increment per-edge usage counters for the selected path.
+    await this.analyticsService.recordPathUsage(path.edgeIds);
+
     return {
       fromNode: this.toRouteNodeResponse(fromNode),
-      toNode: this.toRouteNodeResponse(toNode),
+      toNode: this.toRouteNodeResponse(effectiveToNode),
       nodes: routeNodes.map((node) => this.toRouteNodeResponse(node)),
       edges: routeEdges.map((edge) => this.toRouteEdgeResponse(edge)),
       totalDistance: path.totalDistance,
@@ -292,8 +351,17 @@ export class RoutesService {
       floorChanges,
       instructions: this.toRouteInstructions(routeNodes),
       meta: this.createRouteMeta({
-        schemaVersion: "green-mall-route-v2",
-        purpose: "Frontend-ready route between navigation nodes",
+        schemaVersion:
+          mode === "emergency"
+            ? "green-mall-route-emergency-v1"
+            : "green-mall-route-v2",
+        purpose:
+          mode === "emergency"
+            ? "Frontend-ready emergency evacuation route"
+            : "Frontend-ready route between navigation nodes",
+        mode,
+        emergencyExitUsed,
+        routingReport,
       }),
     };
   }
@@ -380,6 +448,9 @@ export class RoutesService {
         generatedAt: new Date().toISOString(),
         purpose: "Frontend-ready route from navigation node to selected store",
         rendering: routeRenderingMeta,
+        mode: route.meta.mode,
+        emergencyExitUsed: route.meta.emergencyExitUsed,
+        routingReport: route.meta.routingReport,
       },
     };
   }
@@ -936,13 +1007,134 @@ export class RoutesService {
   private createRouteMeta(params: {
     schemaVersion: string;
     purpose: string;
+    mode?: "normal" | "emergency";
+    emergencyExitUsed?: string | null;
+    routingReport?: Record<string, unknown> | null;
   }): RouteMetaDto {
     return {
       schemaVersion: params.schemaVersion,
       generatedAt: new Date().toISOString(),
       purpose: params.purpose,
       rendering: routeRenderingMeta,
+      mode: params.mode ?? "normal",
+      emergencyExitUsed: params.emergencyExitUsed ?? null,
+      routingReport: params.routingReport ?? null,
     };
+  }
+
+  private async loadRoutingConfig(): Promise<RoutingConfig> {
+    const value = await this.prisma.systemSetting.findUnique({
+      where: { key: "routing.adaptive" },
+      select: { value: true },
+    });
+
+    const defaults: RoutingConfig = {
+      overloadThreshold: 30,
+      overloadPenalty: 50,
+      penaltyMultiplier: 1.5,
+      enabled: true,
+    };
+
+    if (!value?.value || typeof value.value !== "object") {
+      return defaults;
+    }
+
+    const raw = value.value as Record<string, unknown>;
+    return {
+      overloadThreshold:
+        typeof raw.overloadThreshold === "number"
+          ? raw.overloadThreshold
+          : defaults.overloadThreshold,
+      overloadPenalty:
+        typeof raw.overloadPenalty === "number"
+          ? raw.overloadPenalty
+          : defaults.overloadPenalty,
+      penaltyMultiplier:
+        typeof raw.penaltyMultiplier === "number"
+          ? raw.penaltyMultiplier
+          : defaults.penaltyMultiplier,
+      enabled: raw.enabled !== false,
+    };
+  }
+
+  private applyAdaptiveWeights(
+    edges: RouteEdgeWithRelations[],
+    usageMap: Map<string, number>,
+    config: RoutingConfig,
+  ): {
+    effectiveEdges: RouteEdgeWithRelations[];
+    routingReport: Record<string, unknown>;
+  } {
+    if (!config.enabled || usageMap.size === 0) {
+      return { effectiveEdges: edges, routingReport: {} };
+    }
+
+    const report: Record<string, unknown> = {};
+    const effectiveEdges = edges.map((edge) => {
+      // Virtual vertical edges are generated in-memory and have no usage counter.
+      if (edge.id.startsWith("vertical:")) {
+        return edge;
+      }
+
+      const loadCount = usageMap.get(edge.id) ?? 0;
+      const baseWeight = edge.weight ?? edge.distance ?? 1;
+      const isOverloaded = loadCount >= config.overloadThreshold;
+      const overloadFactor = isOverloaded
+        ? 1 + (loadCount - config.overloadThreshold + 1) * 0.1
+        : 1;
+      const effectiveWeight = Math.round(
+        baseWeight * overloadFactor * (isOverloaded ? config.penaltyMultiplier : 1) +
+          (isOverloaded ? config.overloadPenalty : 0),
+      );
+
+      report[edge.id] = {
+        baseWeight,
+        effectiveWeight,
+        loadCount,
+        overloaded: isOverloaded,
+      };
+
+      return { ...edge, weight: effectiveWeight };
+    });
+
+    return { effectiveEdges, routingReport: report };
+  }
+
+  private findNearestExitNode(
+    fromNode: RouteNodeWithFloor,
+    nodes: RouteNodeWithFloor[],
+    edges: RouteEdgeWithRelations[],
+  ): RouteNodeWithFloor | null {
+    const exitNodes = nodes.filter(
+      (node) => node.isActive && node.type === RouteNodeType.EXIT,
+    );
+
+    if (exitNodes.length === 0) {
+      return null;
+    }
+
+    let best = exitNodes[0];
+    let bestDistance = Number.POSITIVE_INFINITY;
+
+    for (const exitNode of exitNodes) {
+      const candidate = this.findShortestPath({
+        nodes,
+        edges,
+        fromNodeId: fromNode.id,
+        toNodeId: exitNode.id,
+      });
+
+      if (!candidate) {
+        continue;
+      }
+
+      if (candidate.totalDistance < bestDistance) {
+        best = exitNode;
+        bestDistance = candidate.totalDistance;
+      }
+    }
+
+    return bestDistance === Number.POSITIVE_INFINITY ? null : best;
   }
 
   private getNodeLabel(node: RouteNodeWithFloor): string {
@@ -997,4 +1189,19 @@ export class RoutesService {
       searchKeywords: store.searchKeywords,
     };
   }
+
+  private isBlockedEdge(edge: RouteEdgeWithRelations): boolean {
+    const metadata = edge.metadata;
+    if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
+      return false;
+    }
+    return (metadata as Record<string, unknown>).blocked === true;
+  }
 }
+
+type RoutingConfig = {
+  overloadThreshold: number;
+  overloadPenalty: number;
+  penaltyMultiplier: number;
+  enabled: boolean;
+};

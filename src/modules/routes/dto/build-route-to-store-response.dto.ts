@@ -73,6 +73,19 @@ export class RouteToStoreMetaDto {
 
   @ApiProperty({ type: RouteRenderingMetaDto })
   rendering!: RouteRenderingMetaDto;
+
+  @ApiProperty({
+    enum: ["normal", "emergency"],
+    example: "normal",
+    description: "Routing mode used for this build.",
+  })
+  mode!: "normal" | "emergency";
+
+  @ApiPropertyOptional({ nullable: true })
+  emergencyExitUsed!: string | null;
+
+  @ApiPropertyOptional({ nullable: true, type: Object })
+  routingReport!: Record<string, unknown> | null;
 }
 
 export class BuildRouteToStoreResponseDto {

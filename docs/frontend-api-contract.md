@@ -580,6 +580,106 @@ Frontend использует:
 
 Загрузку GLB/GLTF/FBX, хранение файлов и импорт модели из Autodesk 3ds Max следует реализовать отдельным этапом после подключения frontend и фиксации правил экспорта: единиц измерения, осей координат, origin/pivot, именования объектов и формата материалов.
 
+## 6. Адаптивная маршрутизация и режим эвакуации
+
+### `GET /api/public/routes/build`
+
+Дополнительный query-параметр `emergencyMode` (boolean, по умолчанию `false`). При `emergencyMode=true` backend игнорирует `toNodeId` и строит маршрут от `fromNodeId` до ближайшего активного узла типа `EXIT` (эвакуационный выход). Если подходящий exit-узел не найден, возвращается `404`.
+
+Пример запроса:
+
+```http
+GET /api/public/routes/build?fromNodeId=route-node-entrance&floorId=cmr-floor-1&emergencyMode=true
+```
+
+Ответ `200 OK` содержит дополнительные поля в `meta`:
+
+| Поле | Тип | Описание |
+| --- | --- | --- |
+| `meta.mode` | `"normal" \| "emergency"` | Режим, в котором построен маршрут. |
+| `meta.emergencyExitUsed` | `string \| null` | ID exit-узла, использованного как цель в режиме эвакуации. |
+| `meta.routingReport` | `object \| null` | Отчёт адаптивной маршрутизации: для каждого ребра `baseWeight`, `effectiveWeight`, `loadCount`, `overloaded`. |
+
+При `emergencyMode=false` `meta.emergencyExitUsed = null`, а `meta.mode = "normal"`.
+
+### `GET /api/admin/analytics/edge-usage`
+
+Назначение: получить счётчики частоты использования рёбер за текущее скользящее окно (15 минут). Используется для настройки адаптивной маршрутизации и диагностики перегруженных путей.
+
+Параметры query:
+
+| Параметр | Тип | Обязательный | Описание |
+| --- | --- | --- | --- |
+| `floorId` | `string` | нет | Фильтр по этажу. |
+
+Ответ `200 OK`:
+
+```json
+{
+  "windowMs": 900000,
+  "generatedAt": "2026-10-15T13:10:00.000Z",
+  "edges": [
+    { "edgeId": "route-edge-entrance-panel", "count": 128 },
+    { "edgeId": "route-edge-panel-escalator", "count": 47 }
+  ]
+}
+```
+
+Frontend использует:
+
+- `edges[].count` — количество запросов маршрута, прошедших через ребро за окно. Порог перегрузки настраивается в системных настройках (`routing.adaptive.overloadThreshold`, по умолчанию 30).
+- `windowMs` — длина окна в миллисекундах.
+
+## 7. Управление обслуживанием путей (админка)
+
+### `GET /api/admin/route-maintenance/edges/blocked`
+
+Список всех рёбер, временно заблокированных для технического обслуживания (`metadata.blocked = true`).
+
+### `GET /api/admin/route-maintenance/nodes/blocked`
+
+Список всех узлов, временно заблокированных для технического обслуживания (`metadata.blocked = true`).
+
+### `POST /api/admin/route-maintenance/edges/{edgeId}/block`
+
+Блокирует ребро. Тело: `{ "reason"?: string, "blockedUntil"?: ISO-8601 }`. После этого ребро исключается из графа при построении маршрута (в `routes.service.build` фильтруются рёбра с `metadata.blocked = true`).
+
+### `POST /api/admin/route-maintenance/edges/{edgeId}/unblock`
+
+Снимает блокировку с ребра.
+
+### `POST /api/admin/route-maintenance/nodes/{nodeId}/block`
+
+Блокирует узел (например, лифт или эскалатор на обслуживании).
+
+### `POST /api/admin/route-maintenance/nodes/{nodeId}/unblock`
+
+Снимает блокировку с узла.
+
+## 8. Системные настройки (админка)
+
+### `GET /api/admin/system-settings`
+
+Список системных настроек. Поддерживает query-параметр `keyPrefix` для фильтрации по префиксу ключа.
+
+### `GET /api/admin/system-settings/{key}`
+
+Получить одну настройку по ключу.
+
+### `POST /api/admin/system-settings` / `PATCH /api/admin/system-settings/{key}`
+
+Создать или обновить настройку. Тело: `{ "key": string, "value": object, "description"?: string, "isPublic"?: boolean }`.
+
+### `DELETE /api/admin/system-settings/{key}`
+
+Удалить настройку.
+
+Настройки, важные для маршрутизации:
+
+| Ключ | Значение по умолчанию | Описание |
+| --- | --- | --- |
+| `routing.adaptive` | `{ "overloadThreshold": 30, "overloadPenalty": 50, "penaltyMultiplier": 1.5, "enabled": true }` | Параметры адаптивной маршрутизации. |
+
 ## Что готово для frontend MVP
 
 - Backend отдаёт карту ТЦ и параметры активного этажа.
@@ -589,4 +689,7 @@ Frontend использует:
 - Backend строит маршрут от route node до выбранного магазина.
 - Backend возвращает координаты, упорядоченный `routePath`, сегменты и инструкции для отрисовки маршрута.
 - Backend уже содержит базовые поля для будущей 2D/3D-интеграции.
+- Backend поддерживает режим эвакуации (`emergencyMode`) — маршрут до ближайшего активного exit-узла.
+- Backend поддерживает адаптивную маршрутизацию на основе частоты запросов по рёбрам (счётчики в `RouteEdgeUsage`, отчёт в `meta.routingReport`).
+- Backend предоставляет admin API для управления блокировками путей (`/admin/route-maintenance`) и системными настройками (`/admin/system-settings`).
 
