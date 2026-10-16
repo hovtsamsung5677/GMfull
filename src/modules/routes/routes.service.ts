@@ -165,7 +165,7 @@ export class RoutesService {
         );
       }
 
-      if (toNode.floorId !== query.floorId) {
+      if (toNode && toNode.floorId !== query.floorId) {
         throw new NotFoundException(
           "To route node not found on selected floor",
         );
@@ -209,12 +209,12 @@ export class RoutesService {
 
     console.log("[routes] build graph loaded", {
       fromNodeId: fromNode.id,
-      toNodeId: toNode.id,
+      toNodeId: toNode?.id ?? null,
       floorId: query.floorId ?? "all",
       nodesCount: nodes.length,
       edgesCount: edges.length,
       fromNodeInGraph: nodeById.has(fromNode.id),
-      toNodeInGraph: nodeById.has(toNode.id),
+      toNodeInGraph: toNode ? nodeById.has(toNode.id) : false,
     });
 
     if (!nodeById.has(fromNode.id)) {
@@ -234,24 +234,26 @@ export class RoutesService {
       })),
     });
 
-    // Effective target: in emergency mode we route to the nearest active exit node.
-    let effectiveToNode = toNode;
-    let emergencyExitUsed: string | null = null;
+// Effective target: in emergency mode we route to the nearest active exit node.
+let effectiveToNode: RouteNodeWithFloor;
+let emergencyExitUsed: string | null = null;
 
-    if (mode === "emergency") {
-      const exitNode = this.findNearestExitNode(
-        fromNode,
-        nodes,
-        allEdges,
-      );
-      if (!exitNode) {
-        throw new NotFoundException(
-          "No active emergency exit node found for evacuation routing",
-        );
-      }
-      effectiveToNode = exitNode;
-      emergencyExitUsed = exitNode.id;
-    }
+if (mode === "emergency") {
+  const exitNode = this.findNearestExitNode(
+    fromNode,
+    nodes,
+    allEdges,
+  );
+  if (!exitNode) {
+    throw new NotFoundException(
+      "No active emergency exit node found for evacuation routing",
+    );
+  }
+  effectiveToNode = exitNode;
+  emergencyExitUsed = exitNode.id;
+} else {
+  effectiveToNode = toNode!;
+}
 
     if (!nodeById.has(effectiveToNode.id)) {
       throw new NotFoundException("Route not found for selected floor");
