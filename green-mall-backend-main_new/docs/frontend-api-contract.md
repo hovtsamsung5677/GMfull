@@ -395,6 +395,69 @@ curl "http://localhost:3000/api/public/routes/to-store?fromNodeId=route-node-ent
       "z": 0
     }
   ],
+  "evacuation": {
+    "stair": {
+      "id": "route-node-fire-stairs-east",
+      "floorId": "cmr4yowvx000kw35sedq47bfx",
+      "type": "STAIRS",
+      "name": "Пожарная лестница",
+      "code": "FIRE_STAIRS_1_EAST",
+      "x": 846,
+      "y": 132,
+      "z": 0,
+      "metadata": { "isEvacuation": true },
+      "isActive": true
+    },
+    "route": {
+      "totalDistance": 250,
+      "routePath": [
+        {
+          "nodeId": "route-node-sportmaster",
+          "type": "STORE_ANCHOR",
+          "code": "STORE_SPORTMASTER",
+          "x": 620,
+          "y": 330,
+          "z": 0,
+          "floorNumber": 1
+        },
+        {
+          "nodeId": "route-node-fire-stairs-east",
+          "type": "STAIRS",
+          "code": "FIRE_STAIRS_1_EAST",
+          "x": 846,
+          "y": 132,
+          "z": 0,
+          "floorNumber": 1
+        }
+      ],
+      "segments": [
+        {
+          "floorNumber": 1,
+          "floorId": "cmr4yowvx000kw35sedq47bfx",
+          "points": [
+            {
+              "nodeId": "route-node-sportmaster",
+              "type": "STORE_ANCHOR",
+              "x": 620,
+              "y": 330,
+              "z": 0,
+              "floorNumber": 1
+            },
+            {
+              "nodeId": "route-node-fire-stairs-east",
+              "type": "STAIRS",
+              "x": 846,
+              "y": 132,
+              "z": 0,
+              "floorNumber": 1
+            }
+          ]
+        }
+      ],
+      "floorChanges": [],
+      "instructions": []
+    }
+  },
   "meta": {
     "schemaVersion": "green-mall-route-to-store-v2",
     "generatedAt": "2026-07-15T12:00:00.000Z",
@@ -419,6 +482,7 @@ Frontend использует:
 - `totalDistance` — суммарная длина маршрута; используется для отображения расстояния.
 - `totalWeight` — суммарная стоимость пути, по которой выбирался кратчайший маршрут.
 - `meta.rendering` — возможности и система координат ответа.
+- `evacuation` — маршрут от магазина до ближайшей пожарной лестницы этажа (подробнее в разделе 5.1). `null`, если на этаже магазина нет размеченных пожарных лестниц или они не связаны с графом. Frontend рисует его другим цветом через 3 секунды после того, как основной маршрут дорисован.
 
 Основные ошибки:
 
@@ -508,6 +572,55 @@ Frontend использует:
 - `metadata` — дополнительные параметры узла или ребра, включая необязательную подпись сегмента.
 
 Если этаж не найден или неактивен, backend возвращает `404 Floor not found`.
+
+## 5.1. Пожарные лестницы этажа
+
+Пожарная (эвакуационная) лестница — это активный узел графа типа `STAIRS` с флагом `metadata.isEvacuation = true`. Флаг выставляет администратор в редакторе графа (чекбокс «Пожарная лестница») либо сид (`prisma/seed.ts` размещает две лестницы на каждом этаже и связывает их с ближайшими узлами каждой связной компоненты графа).
+
+### `GET /api/public/floors/:floorId/evacuation-stairs`
+
+Назначение: список пожарных лестниц этажа. Панель рисует по ним маркеры на 3D-модели всегда, независимо от построенного маршрута.
+
+Параметры path:
+
+| Параметр | Тип | Обязательный | Описание |
+| --- | --- | --- | --- |
+| `floorId` | `string` | да | ID активного этажа. |
+
+Пример запроса:
+
+```http
+GET /api/public/floors/cmr4yowvx000kw35sedq47bfx/evacuation-stairs
+```
+
+```bash
+curl http://localhost:3000/api/public/floors/cmr4yowvx000kw35sedq47bfx/evacuation-stairs
+```
+
+Сокращённый пример ответа `200 OK`:
+
+```json
+[
+  {
+    "id": "route-node-fire-stairs-west",
+    "floorId": "cmr4yowvx000kw35sedq47bfx",
+    "type": "STAIRS",
+    "name": "Пожарная лестница",
+    "code": "FIRE_STAIRS_1_WEST",
+    "x": 54,
+    "y": 132,
+    "z": 0,
+    "mapObjectId": "map-object-fire-stairs-west",
+    "metadata": { "sceneRole": "evacuation-stairs", "isEvacuation": true },
+    "sortOrder": 200,
+    "isActive": true
+  }
+]
+```
+
+Массив пустой, если на этаже нет размеченных пожарных лестниц. Если этаж не найден или неактивен — `404 Floor not found`.
+
+Эвакуационный маршрут из ответа `/api/public/routes/to-store` (поле `evacuation`) всегда остаётся в пределах этажа магазина: backend строит его с ограничением `floorId`, поэтому межэтажные рёбра в нём не участвуют. Расстояние до лестницы — в `evacuation.route.totalDistance`, точки линии — в `evacuation.route.segments` (у каждого сегмента свой `floorNumber`).
 
 ## 6. Рекламная выдача и tracking
 

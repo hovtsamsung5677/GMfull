@@ -128,10 +128,13 @@ export class MapObjectsService {
   async findPublicByFloor(floorId: string, query: MapObjectQueryDto) {
     await this.ensureFloorExists(floorId);
 
-    return this.findPublic({
-      ...query,
-      floorId,
+    const objects = await this.prisma.mapObject.findMany({
+      where: { ...this.buildWhere(query, true), floorId },
+      include: mapObjectInclude,
+      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
     });
+
+    return objects.map((object) => this.toResponse(object));
   }
 
   async findPublicMap(): Promise<PublicMapResponseDto> {
@@ -562,12 +565,19 @@ export class MapObjectsService {
   }
 
   private getPagination(query: MapObjectQueryDto) {
-    const page = query.page ?? 1;
-    const limit = query.limit ?? 20;
+    const page = query.page;
+    const limit = query.limit;
+
+    if (page == null && limit == null) {
+      return undefined;
+    }
+
+    const safePage = Math.max(1, page ?? 1);
+    const safeLimit = Math.max(1, limit ?? 20);
 
     return {
-      skip: (page - 1) * limit,
-      take: limit,
+      skip: (safePage - 1) * safeLimit,
+      take: safeLimit,
     };
   }
 

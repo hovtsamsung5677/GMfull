@@ -1,9 +1,21 @@
-import { Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { FloorIconQueryDto } from './dto/floor-icon-query.dto';
 import { CreateFloorIconDto } from './dto/create-floor-icon.dto';
 import { UpdateFloorIconDto } from './dto/update-floor-icon.dto';
 import { FloorIconResponseDto } from './dto/floor-icon-response.dto';
+
+const iconAssetSelect = {
+  id: true,
+  filename: true,
+  url: true,
+  kind: true,
+  isActive: true,
+} as const;
 
 @Injectable()
 export class FloorIconsService {
@@ -15,7 +27,7 @@ export class FloorIconsService {
         ...(query.floorId ? { floorId: query.floorId } : {}),
         isActive: true,
       },
-      include: { asset: { select: { id: true, filename: true, url: true, kind: true, isActive: true } } },
+      include: { asset: { select: iconAssetSelect } },
       orderBy: { sortOrder: 'asc' },
     });
     return icons.map(this.toResponse);
@@ -24,12 +36,14 @@ export class FloorIconsService {
   async findById(id: string): Promise<FloorIconResponseDto | null> {
     const icon = await this.prisma.floorIcon.findUnique({
       where: { id },
-      include: { asset: { select: { id: true, filename: true, url: true, kind: true, isActive: true } } },
+      include: { asset: { select: iconAssetSelect } },
     });
     return icon ? this.toResponse(icon) : null;
   }
 
   async create(dto: CreateFloorIconDto): Promise<FloorIconResponseDto> {
+    await this.ensureReferencesExist(dto.floorId, dto.assetId, dto.storeId);
+
     const icon = await this.prisma.floorIcon.create({
       data: {
         name: dto.name,
@@ -45,14 +59,22 @@ export class FloorIconsService {
         isActive: dto.isActive ?? true,
         sortOrder: dto.sortOrder ?? 0,
       },
-      include: { asset: { select: { id: true, filename: true, url: true, kind: true, isActive: true } } },
+      include: { asset: { select: iconAssetSelect } },
     });
     return this.toResponse(icon);
   }
 
-  async update(id: string, dto: UpdateFloorIconDto): Promise<FloorIconResponseDto | null> {
+  async update(id: string, dto: UpdateFloorIconDto): Promise<FloorIconResponseDto> {
     const existing = await this.prisma.floorIcon.findUnique({ where: { id } });
-    if (!existing) return null;
+    if (!existing) {
+      throw new NotFoundException('Floor icon not found');
+    }
+
+    await this.ensureReferencesExist(
+      dto.floorId ?? existing.floorId,
+      dto.assetId ?? existing.assetId,
+      dto.storeId === undefined ? existing.storeId : dto.storeId,
+    );
 
     const icon = await this.prisma.floorIcon.update({
       where: { id },
@@ -70,21 +92,55 @@ export class FloorIconsService {
         ...(dto.isActive !== undefined ? { isActive: dto.isActive } : {}),
         ...(dto.sortOrder !== undefined ? { sortOrder: dto.sortOrder } : {}),
       },
-      include: { asset: { select: { id: true, filename: true, url: true, kind: true, isActive: true } } },
+      include: { asset: { select: iconAssetSelect } },
     });
     return this.toResponse(icon);
   }
 
-  async remove(id: string): Promise<FloorIconResponseDto | null> {
+  async remove(id: string): Promise<FloorIconResponseDto> {
     const existing = await this.prisma.floorIcon.findUnique({ where: { id } });
-    if (!existing) return null;
+    if (!existing) {
+      throw new NotFoundException('Floor icon not found');
+    }
 
     const icon = await this.prisma.floorIcon.update({
       where: { id },
       data: { isActive: false },
-      include: { asset: { select: { id: true, filename: true, url: true, kind: true, isActive: true } } },
+      include: { asset: { select: iconAssetSelect } },
     });
     return this.toResponse(icon);
+  }
+
+  private async ensureReferencesExist(
+    floorId: string,
+    assetId: string,
+    storeId?: string | null,
+  ): Promise<void> {
+    const floor = await this.prisma.floor.findUnique({
+      where: { id: floorId },
+      select: { id: true },
+    });
+    if (!floor) {
+      throw new NotFoundException('Floor not found');
+    }
+
+    const asset = await this.prisma.fileAsset.findFirst({
+      where: { id: assetId, isActive: true },
+      select: { id: true },
+    });
+    if (!asset) {
+      throw new NotFoundException('File asset not found');
+    }
+
+    if (storeId) {
+      const store = await this.prisma.store.findUnique({
+        where: { id: storeId },
+        select: { id: true },
+      });
+      if (!store) {
+        throw new NotFoundException('Store not found');
+      }
+    }
   }
 
   private toResponse(icon: any): FloorIconResponseDto {

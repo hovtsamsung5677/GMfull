@@ -38,6 +38,7 @@ export class PublicAnalyticsEventsService {
     const storeId = dto.storeId ?? null;
     const categoryId = dto.categoryId ?? null;
     const promotionId = dto.promotionId ?? null;
+    const qrToken = dto.qrToken ?? null;
     const [panel, store, category, promotion] = await Promise.all([
       panelId === null
         ? Promise.resolve(null)
@@ -92,6 +93,7 @@ export class PublicAnalyticsEventsService {
           storeId,
           categoryId,
           promotionId,
+          qrToken,
           query: dto.query ?? null,
           deviceData: this.toJsonInput(dto.deviceData),
           payload: this.toJsonInput(dto.payload),
@@ -149,6 +151,7 @@ export class PublicAnalyticsEventsService {
       existing.storeId === (dto.storeId ?? null) &&
       existing.categoryId === (dto.categoryId ?? null) &&
       existing.promotionId === (dto.promotionId ?? null) &&
+      existing.qrToken === (dto.qrToken ?? null) &&
       existing.query === (dto.query ?? null) &&
       this.stableJson(existing.payload) === this.stableJson(dto.payload);
 

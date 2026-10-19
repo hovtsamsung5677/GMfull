@@ -25,7 +25,7 @@ export class PublicAnalyticsEventsController {
   @ApiOperation({
     summary: "Track a public visitor or navigation analytics event",
     description:
-      "Public ingestion endpoint; JWT is not required. Accepts the documented visitor/navigation types from PANEL or MOBILE, but rejects AD_IMPRESSION, AD_CLICK, QR_SCANNED and ADMIN. PANEL requires panelId. clientEventId provides race-safe idempotency: a new event returns 201, an identical replay returns 200, and reuse for another identity returns 409. Identity includes type, source, session, subject references, query and payload; deviceData is contextual only. Referenced entities are checked for existence without current lifecycle filtering. This endpoint does not update Panel runtime fields or implement heartbeat.",
+      "Public ingestion endpoint; JWT is not required. Accepts the documented visitor/navigation types from PANEL or MOBILE, but rejects AD_IMPRESSION, AD_CLICK and ADMIN. PANEL requires panelId. clientEventId provides race-safe idempotency: a new event returns 201, an identical replay returns 200, and reuse for another identity returns 409. Identity includes type, source, session, subject references, qrToken, query and payload; deviceData is contextual only. Referenced entities are checked for existence without current lifecycle filtering. This endpoint does not update Panel runtime fields or implement heartbeat.",
   })
   @ApiBody({ type: CreatePublicAnalyticsEventDto })
   @ApiCreatedResponse({

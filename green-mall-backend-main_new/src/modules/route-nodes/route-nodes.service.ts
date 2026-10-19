@@ -5,6 +5,7 @@
   NotFoundException,
 } from '@nestjs/common';
 import { MapObjectType, Prisma, RouteNodeType } from '@prisma/client';
+import { isEvacuationStairNode } from '../../common/utils/evacuation.util';
 import { preserveStorePrimaryRelationMetadata } from '../../common/utils/store-primary.util';
 import { PrismaService } from '../../database/prisma.service';
 import { CreateRouteNodeDto } from './dto/create-route-node.dto';
@@ -84,6 +85,28 @@ export class RouteNodesService {
     return this.findPublic({ ...query, floorId });
   }
 
+  /**
+   * Пожарные (эвакуационные) лестницы этажа: активные узлы типа STAIRS
+   * с metadata.isEvacuation. Панель рисует по ним маркеры на 3D-модели.
+   */
+  async findEvacuationStairsByFloor(
+    floorId: string,
+  ): Promise<RouteNodeResponseDto[]> {
+    await this.ensureFloorExists(floorId);
+
+    const nodes = await this.prisma.routeNode.findMany({
+      where: {
+        floorId,
+        isActive: true,
+        type: RouteNodeType.STAIRS,
+      },
+      include: routeNodeInclude,
+      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+    });
+
+    return nodes.filter(isEvacuationStairNode).map((node) => this.toResponse(node));
+  }
+
   async findPublicRouteGraph(floorId: string): Promise<RouteGraphResponseDto> {
     const floor = await this.prisma.floor.findFirst({
       where: { id: floorId, isActive: true },
@@ -152,7 +175,10 @@ export class RouteNodesService {
     ) {
       const mapObject = await this.prisma.mapObject.create({
         data: {
-          type: MapObjectType.ELEVATOR,
+          type:
+            node.type === RouteNodeType.STAIRS
+              ? MapObjectType.STAIRS
+              : MapObjectType.ELEVATOR,
           name: node.name || node.type,
           floorId: node.floorId,
           storeId: null,
@@ -195,7 +221,10 @@ export class RouteNodesService {
     ) {
       const created = await this.prisma.mapObject.create({
         data: {
-          type: MapObjectType.ELEVATOR,
+          type:
+            (dto.type ?? existing.type) === RouteNodeType.STAIRS
+              ? MapObjectType.STAIRS
+              : MapObjectType.ELEVATOR,
           name: dto.name || dto.type || 'Elevator',
           floorId: floorId,
           storeId: null,
@@ -242,7 +271,10 @@ export class RouteNodesService {
     ) {
       const mapObject = await this.prisma.mapObject.create({
         data: {
-          type: MapObjectType.ELEVATOR,
+          type:
+            node.type === RouteNodeType.STAIRS
+              ? MapObjectType.STAIRS
+              : MapObjectType.ELEVATOR,
           name: node.name || node.type,
           floorId: node.floorId,
           storeId: null,

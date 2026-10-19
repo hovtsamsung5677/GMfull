@@ -63,6 +63,11 @@ describe("Public visitor/navigation analytics event API (e2e)", () => {
         return buildEventBody(type, {
           payload: { fromNodeId: "entrance", toNodeId: "store-anchor" },
         });
+      case AnalyticsEventType.QR_SCANNED:
+        return buildEventBody(type, {
+          qrToken: prefix + "-qr-token",
+          storeId,
+        });
       case AnalyticsEventType.PROMOTION_VIEWED:
         return buildEventBody(type, { promotionId });
       case AnalyticsEventType.DATA_LOAD_ERROR:
@@ -196,6 +201,7 @@ describe("Public visitor/navigation analytics event API (e2e)", () => {
     AnalyticsEventType.STORE_SELECTED,
     AnalyticsEventType.STORE_CARD_VIEWED,
     AnalyticsEventType.ROUTE_BUILT,
+    AnalyticsEventType.QR_SCANNED,
     AnalyticsEventType.PROMOTION_VIEWED,
     AnalyticsEventType.MOBILE_OPENED,
     AnalyticsEventType.PANEL_USED,
@@ -298,7 +304,6 @@ describe("Public visitor/navigation analytics event API (e2e)", () => {
   it.each([
     AnalyticsEventType.AD_IMPRESSION,
     AnalyticsEventType.AD_CLICK,
-    AnalyticsEventType.QR_SCANNED,
   ])("rejects unsupported event type %s", async (type) => {
     await request(app.getHttpServer())
       .post(eventsUrl)
@@ -563,6 +568,41 @@ describe("Public visitor/navigation analytics event API (e2e)", () => {
       platform: "panel",
       appVersion: "1.0.0",
     });
+  });
+
+  it("stores the qrToken for QR_SCANNED and treats it as identity", async () => {
+    const body = buildEventBody(AnalyticsEventType.QR_SCANNED, {
+      qrToken: prefix + "-identity-qr-token",
+      storeId,
+    });
+
+    await request(app.getHttpServer()).post(eventsUrl).send(body).expect(201);
+
+    const stored = await prisma.analyticsEvent.findUniqueOrThrow({
+      where: { clientEventId: body.clientEventId as string },
+    });
+    expect(stored).toMatchObject({
+      type: AnalyticsEventType.QR_SCANNED,
+      source: AnalyticsSource.MOBILE,
+      storeId,
+      qrToken: prefix + "-identity-qr-token",
+    });
+
+    const replay = await request(app.getHttpServer())
+      .post(eventsUrl)
+      .send(body)
+      .expect(200);
+    expect(replay.body.clientEventId).toBe(body.clientEventId);
+    await expect(
+      prisma.analyticsEvent.count({
+        where: { clientEventId: body.clientEventId as string },
+      }),
+    ).resolves.toBe(1);
+
+    await request(app.getHttpServer())
+      .post(eventsUrl)
+      .send({ ...body, qrToken: prefix + "-other-qr-token" })
+      .expect(409);
   });
 
   it("returns 409 when clientEventId is reused for another identity", async () => {

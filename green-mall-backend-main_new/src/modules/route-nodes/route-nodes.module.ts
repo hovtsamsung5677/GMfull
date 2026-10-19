@@ -8,5 +8,6 @@ import { RouteNodesService } from './route-nodes.service';
   imports: [DatabaseModule],
   controllers: [RouteNodesPublicController, RouteNodesAdminController],
   providers: [RouteNodesService],
+  exports: [RouteNodesService],
 })
 export class RouteNodesModule {}

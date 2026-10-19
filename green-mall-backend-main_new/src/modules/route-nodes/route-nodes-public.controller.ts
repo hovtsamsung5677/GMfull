@@ -1,5 +1,10 @@
 import { Controller, Get, Param, Query } from '@nestjs/common';
-import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiNotFoundResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import { RouteGraphResponseDto } from './dto/route-graph-response.dto';
 import { RouteNodeQueryDto } from './dto/route-node-query.dto';
 import { RouteNodeResponseDto } from './dto/route-node-response.dto';
@@ -23,6 +28,16 @@ export class RouteNodesPublicController {
     @Query() query: RouteNodeQueryDto,
   ) {
     return this.routeNodesService.findPublicByFloor(floorId, query);
+  }
+
+  @Get('public/floors/:floorId/evacuation-stairs')
+  @ApiOperation({
+    summary: 'List evacuation (fire) stairs marked on the floor.',
+  })
+  @ApiOkResponse({ type: [RouteNodeResponseDto] })
+  @ApiNotFoundResponse({ description: 'Floor not found.' })
+  findEvacuationStairs(@Param('floorId') floorId: string) {
+    return this.routeNodesService.findEvacuationStairsByFloor(floorId);
   }
 
   @Get('public/floors/:floorId/route-graph')

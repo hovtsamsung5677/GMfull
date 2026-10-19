@@ -61,7 +61,10 @@ export class FloorIconsAdminController {
   @ApiOperation({ summary: 'Update a floor icon.' })
   @ApiOkResponse({ type: FloorIconResponseDto })
   @ApiNotFoundResponse({ description: 'Floor icon not found.' })
-  update(@Param('id') id: string, @Body() dto: UpdateFloorIconDto): Promise<FloorIconResponseDto | null> {
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpdateFloorIconDto,
+  ): Promise<FloorIconResponseDto> {
     return this.service.update(id, dto);
   }
 
@@ -69,7 +72,7 @@ export class FloorIconsAdminController {
   @ApiOperation({ summary: 'Soft-delete a floor icon (isActive=false).' })
   @ApiOkResponse({ type: FloorIconResponseDto })
   @ApiNotFoundResponse({ description: 'Floor icon not found.' })
-  remove(@Param('id') id: string): Promise<FloorIconResponseDto | null> {
+  remove(@Param('id') id: string): Promise<FloorIconResponseDto> {
     return this.service.remove(id);
   }
 }

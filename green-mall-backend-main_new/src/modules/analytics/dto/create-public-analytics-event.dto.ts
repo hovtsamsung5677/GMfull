@@ -20,6 +20,7 @@ export const PUBLIC_ANALYTICS_EVENT_TYPES = [
   AnalyticsEventType.STORE_SELECTED,
   AnalyticsEventType.STORE_CARD_VIEWED,
   AnalyticsEventType.ROUTE_BUILT,
+  AnalyticsEventType.QR_SCANNED,
   AnalyticsEventType.PROMOTION_VIEWED,
   AnalyticsEventType.MOBILE_OPENED,
   AnalyticsEventType.PANEL_USED,
@@ -56,7 +57,7 @@ export class CreatePublicAnalyticsEventDto {
     enum: PUBLIC_ANALYTICS_EVENT_TYPES,
     example: AnalyticsEventType.SEARCH_QUERY,
     description:
-      "Visitor/navigation event type accepted by this endpoint. AD_IMPRESSION, AD_CLICK and QR_SCANNED are rejected.",
+      "Visitor/navigation event type accepted by this endpoint. AD_IMPRESSION and AD_CLICK are rejected.",
   })
   @IsIn(PUBLIC_ANALYTICS_EVENT_TYPES)
   type!: AnalyticsEventType;
@@ -87,13 +88,12 @@ export class CreatePublicAnalyticsEventDto {
     nullable: true,
     maxLength: 191,
     description:
-      "Required for source=PANEL. If supplied for MOBILE, the referenced Panel must also exist.",
+      "Optional panel identifier. Required for AD_IMPRESSION/AD_CLICK on the advertising ingestion. On this endpoint it is optional: PANEL and MOBILE events may be sent without it, and any supplied Panel must exist.",
   })
   @Transform(trimString)
   @ValidateIf(
     (dto: CreatePublicAnalyticsEventDto, value: unknown) =>
-      dto.source === AnalyticsSource.PANEL ||
-      (value !== undefined && value !== null),
+      value !== undefined && value !== null,
   )
   @IsString()
   @MinLength(1)
@@ -105,7 +105,7 @@ export class CreatePublicAnalyticsEventDto {
     nullable: true,
     maxLength: 191,
     description:
-      "Required for STORE_SELECTED and STORE_CARD_VIEWED. Any supplied Store must exist.",
+      "Required for STORE_SELECTED and STORE_CARD_VIEWED. Any supplied Store must exist. QR_SCANNED may reference the Store behind the scanned QR link.",
   })
   @Transform(trimString)
   @ValidateIf(
@@ -181,6 +181,24 @@ export class CreatePublicAnalyticsEventDto {
   @IsOptional()
   @IsObject()
   deviceData?: Record<string, unknown> | null;
+
+  @ApiPropertyOptional({
+    type: String,
+    nullable: true,
+    maxLength: 191,
+    description:
+      "Optional QR/share token for QR_SCANNED. It identifies the scanned link and is part of the idempotency identity.",
+  })
+  @Transform(trimString)
+  @ValidateIf(
+    (dto: CreatePublicAnalyticsEventDto, value: unknown) =>
+      dto.type === AnalyticsEventType.QR_SCANNED ||
+      (value !== undefined && value !== null),
+  )
+  @IsString()
+  @MinLength(1)
+  @MaxLength(191)
+  qrToken?: string | null;
 
   @ApiPropertyOptional({
     type: Object,

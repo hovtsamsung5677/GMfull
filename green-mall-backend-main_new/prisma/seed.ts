@@ -1,5 +1,6 @@
 import {
   MapObjectType,
+  PanelStatus,
   Prisma,
   PrismaClient,
   RouteNodeType,
@@ -40,6 +41,12 @@ type MapObjectSeed = {
   sortOrder: number;
   metadata?: Prisma.InputJsonValue;
   geometry?: Prisma.InputJsonValue;
+  /**
+   * Матчинг только по externalObjectId. Нужен сиду пожарных лестниц:
+   * обычный матчинг по {type, name} мог бы деактивировать объект оператора
+   * с таким же именем на этаже.
+   */
+  matchExternalIdOnly?: boolean;
 };
 
 type RouteNodeSeed = {
@@ -110,14 +117,20 @@ async function upsertStoreBySlug(data: StoreSeed) {
 }
 
 async function upsertMapObjectByExternalId(data: MapObjectSeed) {
+  const or: Prisma.MapObjectWhereInput[] = [
+    { externalObjectId: data.externalObjectId },
+  ];
+  if (!data.matchExternalIdOnly) {
+    if (data.storeId) {
+      or.push({ storeId: data.storeId });
+    }
+    or.push({ type: data.type, name: data.name });
+  }
+
   const objects = await prisma.mapObject.findMany({
     where: {
       floorId: data.floorId,
-      OR: [
-        { externalObjectId: data.externalObjectId },
-        ...(data.storeId ? [{ storeId: data.storeId }] : []),
-        { type: data.type, name: data.name },
-      ],
+      OR: or,
     },
     orderBy: { createdAt: 'asc' },
   });
@@ -261,6 +274,255 @@ async function upsertRouteEdge(params: {
 
   return prisma.routeEdge.create({
     data: edgeData,
+  });
+}
+
+/**
+ * Пожарные (эвакуационные) лестницы на каждом этаже.
+ *
+ * На этаж ставятся две лестницы — у западного и восточного торцов этажа.
+ * Лестница связывается с ближайшим узлом КАЖДОЙ связной компоненты графа
+ * маршрутов, поэтому «магазин → ближайшая лестница» находится обычной
+ * Дейкстрой из любой точки этажа. Лестница помечается metadata.isEvacuation —
+ * по этому флагу её находит публичный API и панель рисует маркер.
+ */
+/**
+ * Узлы типа PANEL — физические стойки навигации. Для каждого активного узла
+ * создаётся запись Panel, привязанная к этому узлу как стартовая точка.
+ * Без неё `GET /public/panels/by-node/:nodeId` отдаёт 404 и панель не может
+ * атрибутировать свои события аналитики, поэтому статистика остаётся нулевой.
+ */
+async function seedNavigationPanels() {
+  const panelNodes = await prisma.routeNode.findMany({
+    where: { type: RouteNodeType.PANEL, isActive: true },
+    orderBy: [{ floorId: 'asc' }, { createdAt: 'asc' }],
+    select: {
+      id: true,
+      code: true,
+      name: true,
+      floorId: true,
+      x: true,
+      y: true,
+      mapObjectId: true,
+    },
+  });
+
+  for (const [index, node] of panelNodes.entries()) {
+    const baseCode = node.code ?? `PANEL_NODE_${index + 1}`;
+    const panel = await prisma.panel.upsert({
+      where: { routeNodeId: node.id },
+      update: {
+        name: node.name ?? baseCode,
+        floorId: node.floorId,
+        location: { x: node.x, y: node.y },
+        isActive: true,
+      },
+      create: {
+        code: baseCode,
+        name: node.name ?? baseCode,
+        status: PanelStatus.ONLINE,
+        floorId: node.floorId,
+        routeNodeId: node.id,
+        location: { x: node.x, y: node.y },
+        lastSeenAt: new Date(),
+        isActive: true,
+      },
+    });
+
+    console.log(
+      `[seed] панель ${panel.code} привязана к узлу ${node.code ?? node.id}`,
+    );
+  }
+
+  if (panelNodes.length === 0) {
+    console.log('[seed] узлов типа PANEL нет, панели не созданы');
+  }
+}
+
+async function seedEvacuationStairs(infrastructureCategoryId: string) {
+  const floors = await prisma.floor.findMany({
+    orderBy: [{ sortOrder: 'asc' }, { number: 'asc' }],
+  });
+
+  for (const floor of floors) {
+    const [graphNodes, graphEdges] = await Promise.all([
+      prisma.routeNode.findMany({
+        where: { floorId: floor.id, isActive: true },
+        select: { id: true, x: true, y: true },
+      }),
+      prisma.routeEdge.findMany({
+        where: { floorId: floor.id, isActive: true },
+        select: { fromNodeId: true, toNodeId: true, isBidirectional: true },
+      }),
+    ]);
+
+    if (graphNodes.length === 0) {
+      console.log(
+        `[seed] floor #${floor.number}: нет узлов графа, пожарные лестницы не размещены`,
+      );
+      continue;
+    }
+
+    // Связные компоненты графа этажа: лестница должна быть достижима из
+    // любой точки этажа, даже если граф состоит из нескольких островов.
+    const components = splitIntoComponents(graphNodes, graphEdges);
+
+    const width = floor.width ?? 900;
+    const height = floor.height ?? 600;
+
+    const spots = [
+      {
+        side: 'WEST',
+        label: 'западная',
+        x: Math.round(width * 0.06),
+        y: Math.round(height * 0.22),
+      },
+      {
+        side: 'EAST',
+        label: 'восточная',
+        x: Math.round(width * 0.94),
+        y: Math.round(height * 0.22),
+      },
+    ];
+
+    for (const spot of spots) {
+      const mapObject = await upsertMapObjectByExternalId({
+        externalObjectId: `floor-${floor.number}-fire-stairs-${spot.side.toLowerCase()}`,
+        floorId: floor.id,
+        type: MapObjectType.STAIRS,
+        name: `Пожарная лестница (${spot.label})`,
+        categoryId: infrastructureCategoryId,
+        x: spot.x,
+        y: spot.y,
+        z: 0,
+        width: 60,
+        height: 40,
+        sortOrder: 200,
+        metadata: { sceneRole: 'evacuation-stairs' },
+        matchExternalIdOnly: true,
+      });
+
+      const node = await upsertRouteNodeByCode({
+        floorId: floor.id,
+        type: RouteNodeType.STAIRS,
+        name: 'Пожарная лестница',
+        code: `FIRE_STAIRS_${floor.number}_${spot.side}`,
+        x: spot.x,
+        y: spot.y,
+        z: 0,
+        mapObjectId: mapObject.id,
+        sortOrder: 200,
+        metadata: { sceneRole: 'evacuation-stairs', isEvacuation: true },
+      });
+
+      // Рёбра прошлых прогонов сида могли указывать на другие узлы — гасим,
+      // чтобы набор связей лестницы соответствовал текущему графу.
+      await deactivateEvacuationStairEdges(node.id);
+
+      for (const component of components) {
+        // Саму лестницу из кандидатов исключаем: при повторном сиде её узел
+        // уже есть в графе, и «ближайший узел» оказался бы ей же.
+        const reachable = component.filter((candidate) => candidate.id !== node.id);
+        if (reachable.length === 0) continue;
+
+        const nearest = reachable.reduce((best, candidate) => {
+          const bestDistance = Math.hypot(best.x - spot.x, best.y - spot.y);
+          const candidateDistance = Math.hypot(
+            candidate.x - spot.x,
+            candidate.y - spot.y,
+          );
+          return candidateDistance < bestDistance ? candidate : best;
+        });
+
+        await upsertRouteEdge({
+          floorId: floor.id,
+          fromNodeId: node.id,
+          toNodeId: nearest.id,
+          distance: Math.max(
+            1,
+            Math.round(Math.hypot(nearest.x - spot.x, nearest.y - spot.y)),
+          ),
+          label: `${node.code}-to-graph`,
+        });
+      }
+    }
+
+    console.log(
+      `[seed] floor #${floor.number}: пожарные лестницы размещены (компонент графа: ${components.length})`,
+    );
+  }
+}
+
+function splitIntoComponents(
+  nodes: { id: string; x: number; y: number }[],
+  edges: { fromNodeId: string; toNodeId: string; isBidirectional: boolean }[],
+): { id: string; x: number; y: number }[][] {
+  const byId = new Map(nodes.map((node) => [node.id, node]));
+  const adjacency = new Map<string, Set<string>>();
+  for (const node of nodes) {
+    adjacency.set(node.id, new Set());
+  }
+  for (const edge of edges) {
+    if (!byId.has(edge.fromNodeId) || !byId.has(edge.toNodeId)) continue;
+    adjacency.get(edge.fromNodeId)!.add(edge.toNodeId);
+    if (edge.isBidirectional) {
+      adjacency.get(edge.toNodeId)!.add(edge.fromNodeId);
+    }
+  }
+
+  const components: { id: string; x: number; y: number }[][] = [];
+  const visited = new Set<string>();
+
+  for (const node of nodes) {
+    if (visited.has(node.id)) continue;
+    const component: { id: string; x: number; y: number }[] = [];
+    const queue = [node.id];
+    visited.add(node.id);
+    while (queue.length > 0) {
+      const currentId = queue.shift()!;
+      const currentNode = byId.get(currentId);
+      if (currentNode) component.push(currentNode);
+      for (const nextId of adjacency.get(currentId) ?? []) {
+        if (visited.has(nextId)) continue;
+        visited.add(nextId);
+        queue.push(nextId);
+      }
+    }
+    components.push(component);
+  }
+
+  return components;
+}
+
+/**
+ * Гасит рёбра «лестница → граф», созданные предыдущими прогонами сида.
+ * Без этого при смене геометрии этажа или состава графа старые рёбра
+ * остаются активными с устаревшими distance и новые добавляются рядом.
+ */
+async function deactivateEvacuationStairEdges(nodeId: string) {
+  const activeEdges = await prisma.routeEdge.findMany({
+    where: { fromNodeId: nodeId, isActive: true },
+    select: { id: true, metadata: true },
+  });
+
+  const staleIds = activeEdges
+    .filter((edge) => {
+      const { metadata } = edge;
+      if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) {
+        return false;
+      }
+      const label = (metadata as { label?: unknown }).label;
+      return (
+        typeof label === 'string' && /^FIRE_STAIRS_.+-to-graph$/.test(label)
+      );
+    })
+    .map((edge) => edge.id);
+
+  if (staleIds.length === 0) return;
+
+  await prisma.routeEdge.updateMany({
+    where: { id: { in: staleIds } },
+    data: { isActive: false },
   });
 }
 
@@ -773,6 +1035,9 @@ async function main() {
       label: 'lift-to-sportmaster',
     }),
   ]);
+
+  await seedEvacuationStairs(infrastructureCategory.id);
+  await seedNavigationPanels();
 
   const superAdminRole = await prisma.role.findUniqueOrThrow({
     where: { name: 'SUPER_ADMIN' },

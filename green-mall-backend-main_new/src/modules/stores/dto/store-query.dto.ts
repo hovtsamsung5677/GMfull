@@ -35,11 +35,11 @@ export class StoreQueryDto {
   @Min(1)
   page?: number;
 
-  @ApiPropertyOptional({ example: 20, minimum: 1, maximum: 100, default: 20 })
+  @ApiPropertyOptional({ example: 100, minimum: 1, maximum: 1000, default: 100 })
   @Transform(toOptionalNumber)
   @IsOptional()
   @IsInt()
   @Min(1)
-  @Max(100)
+  @Max(1000)
   limit?: number;
 }

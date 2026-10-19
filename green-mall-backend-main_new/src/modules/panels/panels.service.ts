@@ -11,6 +11,7 @@ import {
   PanelAdminListResponseDto,
   PanelAdminResponseDto,
 } from "./dto/panel-admin-response.dto";
+import { PanelPublicResponseDto } from "./dto/panel-public-response.dto";
 import { PanelQueryDto } from "./dto/panel-query.dto";
 import { CreatePanelDto } from "./dto/create-panel.dto";
 import { UpdatePanelDto } from "./dto/update-panel.dto";
@@ -70,12 +71,31 @@ export class PanelsService {
       where: { id },
       include: panelAdminInclude,
     });
-
     if (!panel) {
       throw new NotFoundException("Panel not found");
     }
 
     return toPanelAdminResponse(panel);
+  }
+
+  async findPublicByRouteNodeId(
+    routeNodeId: string,
+  ): Promise<PanelPublicResponseDto> {
+    const panel = await this.prisma.panel.findUnique({
+      where: { routeNodeId },
+      select: {
+        id: true,
+        code: true,
+        name: true,
+        floorId: true,
+      },
+    });
+
+    if (!panel) {
+      throw new NotFoundException("Panel not found for route node");
+    }
+
+    return panel;
   }
 
   async create(dto: CreatePanelDto): Promise<PanelAdminResponseDto> {

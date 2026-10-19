@@ -280,12 +280,19 @@ export class RouteEdgesService {
   }
 
   private getPagination(query: RouteEdgeQueryDto) {
-    const page = query.page ?? 1;
-    const limit = query.limit ?? 50;
+    const page = query.page;
+    const limit = query.limit;
+
+    if (page == null && limit == null) {
+      return undefined;
+    }
+
+    const safePage = Math.max(1, page ?? 1);
+    const safeLimit = Math.max(1, limit ?? 50);
 
     return {
-      skip: (page - 1) * limit,
-      take: limit,
+      skip: (safePage - 1) * safeLimit,
+      take: safeLimit,
     };
   }
 

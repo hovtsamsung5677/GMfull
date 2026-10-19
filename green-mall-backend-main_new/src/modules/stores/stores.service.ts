@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
-import { Prisma, RouteNodeType } from "@prisma/client";
+import { Prisma, MapObjectType, RouteNodeType } from "@prisma/client";
 import {
   isPrimaryStoreRelation,
   updatePrimaryStoreRelationMetadata,
@@ -139,7 +139,7 @@ export class StoresService {
     query: StoreSearchQueryDto,
   ): Promise<StoreSearchResponseDto[]> {
     const page = query.page ?? 1;
-    const limit = query.limit ?? 20;
+    const limit = query.limit ?? 100;
     const search = query.query?.trim();
 
     const where: Prisma.StoreWhereInput = {
@@ -229,10 +229,49 @@ export class StoresService {
           },
         });
 
+        const hasRelationInput =
+          dto.mapObjectIds !== undefined || dto.routeNodeIds !== undefined;
+
+        let autoMapObjectId: string | null = null;
+        let autoRouteNodeId: string | null = null;
+
+        if (created.floorId && !hasRelationInput) {
+          const mapObject = await tx.mapObject.create({
+            data: {
+              type: MapObjectType.STORE,
+              name: created.name,
+              floorId: created.floorId,
+              storeId: created.id,
+              x: 0,
+              y: 0,
+              isActive: true,
+            },
+          });
+          autoMapObjectId = mapObject.id;
+
+          const routeNode = await tx.routeNode.create({
+            data: {
+              floorId: created.floorId,
+              type: RouteNodeType.STORE_ANCHOR,
+              name: created.name,
+              mapObjectId: mapObject.id,
+              x: 0,
+              y: 0,
+              isActive: true,
+            },
+          });
+          autoRouteNodeId = routeNode.id;
+        }
+
         await this.syncStoreMapRelations(
           tx,
           created.id,
-          dto,
+          {
+            mapObjectIds: dto.mapObjectIds ?? (autoMapObjectId ? [autoMapObjectId] : undefined),
+            routeNodeIds: dto.routeNodeIds ?? (autoRouteNodeId ? [autoRouteNodeId] : undefined),
+            primaryMapObjectId: dto.primaryMapObjectId ?? autoMapObjectId,
+            primaryRouteNodeId: dto.primaryRouteNodeId ?? autoRouteNodeId,
+          },
           dto.floorId ?? null,
         );
 
@@ -633,13 +672,9 @@ export class StoresService {
         );
       }
 
-      if (floorId !== null && object.floorId !== floorId) {
-        throw new BadRequestException(
-          "Store and map objects must belong to the same floor",
-        );
-      }
-
-      if (object.routeNodes.some((node) => node.floorId !== object.floorId)) {
+      if (
+        object.routeNodes.some((node) => node.floorId !== object.floorId)
+      ) {
         throw new BadRequestException(
           "Map object and linked route nodes must belong to the same floor",
         );
@@ -658,12 +693,6 @@ export class StoresService {
       if (node.floorId !== mapObject.floorId) {
         throw new BadRequestException(
           "Route node and map object must belong to the same floor",
-        );
-      }
-
-      if (floorId !== null && node.floorId !== floorId) {
-        throw new BadRequestException(
-          "Store and route nodes must belong to the same floor",
         );
       }
     }
@@ -913,7 +942,7 @@ export class StoresService {
 
   private getPagination(query: StoreQueryDto) {
     const page = query.page ?? 1;
-    const limit = query.limit ?? 20;
+    const limit = query.limit ?? 100;
 
     return {
       skip: (page - 1) * limit,

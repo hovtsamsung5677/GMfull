@@ -6,11 +6,13 @@
 import { Prisma, RouteNodeType } from "@prisma/client";
 import { isPrimaryStoreRelation } from "../../common/utils/store-primary.util";
 import { PrismaService } from "../../database/prisma.service";
+import { RouteNodesService } from "../route-nodes/route-nodes.service";
 import { RouteEdgeResponseDto } from "../route-edges/dto/route-edge-response.dto";
 import { RouteNodeResponseDto } from "../route-nodes/dto/route-node-response.dto";
 import { BuildRouteToStoreQueryDto } from "./dto/build-route-to-store-query.dto";
 import {
   BuildRouteToStoreResponseDto,
+  RouteToStoreEvacuationDto,
   RouteToStoreTargetStoreDto,
 } from "./dto/build-route-to-store-response.dto";
 import { BuildRouteQueryDto } from "./dto/build-route-query.dto";
@@ -122,7 +124,10 @@ const routeRenderingMeta = {
 
 @Injectable()
 export class RoutesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly routeNodesService: RouteNodesService,
+  ) {}
 
   async build(query: BuildRouteQueryDto): Promise<BuildRouteResponseDto> {
     const [fromNode, toNode] = await this.prisma.$transaction([
@@ -167,118 +172,28 @@ export class RoutesService {
       }
     }
 
-    const graphWhere: Prisma.RouteNodeWhereInput = {
-      isActive: true,
-      ...(query.floorId ? { floorId: query.floorId } : {}),
-    };
+    const graph = await this.loadRouteGraph(query.floorId);
 
-    const edgeWhere: Prisma.RouteEdgeWhereInput = query.floorId
-      ? {
-          isActive: true,
-          floorId: query.floorId,
-          fromNode: { isActive: true, floorId: query.floorId },
-          toNode: { isActive: true, floorId: query.floorId },
-        }
-      : {
-          isActive: true,
-          fromNode: { isActive: true },
-          toNode: { isActive: true },
-        };
-
-    const [nodes, edges] = await this.prisma.$transaction([
-      this.prisma.routeNode.findMany({
-        where: graphWhere,
-        include: routeNodeInclude,
-      }),
-      this.prisma.routeEdge.findMany({
-        where: edgeWhere,
-        include: routeEdgeInclude,
-      }),
-    ]);
-
-    const nodeById = new Map(nodes.map((node) => [node.id, node]));
-
-    console.log('[routes] build graph loaded', {
-      fromNodeId: fromNode.id,
-      toNodeId: toNode.id,
-      floorId: query.floorId ?? 'all',
-      nodesCount: nodes.length,
-      edgesCount: edges.length,
-      fromNodeInGraph: nodeById.has(fromNode.id),
-      toNodeInGraph: nodeById.has(toNode.id),
-    });
-
-    if (!nodeById.has(fromNode.id) || !nodeById.has(toNode.id)) {
+    if (!graph.nodeById.has(fromNode.id) || !graph.nodeById.has(toNode.id)) {
       throw new NotFoundException("Route not found for selected floor");
     }
 
-    const verticalEdges = this.buildVerticalEdges(nodes);
-    const allEdges = edges.concat(verticalEdges);
-
-    // Вертикальные рёбра синтезируются в памяти и отсутствуют в БД,
-    // поэтому путь восстанавливаем по allEdges, а не по edgeById.
-    const allEdgeById = new Map(allEdges.map((edge) => [edge.id, edge]));
-
-    console.log('[routes] build vertical edges', {
-      count: verticalEdges.length,
-      items: verticalEdges.map((e) => ({ id: e.id, from: e.fromNodeId, to: e.toNodeId, distance: e.distance })),
-    });
-
     const path = this.findShortestPath({
-      nodes,
-      edges: allEdges,
+      nodes: graph.nodes,
+      edges: graph.allEdges,
       fromNodeId: fromNode.id,
       toNodeId: toNode.id,
-    });
-
-    console.log('[routes] build shortestPath result', {
-      fromNodeId: fromNode.id,
-      toNodeId: toNode.id,
-      pathFound: Boolean(path),
-      pathNodeIds: path?.nodeIds,
-      pathEdgeIds: path?.edgeIds,
-      totalDistance: path?.totalDistance,
     });
 
     if (!path) {
-      console.log('[routes] build graph debug', {
-        nodes: nodes.map((n) => ({ id: n.id, floorId: n.floorId, type: n.type, code: n.code })),
-        edges: edges.map((e) => ({ id: e.id, from: e.fromNodeId, to: e.toNodeId, floorId: e.floorId })),
-        verticalEdges: verticalEdges.map((e) => ({ id: e.id, from: e.fromNodeId, to: e.toNodeId, floorId: e.floorId })),
-      });
       throw new NotFoundException(
         `Route not found between ${fromNode.id} (floor ${fromNode.floorId}) and ${toNode.id} (floor ${toNode.floorId}). ` +
-          `Graph: ${nodes.length} nodes, ${edges.length} edges, ${verticalEdges.length} vertical edges. ` +
-          `From node in graph: ${nodeById.has(fromNode.id)}, To node in graph: ${nodeById.has(toNode.id)}`,
+          `Graph: ${graph.nodes.length} nodes, ${graph.edges.length} edges, ${graph.verticalEdges.length} vertical edges. ` +
+          `From node in graph: ${graph.nodeById.has(fromNode.id)}, To node in graph: ${graph.nodeById.has(toNode.id)}`,
       );
     }
 
-    const routeNodes = path.nodeIds
-      .map((nodeId) => nodeById.get(nodeId))
-      .filter((n): n is RouteNodeWithFloor => Boolean(n));
-    const routeEdges = path.edgeIds
-      .map((edgeId) => allEdgeById.get(edgeId))
-      .filter((e): e is RouteEdgeWithRelations => Boolean(e));
-    const segments = this.splitIntoFloorSegments(routeNodes);
-    const floorChanges = this.buildFloorChanges(routeNodes);
-
-    return {
-      fromNode: this.toRouteNodeResponse(fromNode),
-      toNode: this.toRouteNodeResponse(toNode),
-      nodes: routeNodes.map((node) => this.toRouteNodeResponse(node)),
-      edges: routeEdges.map((edge) => this.toRouteEdgeResponse(edge)),
-      totalDistance: path.totalDistance,
-      totalWeight: path.totalWeight,
-      routePath: this.toRoutePath(routeNodes),
-      routeSegments: this.toRouteSegments(routeNodes, routeEdges),
-      segments,
-      floorChanges,
-      instructions: this.toRouteInstructions(routeNodes),
-      meta: this.createRouteMeta({
-        schemaVersion: "green-mall-route-v2",
-        purpose: "Frontend-ready route between navigation nodes",
-      }),
-    };
+    return this.assembleRouteResponse(fromNode, toNode, graph, path);
   }
 
   async buildToStore(
@@ -336,10 +251,13 @@ export class RoutesService {
       toNodeId: targetNode.id,
     });
 
+    const evacuation = await this.buildEvacuationRoute(targetNode);
+
     console.log('[routes] buildToStore success', {
       fromNodeId: query.fromNodeId,
       toNodeId: targetNode.id,
       totalDistance: route.totalDistance,
+      evacuationStairId: evacuation?.stair.id ?? null,
     });
 
     const response = {
@@ -355,6 +273,7 @@ export class RoutesService {
       segments: route.segments,
       floorChanges: route.floorChanges,
       instructions: route.instructions,
+      evacuation,
       meta: {
         schemaVersion: "green-mall-route-to-store-v3",
         generatedAt: new Date().toISOString(),
@@ -364,6 +283,163 @@ export class RoutesService {
     };
 
     return response;
+  }
+
+  /**
+   * Маршрут от магазина до ближайшей пожарной лестницы того же этажа.
+   *
+   * Граф этажа загружается один раз, Дейкстра запускается один раз от узла
+   * магазина: расстояния до всех лестниц известны сразу, из них берётся
+   * ближайшая. null — если на этаже нет размеченных лестниц или ни одна из
+   * них не достижима по графу.
+   */
+  private async buildEvacuationRoute(
+    targetNode: RouteNodeWithFloor,
+  ): Promise<RouteToStoreEvacuationDto | null> {
+    const stairs = await this.routeNodesService.findEvacuationStairsByFloor(
+      targetNode.floorId,
+    );
+
+    if (stairs.length === 0) {
+      return null;
+    }
+
+    const graph = await this.loadRouteGraph(targetNode.floorId);
+    if (!graph.nodeById.has(targetNode.id)) {
+      return null;
+    }
+
+    const { distances, previous } = this.runDijkstra({
+      nodes: graph.nodes,
+      edges: graph.allEdges,
+      fromNodeId: targetNode.id,
+    });
+
+    let nearestStairId: string | null = null;
+    let nearestDistance = Number.POSITIVE_INFINITY;
+
+    for (const stair of stairs) {
+      if (!graph.nodeById.has(stair.id)) continue;
+      const distance = distances.get(stair.id) ?? Number.POSITIVE_INFINITY;
+      if (distance < nearestDistance) {
+        nearestDistance = distance;
+        nearestStairId = stair.id;
+      }
+    }
+
+    if (!nearestStairId) {
+      return null;
+    }
+
+    const path = this.restorePath(targetNode.id, nearestStairId, previous);
+    if (!path) {
+      return null;
+    }
+
+    const nearestStairNode = graph.nodeById.get(nearestStairId)!;
+    const route = this.assembleRouteResponse(
+      targetNode,
+      nearestStairNode,
+      graph,
+      path,
+    );
+
+    return {
+      stair: stairs.find((stair) => stair.id === nearestStairId)!,
+      route: {
+        totalDistance: route.totalDistance,
+        segments: route.segments,
+      },
+    };
+  }
+
+  /** Активный граф маршрутов: узлы, рёбра и синтезированные межэтажные рёбра. */
+  private async loadRouteGraph(floorId?: string): Promise<{
+    nodes: RouteNodeWithFloor[];
+    edges: RouteEdgeWithRelations[];
+    allEdges: RouteEdgeWithRelations[];
+    verticalEdges: RouteEdgeWithRelations[];
+    nodeById: Map<string, RouteNodeWithFloor>;
+    allEdgeById: Map<string, RouteEdgeWithRelations>;
+  }> {
+    const graphWhere: Prisma.RouteNodeWhereInput = {
+      isActive: true,
+      ...(floorId ? { floorId } : {}),
+    };
+
+    const edgeWhere: Prisma.RouteEdgeWhereInput = floorId
+      ? {
+          isActive: true,
+          floorId,
+          fromNode: { isActive: true, floorId },
+          toNode: { isActive: true, floorId },
+        }
+      : {
+          isActive: true,
+          fromNode: { isActive: true },
+          toNode: { isActive: true },
+        };
+
+    const [nodes, edges] = await this.prisma.$transaction([
+      this.prisma.routeNode.findMany({
+        where: graphWhere,
+        include: routeNodeInclude,
+      }),
+      this.prisma.routeEdge.findMany({
+        where: edgeWhere,
+        include: routeEdgeInclude,
+      }),
+    ]);
+
+    // Вертикальные рёбра синтезируются в памяти и отсутствуют в БД,
+    // поэтому путь восстанавливаем по allEdges, а не по edgeById.
+    const verticalEdges = this.buildVerticalEdges(nodes);
+    const allEdges = edges.concat(verticalEdges);
+
+    return {
+      nodes,
+      edges,
+      allEdges,
+      verticalEdges,
+      nodeById: new Map(nodes.map((node) => [node.id, node])),
+      allEdgeById: new Map(allEdges.map((edge) => [edge.id, edge])),
+    };
+  }
+
+  /** Сборка ответа маршрута по найденному пути в уже загруженном графе. */
+  private assembleRouteResponse(
+    fromNode: RouteNodeWithFloor,
+    toNode: RouteNodeWithFloor,
+    graph: {
+      nodeById: Map<string, RouteNodeWithFloor>;
+      allEdgeById: Map<string, RouteEdgeWithRelations>;
+    },
+    path: ShortestPath,
+  ): BuildRouteResponseDto {
+    const routeNodes = path.nodeIds
+      .map((nodeId) => graph.nodeById.get(nodeId))
+      .filter((n): n is RouteNodeWithFloor => Boolean(n));
+    const routeEdges = path.edgeIds
+      .map((edgeId) => graph.allEdgeById.get(edgeId))
+      .filter((e): e is RouteEdgeWithRelations => Boolean(e));
+
+    return {
+      fromNode: this.toRouteNodeResponse(fromNode),
+      toNode: this.toRouteNodeResponse(toNode),
+      nodes: routeNodes.map((node) => this.toRouteNodeResponse(node)),
+      edges: routeEdges.map((edge) => this.toRouteEdgeResponse(edge)),
+      totalDistance: path.totalDistance,
+      totalWeight: path.totalWeight,
+      routePath: this.toRoutePath(routeNodes),
+      routeSegments: this.toRouteSegments(routeNodes, routeEdges),
+      segments: this.splitIntoFloorSegments(routeNodes),
+      floorChanges: this.buildFloorChanges(routeNodes),
+      instructions: this.toRouteInstructions(routeNodes),
+      meta: this.createRouteMeta({
+        schemaVersion: "green-mall-route-v2",
+        purpose: "Frontend-ready route between navigation nodes",
+      }),
+    };
   }
 
   private buildStoreIdentifierWhere(
@@ -604,6 +680,28 @@ export class RoutesService {
       };
     }
 
+    const { distances, previous } = this.runDijkstra(params);
+
+    if (
+      (distances.get(params.toNodeId) ?? Number.POSITIVE_INFINITY) ===
+      Number.POSITIVE_INFINITY
+    ) {
+      return null;
+    }
+
+    return this.restorePath(params.fromNodeId, params.toNodeId, previous);
+  }
+
+  /**
+   * Дейкстра от одного источника. Возвращает итоговые расстояния и карту
+   * предыдущих шагов — по ним можно восстановить путь в ЛЮБУЮ достижимую
+   * вершину без повторного обхода графа (нужно для выбора ближайшей лестницы).
+   */
+  private runDijkstra(params: {
+    nodes: RouteNodeWithFloor[];
+    edges: RouteEdgeWithRelations[];
+    fromNodeId: string;
+  }): { distances: Map<string, number>; previous: Map<string, PreviousStep> } {
     const activeNodeIds = new Set(params.nodes.map((node) => node.id));
     const adjacency = new Map<string, GraphConnection[]>();
 
@@ -656,10 +754,6 @@ export class RoutesService {
         break;
       }
 
-      if (currentNodeId === params.toNodeId) {
-        break;
-      }
-
       visited.add(currentNodeId);
 
       for (const connection of adjacency.get(currentNodeId) ?? []) {
@@ -686,14 +780,7 @@ export class RoutesService {
       }
     }
 
-    if (
-      (distances.get(params.toNodeId) ?? Number.POSITIVE_INFINITY) ===
-      Number.POSITIVE_INFINITY
-    ) {
-      return null;
-    }
-
-    return this.restorePath(params.fromNodeId, params.toNodeId, previous);
+    return { distances, previous };
   }
 
   private getClosestUnvisitedNode(

@@ -11,6 +11,7 @@ export const publicAnalyticsEventIdentitySelect = {
   storeId: true,
   categoryId: true,
   promotionId: true,
+  qrToken: true,
   query: true,
   payload: true,
   createdAt: true,

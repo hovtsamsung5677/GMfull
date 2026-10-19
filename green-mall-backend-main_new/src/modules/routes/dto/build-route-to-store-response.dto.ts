@@ -59,6 +59,34 @@ export class RouteToStoreTargetStoreDto {
   searchKeywords!: string | null;
 }
 
+/**
+ * Эвакуационный маршрут от магазина до ближайшей пожарной лестницы этажа.
+ * Панель рисует его другим цветом через несколько секунд после прибытия,
+ * Поэтому в контракте только то, что нужно для отрисовки: длина и точки.
+ */
+export class RouteToStoreEvacuationRouteDto {
+  @ApiProperty()
+  totalDistance!: number;
+
+  @ApiProperty({ type: [RouteFloorSegmentDto] })
+  segments!: RouteFloorSegmentDto[];
+}
+
+export class RouteToStoreEvacuationDto {
+  @ApiProperty({
+    type: RouteNodeResponseDto,
+    description: 'Ближайшая пожарная лестница на этаже магазина.',
+  })
+  stair!: RouteNodeResponseDto;
+
+  @ApiProperty({
+    type: RouteToStoreEvacuationRouteDto,
+    nullable: true,
+    description: 'null — если лестница не связана с графом маршрутов.',
+  })
+  route!: RouteToStoreEvacuationRouteDto | null;
+}
+
 export class RouteToStoreMetaDto {
   @ApiProperty({ example: 'green-mall-route-to-store-v2' })
   schemaVersion!: string;
@@ -111,6 +139,14 @@ export class BuildRouteToStoreResponseDto {
 
   @ApiProperty({ type: [RouteInstructionDto] })
   instructions!: RouteInstructionDto[];
+
+  @ApiPropertyOptional({
+    type: RouteToStoreEvacuationDto,
+    nullable: true,
+    description:
+      'Маршрут от магазина до ближайшей пожарной лестницы. null — на этаже нет размеченных лестниц.',
+  })
+  evacuation?: RouteToStoreEvacuationDto | null;
 
   @ApiProperty({ type: RouteToStoreMetaDto })
   meta!: RouteToStoreMetaDto;
