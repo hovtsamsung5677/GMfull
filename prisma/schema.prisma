@@ -43,6 +43,17 @@ enum RouteNodeType {
   OTHER
 }
 
+enum RouteEdgeType {
+  WALKWAY
+  STAIRS
+  ELEVATOR
+  ESCALATOR
+  TOILET
+  ENTRANCE
+  EXIT
+  OTHER
+}
+
 enum FileAssetKind {
   IMAGE
   VIDEO
@@ -114,6 +125,16 @@ model User {
   refreshTokens     RefreshToken[]
   createdPromotions Promotion[] @relation("PromotionCreatedBy")
   updatedPromotions Promotion[] @relation("PromotionUpdatedBy")
+  createdAdCampaigns           AdCampaign[]           @relation("AdCampaignCreatedBy")
+  updatedAdCampaigns           AdCampaign[]           @relation("AdCampaignUpdatedBy")
+  createdAdCreatives           AdCreative[]           @relation("AdCreativeCreatedBy")
+  updatedAdCreatives           AdCreative[]           @relation("AdCreativeUpdatedBy")
+  createdAdSlots               AdSlot[]               @relation("AdSlotCreatedBy")
+  updatedAdSlots               AdSlot[]               @relation("AdSlotUpdatedBy")
+  createdAdCampaignAssignments AdCampaignAssignment[] @relation("AdCampaignAssignmentCreatedBy")
+  updatedAdCampaignAssignments AdCampaignAssignment[] @relation("AdCampaignAssignmentUpdatedBy")
+  createdHeaderBanners         HeaderBanner[]         @relation("HeaderBannerCreatedBy")
+  updatedHeaderBanners         HeaderBanner[]         @relation("HeaderBannerUpdatedBy")
   createdAt         DateTime    @default(now())
   updatedAt         DateTime    @updatedAt
 
@@ -186,9 +207,11 @@ model Store {
   isActive             Boolean          @default(true)
   isVisible            Boolean          @default(true)
   mapObjects           MapObject[]
+  floorIcons           FloorIcon[]
   promotions           Promotion[]
   targetedCampaigns    AdCampaign[]     @relation("AdCampaignTargetStore")
   analyticsEvents      AnalyticsEvent[]
+  headerBanners        HeaderBanner[]   @relation("HeaderBannerTargetStore")
   createdAt            DateTime         @default(now())
   updatedAt            DateTime         @updatedAt
 
@@ -222,6 +245,7 @@ model Floor {
   routeNodes   RouteNode[]
   routeEdges   RouteEdge[]
   floorTextures FloorTexture[]
+  floorIcons   FloorIcon[]
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
 
@@ -282,6 +306,7 @@ model Panel {
   appVersion      String?
   lastSeenAt      DateTime?
   isActive        Boolean          @default(true)
+  adSlots         AdSlot[]
   analyticsEvents AnalyticsEvent[]
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
@@ -334,6 +359,7 @@ model RouteEdge {
   fromNode        RouteNode @relation("RouteEdgeFrom", fields: [fromNodeId], references: [id], onDelete: Cascade)
   toNodeId        String
   toNode          RouteNode @relation("RouteEdgeTo", fields: [toNodeId], references: [id], onDelete: Cascade)
+  type            RouteEdgeType @default(WALKWAY)
   distance        Int?
   weight          Int?
   isBidirectional Boolean   @default(true)
@@ -422,7 +448,13 @@ model AdCampaign {
   impressionLimit   Int?
   isActive          Boolean          @default(true)
   metadata          Json?
+  deletedAt         DateTime?
+  createdById       String?
+  createdBy         User?            @relation("AdCampaignCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedById       String?
+  updatedBy         User?            @relation("AdCampaignUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
   creatives         AdCreative[]
+  assignments       AdCampaignAssignment[]
   analyticsEvents   AnalyticsEvent[]
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
@@ -434,6 +466,9 @@ model AdCampaign {
   @@index([targetPromotionId])
   @@index([isActive, startsAt, endsAt])
   @@index([priority])
+  @@index([deletedAt])
+  @@index([createdById])
+  @@index([updatedById])
 }
 
 model AdCreative {
@@ -449,6 +484,11 @@ model AdCreative {
   isActive        Boolean          @default(true)
   sortOrder       Int              @default(0)
   metadata        Json?
+  deletedAt       DateTime?
+  createdById     String?
+  createdBy       User?            @relation("AdCreativeCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedById     String?
+  updatedBy       User?            @relation("AdCreativeUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
   analyticsEvents AnalyticsEvent[]
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
@@ -456,36 +496,43 @@ model AdCreative {
   @@index([campaignId])
   @@index([assetId])
   @@index([isActive, sortOrder])
+  @@index([deletedAt])
+  @@index([createdById])
+  @@index([updatedById])
 }
 
 model AnalyticsEvent {
-  id          String             @id @default(cuid())
-  type        AnalyticsEventType
-  source      AnalyticsSource
-  sessionId   String?
-  panelId     String?
-  panel       Panel?             @relation(fields: [panelId], references: [id], onDelete: SetNull)
-  storeId     String?
-  store       Store?             @relation(fields: [storeId], references: [id], onDelete: SetNull)
-  categoryId  String?
-  category    Category?          @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  promotionId String?
-  promotion   Promotion?         @relation(fields: [promotionId], references: [id], onDelete: SetNull)
-  campaignId  String?
-  campaign    AdCampaign?        @relation(fields: [campaignId], references: [id], onDelete: SetNull)
-  creativeId  String?
-  creative    AdCreative?        @relation(fields: [creativeId], references: [id], onDelete: SetNull)
-  query       String?
-  qrToken     String?
-  deviceData  Json?
-  payload     Json?
-  createdAt   DateTime           @default(now())
+id            String             @id @default(cuid())
+  clientEventId String?            @unique
+  type          AnalyticsEventType
+  source        AnalyticsSource
+  sessionId     String?
+  panelId       String?
+  panel         Panel?             @relation(fields: [panelId], references: [id], onDelete: SetNull)
+  adSlotId      String?
+  adSlot        AdSlot?            @relation(fields: [adSlotId], references: [id], onDelete: SetNull)
+  storeId       String?
+  store         Store?             @relation(fields: [storeId], references: [id], onDelete: SetNull)
+  categoryId    String?
+  category      Category?          @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  promotionId   String?
+  promotion     Promotion?         @relation(fields: [promotionId], references: [id], onDelete: SetNull)
+  campaignId    String?
+  campaign      AdCampaign?        @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  creativeId    String?
+  creative      AdCreative?        @relation(fields: [creativeId], references: [id], onDelete: SetNull)
+  query         String?
+  qrToken       String?
+  deviceData    Json?
+  payload       Json?
+  createdAt     DateTime           @default(now())
 
   @@index([createdAt])
   @@index([type, createdAt])
   @@index([source, createdAt])
   @@index([sessionId])
   @@index([panelId, createdAt])
+  @@index([adSlotId, createdAt])
   @@index([storeId, createdAt])
   @@index([categoryId, createdAt])
   @@index([promotionId, createdAt])
@@ -515,6 +562,8 @@ model FileAsset {
   floorTextures    FloorTexture[]
   promotionImages  Promotion[]   @relation("PromotionImageAsset")
   adCreativeAssets AdCreative[]  @relation("AdCreativeFileAsset")
+  headerBannerAssets HeaderBanner[] @relation("HeaderBannerAsset")
+  floorIcons       FloorIcon[]
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
 
@@ -591,4 +640,108 @@ model SharedRoute {
 
   @@index([token])
   @@index([expiresAt])
+}
+
+model FloorIcon {
+  id        String    @id @default(cuid())
+  name      String
+  floorId   String
+  floor     Floor     @relation(fields: [floorId], references: [id], onDelete: Cascade)
+  storeId   String?
+  store     Store?    @relation(fields: [storeId], references: [id], onDelete: SetNull)
+  assetId   String
+  asset     FileAsset @relation(fields: [assetId], references: [id], onDelete: Restrict)
+  x         Float
+  y         Float
+  z         Float     @default(0)
+  rotation  Float     @default(0)
+  scaleX    Float     @default(1)
+  scaleY    Float     @default(1)
+  sortOrder Int       @default(0)
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([floorId])
+  @@index([storeId])
+  @@index([assetId])
+}
+
+model AdSlot {
+  id              String                 @id @default(cuid())
+  code            String                 @unique
+  name            String
+  description     String?                @db.Text
+  placement       AdPlacement
+  panelId         String?
+  panel           Panel?                 @relation(fields: [panelId], references: [id], onDelete: SetNull)
+  sortOrder       Int                    @default(0)
+  isActive        Boolean                @default(true)
+  metadata        Json?
+  deletedAt       DateTime?
+  createdById     String?
+  createdBy       User?                  @relation("AdSlotCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedById     String?
+  updatedBy       User?                  @relation("AdSlotUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  assignments     AdCampaignAssignment[]
+  analyticsEvents AnalyticsEvent[]
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+
+  @@index([placement, isActive, sortOrder])
+  @@index([panelId, isActive])
+  @@index([deletedAt])
+  @@index([createdById])
+  @@index([updatedById])
+}
+
+model AdCampaignAssignment {
+  id          String     @id @default(cuid())
+  campaignId  String
+  campaign    AdCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  slotId      String
+  slot        AdSlot     @relation(fields: [slotId], references: [id], onDelete: Cascade)
+  isActive    Boolean    @default(true)
+  deletedAt   DateTime?
+  createdById String?
+  createdBy   User?      @relation("AdCampaignAssignmentCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedById String?
+  updatedBy   User?      @relation("AdCampaignAssignmentUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@unique([campaignId, slotId])
+  @@index([campaignId, isActive, deletedAt])
+  @@index([slotId, isActive, deletedAt])
+  @@index([deletedAt])
+  @@index([createdById])
+  @@index([updatedById])
+}
+
+model HeaderBanner {
+  id           String   @id @default(cuid())
+  title        String
+  subtitle     String?
+  linkUrl      String?
+  assetId      String?
+  asset        FileAsset? @relation("HeaderBannerAsset", fields: [assetId], references: [id], onDelete: SetNull)
+  targetStoreId String?
+  targetStore  Store?    @relation("HeaderBannerTargetStore", fields: [targetStoreId], references: [id], onDelete: SetNull)
+  isActive     Boolean  @default(true)
+  sortOrder    Int      @default(0)
+  placement    String   @default("HEADER")
+  deletedAt    DateTime?
+  createdById  String?
+  createdBy    User?    @relation("HeaderBannerCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedById  String?
+  updatedBy    User?    @relation("HeaderBannerUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([isActive, sortOrder])
+  @@index([placement])
+  @@index([deletedAt])
+  @@index([createdById])
+  @@index([updatedById])
+  @@index([targetStoreId])
 }

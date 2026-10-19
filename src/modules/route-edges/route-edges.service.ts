@@ -298,6 +298,7 @@ export class RouteEdgesService {
   private toResponse(edge: RouteEdgeWithRelations): RouteEdgeResponseDto {
     return {
       id: edge.id,
+      type: edge.type,
       floorId: edge.floorId,
       fromNodeId: edge.fromNodeId,
       toNodeId: edge.toNodeId,

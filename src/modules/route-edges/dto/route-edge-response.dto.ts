@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { RouteEdgeType } from "@prisma/client";
 import { RouteNodeResponseDto } from "../../route-nodes/dto/route-node-response.dto";
 
 class RouteEdgeFloorResponseDto {
@@ -15,6 +16,9 @@ class RouteEdgeFloorResponseDto {
 export class RouteEdgeResponseDto {
   @ApiProperty()
   id!: string;
+
+  @ApiProperty({ enum: RouteEdgeType })
+  type!: RouteEdgeType;
 
   @ApiProperty()
   floorId!: string;
