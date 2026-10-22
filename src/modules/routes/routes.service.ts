@@ -643,6 +643,7 @@ if (mode === "emergency") {
     nodes: RouteNodeWithFloor[],
   ): RouteEdgeWithRelations[] {
     const NORMAL_VERTICAL_TYPES = new Set(["ELEVATOR", "ESCALATOR"]);
+    const VERTICAL_BASE_COST = 500;
     const vertical: RouteEdgeWithRelations[] = [];
     const seenPairs = new Set<string>();
 
@@ -651,8 +652,8 @@ if (mode === "emergency") {
       const key = [a.id, b.id].sort().join("|");
       if (seenPairs.has(key)) return;
       seenPairs.add(key);
-      vertical.push(this.makeVerticalEdge(a, b));
-      vertical.push(this.makeVerticalEdge(b, a));
+      vertical.push(this.makeVerticalEdge(a, b, VERTICAL_BASE_COST));
+      vertical.push(this.makeVerticalEdge(b, a, VERTICAL_BASE_COST));
     };
 
     const byCode = new Map<string, RouteNodeWithFloor[]>();
@@ -663,14 +664,10 @@ if (mode === "emergency") {
       byCode.set(node.code, list);
     }
     for (const group of byCode.values()) {
-      const floorSet = new Set<string>();
-      for (const node of group) {
-        floorSet.add(node.floorId);
-      }
-      const isElevatorCode = group.every(
-        (n) => n.type === "ELEVATOR" || n.type === "ESCALATOR",
+      const isVerticalCode = group.every(
+        (n) => NORMAL_VERTICAL_TYPES.has(n.type),
       );
-      if (!isElevatorCode) continue;
+      if (!isVerticalCode) continue;
       for (let i = 0; i < group.length; i++) {
         for (let j = i + 1; j < group.length; j++) {
           addPair(group[i], group[j]);
@@ -678,43 +675,19 @@ if (mode === "emergency") {
       }
     }
 
-    const verticalNodes = nodes.filter((n) => NORMAL_VERTICAL_TYPES.has(n.type));
-    const verticalNodesWithoutCode = verticalNodes.filter((n) => !n.code);
-    const byType = new Map<string, RouteNodeWithFloor[]>();
-    for (const node of verticalNodesWithoutCode) {
-      const list = byType.get(node.type) ?? [];
-      list.push(node);
-      byType.set(node.type, list);
-    }
-    for (const group of byType.values()) {
-      const byFloor = new Map<string, RouteNodeWithFloor[]>();
-      for (const node of group) {
-        const list = byFloor.get(node.floorId) ?? [];
-        list.push(node);
-        byFloor.set(node.floorId, list);
-      }
-      const floors = [...byFloor.values()];
-      for (let i = 0; i < floors.length; i++) {
-        for (let j = i + 1; j < floors.length; j++) {
-          for (const a of floors[i]) {
-            for (const b of floors[j]) {
-              addPair(a, b);
-            }
-          }
-        }
-      }
-    }
     return vertical;
   }
 
   private makeVerticalEdge(
     from: RouteNodeWithFloor,
     to: RouteNodeWithFloor,
+    baseCost = 0,
   ): RouteEdgeWithRelations {
     const dx = to.x - from.x;
     const dy = to.y - from.y;
     const dz = (to.z ?? 0) - (from.z ?? 0);
     const distance = Math.max(1, Math.round(Math.hypot(dx, dy, dz)));
+    const weight = distance + baseCost;
 
     return {
       id: `vertical:${from.id}->${to.id}`,
@@ -724,7 +697,7 @@ if (mode === "emergency") {
       label: null,
       isBidirectional: true,
       distance,
-      weight: distance,
+      weight,
       isActive: true,
       createdAt: new Date(),
       updatedAt: new Date(),
