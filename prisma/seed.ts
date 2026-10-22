@@ -290,6 +290,86 @@ async function upsertRouteEdge(params: {
   });
 }
 
+/**
+ * Пожарные (эвакуационные) лестницы. Создаётся 2 лестницы на каждый этаж
+ * (тип STAIRS с metadata.isEvacuation) и соединяются ребрами с ближайшими
+ * существующими узлами того же этажа, чтобы построение эвакуационного маршрута
+ * от магазина до ближайшей лестницы всегда работало.
+ */
+async function seedEvacuationStairs(
+  floor: { id: string; number: number },
+  existingNodes: { id: string; x: number; y: number; floorId: string }[],
+) {
+  const stairPositions: { name: string; code: string; x: number; y: number }[] =
+    floor.number === -1
+      ? [
+          { name: 'Эвакуационная лестница 1', code: 'EVAC_STAIRS_1', x: 400, y: 400 },
+          { name: 'Эвакуационная лестница 2', code: 'EVAC_STAIRS_2', x: 800, y: 400 },
+        ]
+      : [
+          { name: 'Эвакуационная лестница 1', code: 'EVAC_STAIRS_1', x: 250, y: 320 },
+          { name: 'Эвакуационная лестница 2', code: 'EVAC_STAIRS_2', x: 780, y: 480 },
+        ];
+
+  for (const stair of stairPositions) {
+    await upsertMapObjectByExternalId({
+      externalObjectId: `floor-${floor.number}-evac-stairs-${stair.code}`,
+      floorId: floor.id,
+      type: MapObjectType.STAIRS,
+      name: stair.name,
+      x: stair.x,
+      y: stair.y,
+      z: 0,
+      width: 60,
+      height: 60,
+      sortOrder: 95,
+      metadata: { sceneRole: 'evacuation-stairs', isEvacuation: true },
+    });
+
+    const stairNode = await upsertRouteNodeByCode({
+      floorId: floor.id,
+      type: RouteNodeType.STAIRS,
+      name: stair.name,
+      code: stair.code,
+      x: stair.x,
+      y: stair.y,
+      z: 0,
+      sortOrder: 95,
+      metadata: { isEvacuation: true },
+    });
+
+    const nodeObjects = await prisma.mapObject.findMany({
+      where: { floorId: floor.id, type: MapObjectType.STAIRS, isActive: true },
+      select: { id: true, x: true, y: true, floorId: true },
+    });
+    if (nodeObjects.length > 0) {
+      await prisma.routeNode.update({
+        where: { id: stairNode.id },
+        data: { mapObjectId: nodeObjects[0].id },
+      });
+    }
+
+    const nearbyNodes = existingNodes
+      .filter((n) => n.floorId === floor.id)
+      .map((n) => ({
+        ...n,
+        distance: Math.hypot(n.x - stair.x, n.y - stair.y),
+      }))
+      .sort((a, b) => a.distance - b.distance)
+      .slice(0, 3);
+
+    for (const near of nearbyNodes) {
+      await upsertRouteEdge({
+        floorId: floor.id,
+        fromNodeId: stairNode.id,
+        toNodeId: near.id,
+        distance: Math.max(1, Math.round(near.distance)),
+        label: `evac-stairs-${stair.code}-to-${near.id.slice(0, 8)}`,
+      });
+    }
+  }
+}
+
 function getErrorMessage(error: unknown): string {
   if (error instanceof Error) {
     return error.message;
@@ -886,9 +966,9 @@ const toiletNode = await upsertRouteNodeByCode({
       distance: 180,
       label: 'technopark-to-emergency-exit',
     }),
-  ]);
+]);
 
-  // Default adaptive routing configuration.
+// Default adaptive routing configuration.
   await prisma.systemSetting.upsert({
     where: { key: 'routing.adaptive' },
     update: {
@@ -961,6 +1041,16 @@ const toiletNode = await upsertRouteNodeByCode({
     thirdFloor,
     fourthFloor,
   ];
+
+  // Seed evacuation stairs on every floor + connect them to nearest nodes.
+  const floorRouteNodes = await prisma.routeNode.findMany({
+    where: { isActive: true },
+    select: { id: true, x: true, y: true, floorId: true },
+  });
+
+  for (const floor of allFloors) {
+    await seedEvacuationStairs(floor, floorRouteNodes);
+  }
 
   for (const floor of allFloors) {
     const filename = `${floor.number}_floor.glb`;

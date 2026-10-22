@@ -47,9 +47,10 @@ export class FloorIconsService {
     const icon = await this.prisma.floorIcon.create({
       data: {
         name: dto.name,
+        type: dto.type ?? 'IMAGE',
         floorId: dto.floorId,
         storeId: dto.storeId ?? null,
-        assetId: dto.assetId,
+        assetId: dto.assetId ?? null,
         x: dto.x,
         y: dto.y,
         z: dto.z ?? 0,
@@ -72,7 +73,7 @@ export class FloorIconsService {
 
     await this.ensureReferencesExist(
       dto.floorId ?? existing.floorId,
-      dto.assetId ?? existing.assetId,
+      dto.assetId === undefined ? existing.assetId : dto.assetId,
       dto.storeId === undefined ? existing.storeId : dto.storeId,
     );
 
@@ -80,6 +81,7 @@ export class FloorIconsService {
       where: { id },
       data: {
         ...(dto.name !== undefined ? { name: dto.name } : {}),
+        ...(dto.type !== undefined ? { type: dto.type } : {}),
         ...(dto.floorId !== undefined ? { floorId: dto.floorId } : {}),
         ...(dto.storeId !== undefined ? { storeId: dto.storeId ?? null } : {}),
         ...(dto.assetId !== undefined ? { assetId: dto.assetId } : {}),
@@ -113,7 +115,7 @@ export class FloorIconsService {
 
   private async ensureReferencesExist(
     floorId: string,
-    assetId: string,
+    assetId: string | null | undefined,
     storeId?: string | null,
   ): Promise<void> {
     const floor = await this.prisma.floor.findUnique({
@@ -124,12 +126,14 @@ export class FloorIconsService {
       throw new NotFoundException('Floor not found');
     }
 
-    const asset = await this.prisma.fileAsset.findFirst({
-      where: { id: assetId, isActive: true },
-      select: { id: true },
-    });
-    if (!asset) {
-      throw new NotFoundException('File asset not found');
+    if (assetId) {
+      const asset = await this.prisma.fileAsset.findFirst({
+        where: { id: assetId, isActive: true },
+        select: { id: true },
+      });
+      if (!asset) {
+        throw new NotFoundException('File asset not found');
+      }
     }
 
     if (storeId) {
@@ -147,9 +151,10 @@ export class FloorIconsService {
     return {
       id: icon.id,
       name: icon.name,
+      type: icon.type ?? 'IMAGE',
       floorId: icon.floorId,
       storeId: icon.storeId,
-      assetId: icon.assetId,
+      assetId: icon.assetId ?? null,
       x: icon.x,
       y: icon.y,
       z: icon.z ?? 0,

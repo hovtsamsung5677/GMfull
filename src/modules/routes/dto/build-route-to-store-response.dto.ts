@@ -5,6 +5,7 @@ import {
   RouteFloorChangeDto,
   RouteFloorSegmentDto,
   RouteInstructionDto,
+  RouteMetaDto,
   RoutePathPointDto,
   RouteRenderingMetaDto,
   RouteSegmentDto,
@@ -88,6 +89,34 @@ export class RouteToStoreMetaDto {
   routingReport!: Record<string, unknown> | null;
 }
 
+export class RouteToStoreEvacuationRouteDto {
+  @ApiProperty()
+  totalDistance!: number;
+
+  @ApiProperty({ type: [RouteSegmentDto] })
+  routeSegments!: RouteSegmentDto[];
+
+  @ApiProperty({ type: [RouteFloorSegmentDto] })
+  segments!: RouteFloorSegmentDto[];
+
+  @ApiProperty({ type: [RouteFloorChangeDto] })
+  floorChanges!: RouteFloorChangeDto[];
+
+  @ApiProperty({ type: [RouteInstructionDto] })
+  instructions!: RouteInstructionDto[];
+
+  @ApiProperty({ type: [RoutePathPointDto] })
+  routePath!: RoutePathPointDto[];
+}
+
+export class RouteToStoreEvacuationDto {
+  @ApiProperty({ type: RouteNodeResponseDto })
+  stair!: RouteNodeResponseDto;
+
+  @ApiPropertyOptional({ nullable: true, type: RouteToStoreEvacuationRouteDto })
+  route!: RouteToStoreEvacuationRouteDto | null;
+}
+
 export class BuildRouteToStoreResponseDto {
   @ApiProperty({ type: RouteNodeResponseDto })
   fromNode!: RouteNodeResponseDto;
@@ -127,4 +156,13 @@ export class BuildRouteToStoreResponseDto {
 
   @ApiProperty({ type: RouteToStoreMetaDto })
   meta!: RouteToStoreMetaDto;
+
+  @ApiPropertyOptional({
+    nullable: true,
+    type: RouteToStoreEvacuationDto,
+    description:
+      "Эвакуационный маршрут от магазина до ближайшей пожарной лестницы этажа. " +
+      "null, если на этаже нет активных пожарных лестниц.",
+  })
+  evacuation!: RouteToStoreEvacuationDto | null;
 }

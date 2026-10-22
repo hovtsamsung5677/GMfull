@@ -4,6 +4,7 @@
   NotFoundException,
 } from "@nestjs/common";
 import { Prisma, RouteNodeType } from "@prisma/client";
+import { isEvacuationStairNode } from "../../common/utils/evacuation.util";
 import { isPrimaryStoreRelation } from "../../common/utils/store-primary.util";
 import { PrismaService } from "../../database/prisma.service";
 import { AnalyticsService } from "../analytics/analytics.service";
@@ -12,6 +13,7 @@ import { RouteNodeResponseDto } from "../route-nodes/dto/route-node-response.dto
 import { BuildRouteToStoreQueryDto } from "./dto/build-route-to-store-query.dto";
 import {
   BuildRouteToStoreResponseDto,
+  RouteToStoreEvacuationDto,
   RouteToStoreTargetStoreDto,
 } from "./dto/build-route-to-store-response.dto";
 import { BuildRouteQueryDto } from "./dto/build-route-query.dto";
@@ -443,7 +445,7 @@ if (mode === "emergency") {
       routePath: route.routePath,
       routeSegments: route.routeSegments,
       segments: route.segments,
-      floorChanges: route.floorChanges,
+       floorChanges: route.floorChanges,
       instructions: route.instructions,
       meta: {
         schemaVersion: "green-mall-route-to-store-v3",
@@ -453,6 +455,88 @@ if (mode === "emergency") {
         mode: route.meta.mode,
         emergencyExitUsed: route.meta.emergencyExitUsed,
         routingReport: route.meta.routingReport,
+      },
+      evacuation: await this.buildEvacuationRoute(targetNode, store.floorId ?? undefined),
+    };
+  }
+
+  async buildEvacuationRoute(
+    fromNode: RouteNodeWithFloor,
+    floorId?: string,
+  ): Promise<RouteToStoreEvacuationDto | null> {
+    const targetFloorId = floorId ?? fromNode.floorId;
+
+    const [nodes, edges] = await this.prisma.$transaction([
+      this.prisma.routeNode.findMany({
+        where: { floorId: targetFloorId, isActive: true },
+        include: routeNodeInclude,
+      }),
+      this.prisma.routeEdge.findMany({
+        where: { floorId: targetFloorId, isActive: true },
+        include: routeEdgeInclude,
+      }),
+    ]);
+
+    const nodeById = new Map(nodes.map((node) => [node.id, node]));
+    const activeEdges = edges.filter((edge) => !this.isBlockedEdge(edge));
+    const edgeById = new Map(activeEdges.map((edge) => [edge.id, edge]));
+
+    const evacuationStairs = nodes.filter(isEvacuationStairNode);
+
+    if (evacuationStairs.length === 0) {
+      return null;
+    }
+
+    if (!nodeById.has(fromNode.id)) {
+      const fallback = nodes.find((n) => n.type === RouteNodeType.STORE_ANCHOR);
+      if (!fallback) return null;
+      fromNode = fallback;
+    }
+
+    let bestStair: RouteNodeWithFloor | null = null;
+    let bestPath: ShortestPath | null = null;
+    let bestDistance = Number.POSITIVE_INFINITY;
+
+    for (const stair of evacuationStairs) {
+      const path = this.findShortestPath({
+        nodes,
+        edges: activeEdges,
+        fromNodeId: fromNode.id,
+        toNodeId: stair.id,
+      });
+
+      if (!path) continue;
+
+      if (path.totalDistance < bestDistance) {
+        bestDistance = path.totalDistance;
+        bestStair = stair;
+        bestPath = path;
+      }
+    }
+
+    if (!bestStair || !bestPath) {
+      return {
+        stair: this.toRouteNodeResponse(evacuationStairs[0]),
+        route: null,
+      };
+    }
+
+    const routeNodes = bestPath.nodeIds
+      .map((nodeId) => nodeById.get(nodeId))
+      .filter((n): n is RouteNodeWithFloor => Boolean(n));
+    const routeEdges = bestPath.edgeIds
+      .map((edgeId) => edgeById.get(edgeId))
+      .filter((e): e is RouteEdgeWithRelations => Boolean(e));
+
+    return {
+      stair: this.toRouteNodeResponse(bestStair),
+      route: {
+        totalDistance: bestPath.totalDistance,
+        routeSegments: this.toRouteSegments(routeNodes, routeEdges),
+        segments: this.splitIntoFloorSegments(routeNodes),
+        floorChanges: this.buildFloorChanges(routeNodes),
+        instructions: this.toRouteInstructions(routeNodes),
+        routePath: this.toRoutePath(routeNodes),
       },
     };
   }
@@ -558,8 +642,7 @@ if (mode === "emergency") {
   private buildVerticalEdges(
     nodes: RouteNodeWithFloor[],
   ): RouteEdgeWithRelations[] {
-    const VERTICAL_COST = 50;
-    const VERTICAL_TYPES = new Set(["ELEVATOR", "ESCALATOR", "STAIRS"]);
+    const NORMAL_VERTICAL_TYPES = new Set(["ELEVATOR", "ESCALATOR"]);
     const vertical: RouteEdgeWithRelations[] = [];
     const seenPairs = new Set<string>();
 
@@ -580,6 +663,14 @@ if (mode === "emergency") {
       byCode.set(node.code, list);
     }
     for (const group of byCode.values()) {
+      const floorSet = new Set<string>();
+      for (const node of group) {
+        floorSet.add(node.floorId);
+      }
+      const isElevatorCode = group.every(
+        (n) => n.type === "ELEVATOR" || n.type === "ESCALATOR",
+      );
+      if (!isElevatorCode) continue;
       for (let i = 0; i < group.length; i++) {
         for (let j = i + 1; j < group.length; j++) {
           addPair(group[i], group[j]);
@@ -587,9 +678,10 @@ if (mode === "emergency") {
       }
     }
 
-    const verticalNodes = nodes.filter((n) => VERTICAL_TYPES.has(n.type));
+    const verticalNodes = nodes.filter((n) => NORMAL_VERTICAL_TYPES.has(n.type));
+    const verticalNodesWithoutCode = verticalNodes.filter((n) => !n.code);
     const byType = new Map<string, RouteNodeWithFloor[]>();
-    for (const node of verticalNodes) {
+    for (const node of verticalNodesWithoutCode) {
       const list = byType.get(node.type) ?? [];
       list.push(node);
       byType.set(node.type, list);

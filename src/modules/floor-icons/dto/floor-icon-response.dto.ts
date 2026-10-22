@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { FileAssetKind } from '@prisma/client';
+import { FileAssetKind, FloorIconType } from '@prisma/client';
 
 export class FloorIconResponseDto {
   @ApiProperty()
@@ -8,14 +8,17 @@ export class FloorIconResponseDto {
   @ApiProperty({ example: 'shop-icon.png' })
   name!: string;
 
+  @ApiPropertyOptional({ enum: FloorIconType, example: FloorIconType.IMAGE, default: FloorIconType.IMAGE })
+  type!: FloorIconType;
+
   @ApiProperty({ example: 'floor_abc123' })
   floorId!: string;
 
   @ApiPropertyOptional({ example: 'store_xyz789', nullable: true })
   storeId?: string | null;
 
-  @ApiProperty({ example: 'asset_456' })
-  assetId!: string;
+  @ApiPropertyOptional({ example: 'asset_456', nullable: true, description: 'Null for TEXT type labels.' })
+  assetId?: string | null;
 
   @ApiProperty()
   x!: number;

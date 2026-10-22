@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsBoolean,
+  IsEnum,
   IsNumber,
   IsOptional,
   IsString,
@@ -8,10 +9,20 @@ import {
 import { Transform } from 'class-transformer';
 import { toOptionalNumber } from '../../../common/transformers/query.transformers';
 
+export enum FloorIconTypeEnum {
+  IMAGE = 'IMAGE',
+  TEXT = 'TEXT',
+}
+
 export class CreateFloorIconDto {
   @ApiProperty({ example: 'shop-icon.png' })
   @IsString()
   name!: string;
+
+  @ApiPropertyOptional({ enum: FloorIconTypeEnum, example: FloorIconTypeEnum.IMAGE, default: FloorIconTypeEnum.IMAGE })
+  @IsOptional()
+  @IsEnum(FloorIconTypeEnum)
+  type?: FloorIconTypeEnum;
 
   @ApiProperty({ example: 'floor_abc123' })
   @IsString()
@@ -22,9 +33,10 @@ export class CreateFloorIconDto {
   @IsString()
   storeId?: string | null;
 
-  @ApiProperty({ example: 'asset_456' })
+  @ApiPropertyOptional({ example: 'asset_456', nullable: true, description: 'Required for IMAGE type, ignored for TEXT type.' })
+  @IsOptional()
   @IsString()
-  assetId!: string;
+  assetId?: string | null;
 
   @ApiProperty({ example: 120, description: 'X coordinate in floor-local plan units.' })
   @Transform(toOptionalNumber)
