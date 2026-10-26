@@ -1,6 +1,6 @@
 # Dev-сборка: устанавливает dev-зависимости (nest-cli, prisma, typescript),
 # запускает Nest в режиме watch (hot-reload). Источники монтируются извне.
-FROM node:20-slim
+FROM node:22-slim
 WORKDIR /app
 COPY package*.json ./
 RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
