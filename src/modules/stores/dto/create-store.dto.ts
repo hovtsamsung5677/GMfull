@@ -1,5 +1,5 @@
-import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
-import { Transform } from "class-transformer";
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 import {
   ArrayMaxSize,
   ArrayUnique,
@@ -10,18 +10,18 @@ import {
   IsOptional,
   IsString,
   MaxLength,
-} from "class-validator";
-import { IsIdentifier } from "../../../common/decorators/identifier.decorator";
-import { Nullable } from "../../../common/decorators/nullable.decorator";
-import { toOptionalBoolean } from "../../../common/transformers/query.transformers";
+} from 'class-validator';
+import { IsIdentifier } from '../../../common/decorators/identifier.decorator';
+import { Nullable } from '../../../common/decorators/nullable.decorator';
+import { toOptionalBoolean } from '../../../common/transformers/query.transformers';
 
 export class CreateStoreDto {
-  @ApiProperty({ example: "GREEN Coffee" })
+  @ApiProperty({ example: 'GREEN Coffee' })
   @IsString()
   @MaxLength(160)
   name!: string;
 
-  @ApiPropertyOptional({ example: "green-coffee" })
+  @ApiPropertyOptional({ example: 'green-coffee' })
   @IsOptional()
   @IsString()
   @MaxLength(180)
@@ -41,8 +41,7 @@ export class CreateStoreDto {
 
   @ApiPropertyOptional({
     nullable: true,
-    description:
-      "Existing floor id used to validate linked map objects and route nodes.",
+    description: 'Existing floor id used to validate linked map objects and route nodes.',
   })
   @Nullable()
   @IsIdentifier()
@@ -54,24 +53,24 @@ export class CreateStoreDto {
   @IsString()
   description?: string;
 
-  @ApiPropertyOptional({ example: "1-105" })
+  @ApiPropertyOptional({ example: '1-105' })
   @IsOptional()
   @IsString()
   @MaxLength(80)
   roomNumber?: string;
 
-  @ApiPropertyOptional({ example: "+79990000000" })
+  @ApiPropertyOptional({ example: '+79990000000' })
   @IsOptional()
   @IsString()
   @MaxLength(32)
   phone?: string;
 
-  @ApiPropertyOptional({ example: "store@example.com" })
+  @ApiPropertyOptional({ example: 'store@example.com' })
   @IsOptional()
   @IsEmail()
   email?: string;
 
-  @ApiPropertyOptional({ example: "https://example.com" })
+  @ApiPropertyOptional({ example: 'https://example.com' })
   @IsOptional()
   @IsString()
   @MaxLength(255)
@@ -83,8 +82,8 @@ export class CreateStoreDto {
   workingHours?: Record<string, unknown>;
 
   @ApiPropertyOptional({
-    example: "coffee drinks cafe food",
-    description: "Search terms used by the public store search endpoint.",
+    example: 'coffee drinks cafe food',
+    description: 'Search terms used by the public store search endpoint.',
   })
   @IsOptional()
   @IsString()
@@ -106,7 +105,7 @@ export class CreateStoreDto {
     type: [String],
     maxItems: 200,
     description:
-      "Exact MapObject id set to link to the store. On update, omit this field to preserve current links.",
+      'Exact MapObject id set to link to the store. On update, omit this field to preserve current links.',
   })
   @IsOptional()
   @IsArray()
@@ -119,7 +118,7 @@ export class CreateStoreDto {
     type: [String],
     maxItems: 200,
     description:
-      "Existing RouteNode ids to validate as store links. Each node must reference one of the linked map objects.",
+      'Existing RouteNode ids to validate as store links. Each node must reference one of the linked map objects.',
   })
   @IsOptional()
   @IsArray()
@@ -131,7 +130,7 @@ export class CreateStoreDto {
   @ApiPropertyOptional({
     nullable: true,
     description:
-      "Preferred existing MapObject id. It must be linked to this store. Send null to clear the preference.",
+      'Preferred existing MapObject id. It must be linked to this store. Send null to clear the preference.',
   })
   @Nullable()
   @IsIdentifier()
@@ -141,7 +140,7 @@ export class CreateStoreDto {
   @ApiPropertyOptional({
     nullable: true,
     description:
-      "Preferred existing STORE_ANCHOR RouteNode id. It must be linked through a store map object.",
+      'Preferred existing STORE_ANCHOR RouteNode id. It must be linked through a store map object.',
   })
   @Nullable()
   @IsIdentifier()

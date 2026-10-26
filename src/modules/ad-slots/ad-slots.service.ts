@@ -3,22 +3,19 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
-} from "@nestjs/common";
-import { AdPlacement, AdSlot, Prisma } from "@prisma/client";
-import { PrismaService } from "../../database/prisma.service";
-import { runSerializableTransaction } from "../../database/serializable-transaction";
-import { normalizeAdSlotCode } from "./ad-slot-code";
-import {
-  adSlotAdminInclude,
-  toAdSlotAdminResponse,
-} from "./ad-slot-admin.projection";
+} from '@nestjs/common';
+import { AdPlacement, AdSlot, Prisma } from '@prisma/client';
+import { PrismaService } from '../../database/prisma.service';
+import { runSerializableTransaction } from '../../database/serializable-transaction';
+import { normalizeAdSlotCode } from './ad-slot-code';
+import { adSlotAdminInclude, toAdSlotAdminResponse } from './ad-slot-admin.projection';
 import {
   AdSlotAdminListResponseDto,
   AdSlotAdminResponseDto,
-} from "./dto/ad-slot-admin-response.dto";
-import { AdSlotQueryDto } from "./dto/ad-slot-query.dto";
-import { CreateAdSlotDto } from "./dto/create-ad-slot.dto";
-import { UpdateAdSlotDto } from "./dto/update-ad-slot.dto";
+} from './dto/ad-slot-admin-response.dto';
+import { AdSlotQueryDto } from './dto/ad-slot-query.dto';
+import { CreateAdSlotDto } from './dto/create-ad-slot.dto';
+import { UpdateAdSlotDto } from './dto/update-ad-slot.dto';
 
 interface AdSlotValidationState {
   code: string;
@@ -32,7 +29,7 @@ interface AdSlotValidationState {
 
 type AdSlotWriteClient = Pick<
   Prisma.TransactionClient,
-  "adSlot" | "adCampaignAssignment" | "panel"
+  'adSlot' | 'adCampaignAssignment' | 'panel'
 >;
 
 @Injectable()
@@ -48,7 +45,7 @@ export class AdSlotsService {
       this.prisma.adSlot.findMany({
         where,
         include: adSlotAdminInclude,
-        orderBy: [{ sortOrder: "asc" }, { name: "asc" }, { id: "asc" }],
+        orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }, { id: 'asc' }],
         skip: (page - 1) * limit,
         take: limit,
       }),
@@ -73,16 +70,13 @@ export class AdSlotsService {
     });
 
     if (!slot) {
-      throw new NotFoundException("Ad slot not found");
+      throw new NotFoundException('Ad slot not found');
     }
 
     return toAdSlotAdminResponse(slot);
   }
 
-  async create(
-    dto: CreateAdSlotDto,
-    userId: string,
-  ): Promise<AdSlotAdminResponseDto> {
+  async create(dto: CreateAdSlotDto, userId: string): Promise<AdSlotAdminResponseDto> {
     const state: AdSlotValidationState = {
       code: normalizeAdSlotCode(dto.code),
       name: this.normalizeName(dto.name),
@@ -113,37 +107,22 @@ export class AdSlotsService {
     }
   }
 
-  async update(
-    id: string,
-    dto: UpdateAdSlotDto,
-    userId: string,
-  ): Promise<AdSlotAdminResponseDto> {
+  async update(id: string, dto: UpdateAdSlotDto, userId: string): Promise<AdSlotAdminResponseDto> {
     const existing = await this.findExisting(id);
-    const placementChanges =
-      dto.placement !== undefined && dto.placement !== existing.placement;
+    const placementChanges = dto.placement !== undefined && dto.placement !== existing.placement;
 
     try {
       if (placementChanges) {
-        return await runSerializableTransaction(this.prisma, async (tx) => {
+        return await runSerializableTransaction(this.prisma, async tx => {
           const current = await this.findExisting(id, tx);
           const currentPlacementChanges =
             dto.placement !== undefined && dto.placement !== current.placement;
 
           if (currentPlacementChanges) {
-            await this.ensurePlacementCompatibleWithAssignments(
-              tx,
-              id,
-              dto.placement!,
-            );
+            await this.ensurePlacementCompatibleWithAssignments(tx, id, dto.placement!);
           }
 
-          return this.updateRecord(
-            tx,
-            current,
-            dto,
-            userId,
-            currentPlacementChanges,
-          );
+          return this.updateRecord(tx, current, dto, userId, currentPlacementChanges);
         });
       }
 
@@ -164,7 +143,7 @@ export class AdSlotsService {
     });
 
     if (result.count === 0) {
-      throw new NotFoundException("Ad slot not found");
+      throw new NotFoundException('Ad slot not found');
     }
 
     const slot = await this.prisma.adSlot.findUnique({
@@ -173,7 +152,7 @@ export class AdSlotsService {
     });
 
     if (!slot) {
-      throw new NotFoundException("Ad slot not found");
+      throw new NotFoundException('Ad slot not found');
     }
 
     return toAdSlotAdminResponse(slot);
@@ -190,12 +169,12 @@ export class AdSlotsService {
       ...(search
         ? {
             OR: [
-              { code: { contains: search, mode: "insensitive" as const } },
-              { name: { contains: search, mode: "insensitive" as const } },
+              { code: { contains: search, mode: 'insensitive' as const } },
+              { name: { contains: search, mode: 'insensitive' as const } },
               {
                 description: {
                   contains: search,
-                  mode: "insensitive" as const,
+                  mode: 'insensitive' as const,
                 },
               },
             ],
@@ -210,7 +189,7 @@ export class AdSlotsService {
     });
 
     if (!slot) {
-      throw new NotFoundException("Ad slot not found");
+      throw new NotFoundException('Ad slot not found');
     }
 
     return slot;
@@ -230,9 +209,7 @@ export class AdSlotsService {
       select: { id: true },
     });
     if (conflict) {
-      throw new ConflictException(
-        "Ad slot placement conflicts with an assigned ad campaign",
-      );
+      throw new ConflictException('Ad slot placement conflicts with an assigned ad campaign');
     }
   }
 
@@ -244,10 +221,8 @@ export class AdSlotsService {
     writePlacement: boolean,
   ): Promise<AdSlotAdminResponseDto> {
     const state: AdSlotValidationState = {
-      code:
-        dto.code === undefined ? existing.code : normalizeAdSlotCode(dto.code),
-      name:
-        dto.name === undefined ? existing.name : this.normalizeName(dto.name),
+      code: dto.code === undefined ? existing.code : normalizeAdSlotCode(dto.code),
+      name: dto.name === undefined ? existing.name : this.normalizeName(dto.name),
       description:
         dto.description === undefined
           ? existing.description
@@ -285,34 +260,22 @@ export class AdSlotsService {
       !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(state.code)
     ) {
       throw new BadRequestException(
-        "code must be lowercase kebab-case using letters, digits and hyphens",
+        'code must be lowercase kebab-case using letters, digits and hyphens',
       );
     }
 
-    if (
-      state.name.length === 0 ||
-      state.name.length > 200 ||
-      !/\S/.test(state.name)
-    ) {
+    if (state.name.length === 0 || state.name.length > 200 || !/\S/.test(state.name)) {
       throw new BadRequestException(
-        "name must contain between 1 and 200 non-whitespace characters",
+        'name must contain between 1 and 200 non-whitespace characters',
       );
     }
 
     if (state.description !== null && state.description.length > 5000) {
-      throw new BadRequestException(
-        "description must not exceed 5000 characters",
-      );
+      throw new BadRequestException('description must not exceed 5000 characters');
     }
 
-    if (
-      !Number.isInteger(state.sortOrder) ||
-      state.sortOrder < 0 ||
-      state.sortOrder > 1_000_000
-    ) {
-      throw new BadRequestException(
-        "sortOrder must be an integer between 0 and 1000000",
-      );
+    if (!Number.isInteger(state.sortOrder) || state.sortOrder < 0 || state.sortOrder > 1_000_000) {
+      throw new BadRequestException('sortOrder must be an integer between 0 and 1000000');
     }
 
     if (state.panelId !== null) {
@@ -322,7 +285,7 @@ export class AdSlotsService {
       });
 
       if (!panel) {
-        throw new NotFoundException("Panel not found");
+        throw new NotFoundException('Panel not found');
       }
     }
   }
@@ -338,7 +301,7 @@ export class AdSlotsService {
     });
 
     if (existing && existing.id !== currentId) {
-      throw new ConflictException("Ad slot code already exists");
+      throw new ConflictException('Ad slot code already exists');
     }
   }
 
@@ -346,9 +309,7 @@ export class AdSlotsService {
     return value.trim();
   }
 
-  private normalizeNullableText(
-    value: string | null | undefined,
-  ): string | null | undefined {
+  private normalizeNullableText(value: string | null | undefined): string | null | undefined {
     if (value === undefined || value === null) {
       return value;
     }
@@ -372,16 +333,16 @@ export class AdSlotsService {
 
   private handlePrismaError(error: unknown): never {
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
-      if (error.code === "P2002") {
-        throw new ConflictException("Ad slot code already exists");
+      if (error.code === 'P2002') {
+        throw new ConflictException('Ad slot code already exists');
       }
 
-      if (error.code === "P2003") {
-        throw new NotFoundException("Panel not found");
+      if (error.code === 'P2003') {
+        throw new NotFoundException('Panel not found');
       }
 
-      if (error.code === "P2025") {
-        throw new NotFoundException("Ad slot not found");
+      if (error.code === 'P2025') {
+        throw new NotFoundException('Ad slot not found');
       }
     }
 

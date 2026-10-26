@@ -11,9 +11,7 @@ import {
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
-  ApiConflictResponse,
   ApiCreatedResponse,
-  ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
@@ -26,10 +24,7 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { HeaderBannersService } from './header-banners.service';
 import { CreateHeaderBannerDto } from './dto/create-header-banner.dto';
 import { UpdateHeaderBannerDto } from './dto/update-header-banner.dto';
-import {
-  HeaderBannerQueryDto,
-  HeaderBannerResponseDto,
-} from './dto/header-banner-query.dto';
+import { HeaderBannerQueryDto, HeaderBannerResponseDto } from './dto/header-banner-query.dto';
 
 const HEADER_BANNER_READ_ROLES = ['SUPER_ADMIN', 'MALL_ADMIN', 'ADS_MANAGER'];
 const HEADER_BANNER_WRITE_ROLES = ['SUPER_ADMIN', 'MALL_ADMIN', 'ADS_MANAGER'];

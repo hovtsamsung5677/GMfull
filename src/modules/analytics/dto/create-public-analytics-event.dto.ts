@@ -1,6 +1,6 @@
-import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
-import { AnalyticsEventType, AnalyticsSource } from "@prisma/client";
-import { Transform } from "class-transformer";
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { AnalyticsEventType, AnalyticsSource } from '@prisma/client';
+import { Transform } from 'class-transformer';
 import {
   IsIn,
   IsObject,
@@ -9,7 +9,7 @@ import {
   MaxLength,
   MinLength,
   ValidateIf,
-} from "class-validator";
+} from 'class-validator';
 
 export const PUBLIC_ANALYTICS_EVENT_TYPES = [
   AnalyticsEventType.SESSION_STARTED,
@@ -38,14 +38,14 @@ const STORE_EVENT_TYPES: readonly AnalyticsEventType[] = [
 ];
 
 const trimString = ({ value }: { value: unknown }): unknown =>
-  typeof value === "string" ? value.trim() : value;
+  typeof value === 'string' ? value.trim() : value;
 
 export class CreatePublicAnalyticsEventDto {
   @ApiProperty({
-    example: "0192f744-5d91-7a31-a2e1-8c03fce58f61",
+    example: '0192f744-5d91-7a31-a2e1-8c03fce58f61',
     maxLength: 128,
     description:
-      "Required client-generated idempotency key. Reusing it is successful only for the same visitor/navigation event identity.",
+      'Required client-generated idempotency key. Reusing it is successful only for the same visitor/navigation event identity.',
   })
   @Transform(trimString)
   @IsString()
@@ -57,7 +57,7 @@ export class CreatePublicAnalyticsEventDto {
     enum: PUBLIC_ANALYTICS_EVENT_TYPES,
     example: AnalyticsEventType.SEARCH_QUERY,
     description:
-      "Visitor/navigation event type accepted by this endpoint. AD_IMPRESSION and AD_CLICK are rejected.",
+      'Visitor/navigation event type accepted by this endpoint. AD_IMPRESSION and AD_CLICK are rejected.',
   })
   @IsIn(PUBLIC_ANALYTICS_EVENT_TYPES)
   type!: AnalyticsEventType;
@@ -65,7 +65,7 @@ export class CreatePublicAnalyticsEventDto {
   @ApiProperty({
     enum: PUBLIC_ANALYTICS_EVENT_SOURCES,
     example: AnalyticsSource.MOBILE,
-    description: "Only PANEL and MOBILE are accepted; ADMIN is rejected.",
+    description: 'Only PANEL and MOBILE are accepted; ADMIN is rejected.',
   })
   @IsIn(PUBLIC_ANALYTICS_EVENT_SOURCES)
   source!: AnalyticsSource;
@@ -74,7 +74,7 @@ export class CreatePublicAnalyticsEventDto {
     type: String,
     nullable: true,
     maxLength: 191,
-    description: "Optional client session identifier.",
+    description: 'Optional client session identifier.',
   })
   @Transform(trimString)
   @IsOptional()
@@ -88,12 +88,11 @@ export class CreatePublicAnalyticsEventDto {
     nullable: true,
     maxLength: 191,
     description:
-      "Optional panel identifier. Required for AD_IMPRESSION/AD_CLICK on the advertising ingestion. On this endpoint it is optional: PANEL and MOBILE events may be sent without it, and any supplied Panel must exist.",
+      'Optional panel identifier. Required for AD_IMPRESSION/AD_CLICK on the advertising ingestion. On this endpoint it is optional: PANEL and MOBILE events may be sent without it, and any supplied Panel must exist.',
   })
   @Transform(trimString)
   @ValidateIf(
-    (dto: CreatePublicAnalyticsEventDto, value: unknown) =>
-      value !== undefined && value !== null,
+    (dto: CreatePublicAnalyticsEventDto, value: unknown) => value !== undefined && value !== null,
   )
   @IsString()
   @MinLength(1)
@@ -105,13 +104,12 @@ export class CreatePublicAnalyticsEventDto {
     nullable: true,
     maxLength: 191,
     description:
-      "Required for STORE_SELECTED and STORE_CARD_VIEWED. Any supplied Store must exist. QR_SCANNED may reference the Store behind the scanned QR link.",
+      'Required for STORE_SELECTED and STORE_CARD_VIEWED. Any supplied Store must exist. QR_SCANNED may reference the Store behind the scanned QR link.',
   })
   @Transform(trimString)
   @ValidateIf(
     (dto: CreatePublicAnalyticsEventDto, value: unknown) =>
-      STORE_EVENT_TYPES.includes(dto.type) ||
-      (value !== undefined && value !== null),
+      STORE_EVENT_TYPES.includes(dto.type) || (value !== undefined && value !== null),
   )
   @IsString()
   @MinLength(1)
@@ -122,14 +120,12 @@ export class CreatePublicAnalyticsEventDto {
     type: String,
     nullable: true,
     maxLength: 191,
-    description:
-      "Required for CATEGORY_SELECTED. Any supplied Category must exist.",
+    description: 'Required for CATEGORY_SELECTED. Any supplied Category must exist.',
   })
   @Transform(trimString)
   @ValidateIf(
     (dto: CreatePublicAnalyticsEventDto, value: unknown) =>
-      dto.type === AnalyticsEventType.CATEGORY_SELECTED ||
-      (value !== undefined && value !== null),
+      dto.type === AnalyticsEventType.CATEGORY_SELECTED || (value !== undefined && value !== null),
   )
   @IsString()
   @MinLength(1)
@@ -140,14 +136,12 @@ export class CreatePublicAnalyticsEventDto {
     type: String,
     nullable: true,
     maxLength: 191,
-    description:
-      "Required for PROMOTION_VIEWED. Any supplied Promotion must exist.",
+    description: 'Required for PROMOTION_VIEWED. Any supplied Promotion must exist.',
   })
   @Transform(trimString)
   @ValidateIf(
     (dto: CreatePublicAnalyticsEventDto, value: unknown) =>
-      dto.type === AnalyticsEventType.PROMOTION_VIEWED ||
-      (value !== undefined && value !== null),
+      dto.type === AnalyticsEventType.PROMOTION_VIEWED || (value !== undefined && value !== null),
   )
   @IsString()
   @MinLength(1)
@@ -158,14 +152,12 @@ export class CreatePublicAnalyticsEventDto {
     type: String,
     nullable: true,
     maxLength: 500,
-    description:
-      "Required and non-empty for SEARCH_QUERY. It is trimmed before persistence.",
+    description: 'Required and non-empty for SEARCH_QUERY. It is trimmed before persistence.',
   })
   @Transform(trimString)
   @ValidateIf(
     (dto: CreatePublicAnalyticsEventDto, value: unknown) =>
-      dto.type === AnalyticsEventType.SEARCH_QUERY ||
-      (value !== undefined && value !== null),
+      dto.type === AnalyticsEventType.SEARCH_QUERY || (value !== undefined && value !== null),
   )
   @IsString()
   @MinLength(1)
@@ -176,7 +168,7 @@ export class CreatePublicAnalyticsEventDto {
     type: Object,
     nullable: true,
     description:
-      "Optional client device context. It is stored but is not part of the idempotency identity.",
+      'Optional client device context. It is stored but is not part of the idempotency identity.',
   })
   @IsOptional()
   @IsObject()
@@ -187,13 +179,12 @@ export class CreatePublicAnalyticsEventDto {
     nullable: true,
     maxLength: 191,
     description:
-      "Optional QR/share token for QR_SCANNED. It identifies the scanned link and is part of the idempotency identity.",
+      'Optional QR/share token for QR_SCANNED. It identifies the scanned link and is part of the idempotency identity.',
   })
   @Transform(trimString)
   @ValidateIf(
     (dto: CreatePublicAnalyticsEventDto, value: unknown) =>
-      dto.type === AnalyticsEventType.QR_SCANNED ||
-      (value !== undefined && value !== null),
+      dto.type === AnalyticsEventType.QR_SCANNED || (value !== undefined && value !== null),
   )
   @IsString()
   @MinLength(1)
@@ -204,7 +195,7 @@ export class CreatePublicAnalyticsEventDto {
     type: Object,
     nullable: true,
     description:
-      "Optional event payload, including existing ROUTE_BUILT or DATA_LOAD_ERROR details. It is part of the idempotency identity.",
+      'Optional event payload, including existing ROUTE_BUILT or DATA_LOAD_ERROR details. It is part of the idempotency identity.',
   })
   @IsOptional()
   @IsObject()

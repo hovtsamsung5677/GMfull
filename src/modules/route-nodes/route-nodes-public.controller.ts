@@ -1,10 +1,5 @@
 import { Controller, Get, Param, Query } from '@nestjs/common';
-import {
-  ApiNotFoundResponse,
-  ApiOkResponse,
-  ApiOperation,
-  ApiTags,
-} from '@nestjs/swagger';
+import { ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { RouteGraphResponseDto } from './dto/route-graph-response.dto';
 import { RouteNodeQueryDto } from './dto/route-node-query.dto';
 import { RouteNodeResponseDto } from './dto/route-node-response.dto';
@@ -23,10 +18,7 @@ export class RouteNodesPublicController {
 
   @Get('public/floors/:floorId/route-nodes')
   @ApiOkResponse({ type: [RouteNodeResponseDto] })
-  findByFloor(
-    @Param('floorId') floorId: string,
-    @Query() query: RouteNodeQueryDto,
-  ) {
+  findByFloor(@Param('floorId') floorId: string, @Query() query: RouteNodeQueryDto) {
     return this.routeNodesService.findPublicByFloor(floorId, query);
   }
 

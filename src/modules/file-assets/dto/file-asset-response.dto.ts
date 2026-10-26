@@ -1,5 +1,5 @@
-import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
-import { FileAssetKind } from "@prisma/client";
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { FileAssetKind } from '@prisma/client';
 
 export class FileAssetResponseDto {
   @ApiProperty()
@@ -14,11 +14,11 @@ export class FileAssetResponseDto {
   @ApiPropertyOptional({ nullable: true })
   mimeType!: string | null;
 
-  @ApiPropertyOptional({ nullable: true, description: "File size in bytes." })
+  @ApiPropertyOptional({ nullable: true, description: 'File size in bytes.' })
   size!: number | null;
 
   @ApiProperty({
-    description: "Existing file URL; the backend does not upload it.",
+    description: 'Existing file URL; the backend does not upload it.',
   })
   url!: string;
 
@@ -41,35 +41,35 @@ export class FileAssetResponseDto {
   uploadedById!: string | null;
 
   @ApiProperty({
-    description: "Active floors using this asset as their 2D map.",
+    description: 'Active floors using this asset as their 2D map.',
   })
   floorsMapCount!: number;
 
   @ApiProperty({
-    description: "Active floors using this asset as their 3D model.",
+    description: 'Active floors using this asset as their 3D model.',
   })
   floorsModelCount!: number;
 
-  @ApiProperty({ description: "Active stores using this asset as their logo." })
+  @ApiProperty({ description: 'Active stores using this asset as their logo.' })
   storesLogoCount!: number;
 
   @ApiProperty({
-    description: "Active stores using this asset as their cover.",
+    description: 'Active stores using this asset as their cover.',
   })
   storesCoverCount!: number;
 
   @ApiProperty({
-    description: "Active tenants using this asset as their logo.",
+    description: 'Active tenants using this asset as their logo.',
   })
   tenantsLogoCount!: number;
 
   @ApiProperty({
     description:
-      "Active, not deleted and unexpired promotions whose active store belongs to the same active tenant. Future promotions and temporarily hidden stores remain included.",
+      'Active, not deleted and unexpired promotions whose active store belongs to the same active tenant. Future promotions and temporarily hidden stores remain included.',
   })
   promotionsImageCount!: number;
 
-  @ApiProperty({ description: "Active ad creatives using this asset." })
+  @ApiProperty({ description: 'Active ad creatives using this asset.' })
   adCreativesCount!: number;
 
   @ApiProperty()

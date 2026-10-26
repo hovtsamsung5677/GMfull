@@ -6,4 +6,4 @@ export interface AuthenticatedUser {
   isSuperAdmin: boolean;
 }
 
-export const SUPER_ADMIN_ROLE = "SUPER_ADMIN";
+export const SUPER_ADMIN_ROLE = 'SUPER_ADMIN';

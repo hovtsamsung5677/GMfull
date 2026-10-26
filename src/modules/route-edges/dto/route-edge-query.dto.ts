@@ -1,17 +1,10 @@
-import { ApiPropertyOptional } from "@nestjs/swagger";
-import { Transform } from "class-transformer";
-import {
-  IsBoolean,
-  IsInt,
-  IsOptional,
-  IsString,
-  Max,
-  Min,
-} from "class-validator";
+import { ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
+import { IsBoolean, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 import {
   toOptionalBoolean,
   toOptionalNumber,
-} from "../../../common/transformers/query.transformers";
+} from '../../../common/transformers/query.transformers';
 
 export class RouteEdgeQueryDto {
   @ApiPropertyOptional()

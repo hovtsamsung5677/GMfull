@@ -1,16 +1,20 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService as DbService } from '../../database/prisma.service';
-import {
-  HeaderBannerQueryDto,
-  HeaderBannerResponseDto,
-} from './dto/header-banner-query.dto';
+import { HeaderBannerQueryDto, HeaderBannerResponseDto } from './dto/header-banner-query.dto';
 import { CreateHeaderBannerDto } from './dto/create-header-banner.dto';
 import { UpdateHeaderBannerDto } from './dto/update-header-banner.dto';
+
+const bannerInclude = {
+  asset: { select: { id: true, filename: true, url: true, mimeType: true } },
+  targetStore: { select: { id: true, name: true, slug: true } },
+  createdBy: { select: { id: true, email: true } },
+  updatedBy: { select: { id: true, email: true } },
+} as const;
+
+type HeaderBannerWithRelations = Prisma.HeaderBannerGetPayload<{
+  include: typeof bannerInclude;
+}>;
 
 @Injectable()
 export class HeaderBannersService {
@@ -30,16 +34,7 @@ export class HeaderBannersService {
     const [items, total] = await this.prisma.$transaction([
       this.prisma.headerBanner.findMany({
         where,
-        include: {
-          asset: {
-            select: { id: true, filename: true, url: true, mimeType: true },
-          },
-          targetStore: {
-            select: { id: true, name: true, slug: true },
-          },
-          createdBy: { select: { id: true, email: true } },
-          updatedBy: { select: { id: true, email: true } },
-        },
+        include: bannerInclude,
         orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
         skip: (page - 1) * limit,
         take: limit,
@@ -56,16 +51,7 @@ export class HeaderBannersService {
   async findOne(id: string): Promise<HeaderBannerResponseDto> {
     const banner = await this.prisma.headerBanner.findFirst({
       where: { id },
-      include: {
-        asset: {
-          select: { id: true, filename: true, url: true, mimeType: true },
-        },
-        targetStore: {
-          select: { id: true, name: true, slug: true },
-        },
-        createdBy: { select: { id: true, email: true } },
-        updatedBy: { select: { id: true, email: true } },
-      },
+      include: bannerInclude,
     });
 
     if (!banner) {
@@ -75,10 +61,7 @@ export class HeaderBannersService {
     return this.toResponse(banner);
   }
 
-  async create(
-    dto: CreateHeaderBannerDto,
-    userId: string,
-  ): Promise<HeaderBannerResponseDto> {
+  async create(dto: CreateHeaderBannerDto, userId: string): Promise<HeaderBannerResponseDto> {
     await this.ensureStoreExists(dto.targetStoreId);
 
     try {
@@ -94,18 +77,8 @@ export class HeaderBannersService {
           createdById: userId,
           updatedById: userId,
         },
-        include: {
-          asset: {
-            select: { id: true, filename: true, url: true, mimeType: true },
-          },
-          targetStore: {
-            select: { id: true, name: true, slug: true },
-          },
-          createdBy: { select: { id: true, email: true } },
-          updatedBy: { select: { id: true, email: true } },
-        },
+        include: bannerInclude,
       });
-
       return this.toResponse(banner);
     } catch (error) {
       this.handlePrismaError(error);
@@ -133,26 +106,15 @@ export class HeaderBannersService {
         data: {
           title: dto.title === undefined ? undefined : dto.title.trim(),
           subtitle: dto.subtitle === undefined ? undefined : dto.subtitle?.trim(),
-          linkUrl:
-            dto.linkUrl === undefined ? undefined : dto.linkUrl?.trim(),
-          assetId: dto.assetId === undefined ? undefined : dto.assetId ?? null,
-          targetStoreId: dto.targetStoreId === undefined ? undefined : dto.targetStoreId ?? null,
+          linkUrl: dto.linkUrl === undefined ? undefined : dto.linkUrl?.trim(),
+          assetId: dto.assetId === undefined ? undefined : (dto.assetId ?? null),
+          targetStoreId: dto.targetStoreId === undefined ? undefined : (dto.targetStoreId ?? null),
           isActive: dto.isActive,
           sortOrder: dto.sortOrder,
           updatedById: userId,
         },
-        include: {
-          asset: {
-            select: { id: true, filename: true, url: true, mimeType: true },
-          },
-          targetStore: {
-            select: { id: true, name: true, slug: true },
-          },
-          createdBy: { select: { id: true, email: true } },
-          updatedBy: { select: { id: true, email: true } },
-        },
+        include: bannerInclude,
       });
-
       return this.toResponse(banner);
     } catch (error) {
       this.handlePrismaError(error);
@@ -175,16 +137,7 @@ export class HeaderBannersService {
         deletedAt: new Date(),
         updatedById: userId,
       },
-      include: {
-        asset: {
-          select: { id: true, filename: true, url: true, mimeType: true },
-        },
-        targetStore: {
-          select: { id: true, name: true, slug: true },
-        },
-        createdBy: { select: { id: true, email: true } },
-        updatedBy: { select: { id: true, email: true } },
-      },
+      include: bannerInclude,
     });
 
     return this.toResponse(banner);
@@ -193,14 +146,7 @@ export class HeaderBannersService {
   async findActivePublic(): Promise<HeaderBannerResponseDto> {
     const banner = await this.prisma.headerBanner.findFirst({
       where: { isActive: true, deletedAt: null },
-      include: {
-        asset: {
-          select: { id: true, filename: true, url: true, mimeType: true },
-        },
-        targetStore: {
-          select: { id: true, name: true, slug: true },
-        },
-      },
+      include: bannerInclude,
       orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
     });
 
@@ -226,7 +172,7 @@ export class HeaderBannersService {
     }
   }
 
-  private toResponse(banner: any): HeaderBannerResponseDto {
+  private toResponse(banner: HeaderBannerWithRelations): HeaderBannerResponseDto {
     return {
       id: banner.id,
       title: banner.title,

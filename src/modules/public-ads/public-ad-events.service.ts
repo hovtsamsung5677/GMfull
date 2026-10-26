@@ -3,17 +3,17 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
-} from "@nestjs/common";
-import { AnalyticsSource, Prisma } from "@prisma/client";
-import { PrismaService } from "../../database/prisma.service";
-import { normalizeAdSlotCode } from "../ad-slots/ad-slot-code";
-import { CreatePublicAdEventDto } from "./dto/create-public-ad-event.dto";
-import { PublicAdEventResponseDto } from "./dto/public-ad-event-response.dto";
+} from '@nestjs/common';
+import { AnalyticsSource, Prisma } from '@prisma/client';
+import { PrismaService } from '../../database/prisma.service';
+import { normalizeAdSlotCode } from '../ad-slots/ad-slot-code';
+import { CreatePublicAdEventDto } from './dto/create-public-ad-event.dto';
+import { PublicAdEventResponseDto } from './dto/public-ad-event-response.dto';
 import {
   PublicAdEventIdentityRecord,
   publicAdEventIdentitySelect,
   toPublicAdEventResponse,
-} from "./public-ad-event.projection";
+} from './public-ad-event.projection';
 
 export interface PublicAdEventTrackingResult {
   event: PublicAdEventResponseDto;
@@ -24,9 +24,7 @@ export interface PublicAdEventTrackingResult {
 export class PublicAdEventsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async track(
-    dto: CreatePublicAdEventDto,
-  ): Promise<PublicAdEventTrackingResult> {
+  async track(dto: CreatePublicAdEventDto): Promise<PublicAdEventTrackingResult> {
     const slotCode = normalizeAdSlotCode(dto.slotCode);
     const existing = await this.findByClientEventId(dto.clientEventId);
 
@@ -43,7 +41,7 @@ export class PublicAdEventsService {
     });
 
     if (!slot) {
-      throw new NotFoundException("Ad slot not found");
+      throw new NotFoundException('Ad slot not found');
     }
 
     const panelId = dto.panelId ?? null;
@@ -74,21 +72,19 @@ export class PublicAdEventsService {
     ]);
 
     if (!campaign) {
-      throw new NotFoundException("Ad campaign not found");
+      throw new NotFoundException('Ad campaign not found');
     }
 
     if (!creative) {
-      throw new NotFoundException("Ad creative not found");
+      throw new NotFoundException('Ad creative not found');
     }
 
     if (creative.campaignId !== campaign.id) {
-      throw new BadRequestException(
-        "Ad creative does not belong to the specified campaign",
-      );
+      throw new BadRequestException('Ad creative does not belong to the specified campaign');
     }
 
     if (!assignment) {
-      throw new NotFoundException("Ad campaign assignment not found");
+      throw new NotFoundException('Ad campaign assignment not found');
     }
 
     this.validatePanel(dto.source, panelId, slot.panelId, panel);
@@ -114,10 +110,7 @@ export class PublicAdEventsService {
         created: true,
       };
     } catch (error) {
-      if (
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === "P2002"
-      ) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
         const concurrent = await this.findByClientEventId(dto.clientEventId);
 
         if (concurrent) {
@@ -125,13 +118,8 @@ export class PublicAdEventsService {
         }
       }
 
-      if (
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === "P2003"
-      ) {
-        throw new NotFoundException(
-          "Referenced advertising entity no longer exists",
-        );
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2003') {
+        throw new NotFoundException('Referenced advertising entity no longer exists');
       }
 
       throw error;
@@ -163,7 +151,7 @@ export class PublicAdEventsService {
 
     if (!sameIdentity) {
       throw new ConflictException(
-        "clientEventId is already used for a different advertising event",
+        'clientEventId is already used for a different advertising event',
       );
     }
 
@@ -180,19 +168,15 @@ export class PublicAdEventsService {
     panel: { id: string } | null,
   ): void {
     if (source === AnalyticsSource.PANEL && panelId === null) {
-      throw new BadRequestException("panelId is required for PANEL source");
+      throw new BadRequestException('panelId is required for PANEL source');
     }
 
     if (panelId !== null && !panel) {
-      throw new NotFoundException("Panel not found");
+      throw new NotFoundException('Panel not found');
     }
 
-    if (
-      source === AnalyticsSource.PANEL &&
-      slotPanelId !== null &&
-      slotPanelId !== panelId
-    ) {
-      throw new BadRequestException("Panel does not match ad slot");
+    if (source === AnalyticsSource.PANEL && slotPanelId !== null && slotPanelId !== panelId) {
+      throw new BadRequestException('Panel does not match ad slot');
     }
   }
 

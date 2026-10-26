@@ -1,12 +1,12 @@
-import { Injectable, UnauthorizedException } from "@nestjs/common";
-import { JwtService } from "@nestjs/jwt";
-import * as bcrypt from "bcrypt";
-import { AuthenticatedUser } from "../../common/types/authenticated-user.type";
-import { JwtPayload } from "../../common/types/jwt-payload.type";
-import { RefreshTokensService } from "../refresh-tokens/refresh-tokens.service";
-import { UsersService } from "../users/users.service";
-import { LoginDto } from "./dto/login.dto";
-import { LoginResponseDto } from "./dto/login-response.dto";
+import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
+import * as bcrypt from 'bcrypt';
+import { AuthenticatedUser } from '../../common/types/authenticated-user.type';
+import { JwtPayload } from '../../common/types/jwt-payload.type';
+import { RefreshTokensService } from '../refresh-tokens/refresh-tokens.service';
+import { UsersService } from '../users/users.service';
+import { LoginDto } from './dto/login.dto';
+import { LoginResponseDto } from './dto/login-response.dto';
 
 @Injectable()
 export class AuthService {
@@ -20,16 +20,13 @@ export class AuthService {
     const user = await this.usersService.findByEmailForAuth(dto.email);
 
     if (!user?.passwordHash || !user.isActive) {
-      throw new UnauthorizedException("Invalid email or password");
+      throw new UnauthorizedException('Invalid email or password');
     }
 
-    const isPasswordValid = await bcrypt.compare(
-      dto.password,
-      user.passwordHash,
-    );
+    const isPasswordValid = await bcrypt.compare(dto.password, user.passwordHash);
 
     if (!isPasswordValid) {
-      throw new UnauthorizedException("Invalid email or password");
+      throw new UnauthorizedException('Invalid email or password');
     }
 
     await this.usersService.updateLastLoginAt(user.id);
@@ -58,7 +55,7 @@ export class AuthService {
 
     if (!user || !user.isActive) {
       await this.refreshTokensService.revoke(refreshToken);
-      throw new UnauthorizedException("User is inactive or no longer exists");
+      throw new UnauthorizedException('User is inactive or no longer exists');
     }
 
     const authUser = this.usersService.toAuthUser(user);
@@ -83,8 +80,7 @@ export class AuthService {
   }
 
   async logoutAll(userId: string): Promise<{ revokedCount: number }> {
-    const revokedCount =
-      await this.refreshTokensService.revokeAllForUser(userId);
+    const revokedCount = await this.refreshTokensService.revokeAllForUser(userId);
     return { revokedCount };
   }
 

@@ -1,5 +1,5 @@
-import { Prisma } from "@prisma/client";
-import { AdCampaignAdminResponseDto } from "./dto/ad-campaign-admin-response.dto";
+import { Prisma } from '@prisma/client';
+import { AdCampaignAdminResponseDto } from './dto/ad-campaign-admin-response.dto';
 
 export const adCampaignAdminInclude = {
   tenant: {

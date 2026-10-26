@@ -1,7 +1,7 @@
-import { Module } from "@nestjs/common";
-import { DatabaseModule } from "../../database/database.module";
-import { RouteMaintenanceController } from "./route-maintenance.controller";
-import { RouteMaintenanceService } from "./route-maintenance.service";
+import { Module } from '@nestjs/common';
+import { DatabaseModule } from '../../database/database.module';
+import { RouteMaintenanceController } from './route-maintenance.controller';
+import { RouteMaintenanceService } from './route-maintenance.service';
 
 @Module({
   imports: [DatabaseModule],

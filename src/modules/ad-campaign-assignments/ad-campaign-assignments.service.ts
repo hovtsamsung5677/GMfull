@@ -1,22 +1,18 @@
-import {
-  ConflictException,
-  Injectable,
-  NotFoundException,
-} from "@nestjs/common";
-import { AdPlacement, Prisma } from "@prisma/client";
-import { PrismaService } from "../../database/prisma.service";
-import { runSerializableTransaction } from "../../database/serializable-transaction";
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { AdPlacement, Prisma } from '@prisma/client';
+import { PrismaService } from '../../database/prisma.service';
+import { runSerializableTransaction } from '../../database/serializable-transaction';
 import {
   adCampaignAssignmentAdminInclude,
   toAdCampaignAssignmentAdminResponse,
-} from "./ad-campaign-assignment-admin.projection";
+} from './ad-campaign-assignment-admin.projection';
 import {
   AdCampaignAssignmentAdminListResponseDto,
   AdCampaignAssignmentAdminResponseDto,
-} from "./dto/ad-campaign-assignment-admin-response.dto";
-import { AdCampaignAssignmentQueryDto } from "./dto/ad-campaign-assignment-query.dto";
-import { CreateAdCampaignAssignmentDto } from "./dto/create-ad-campaign-assignment.dto";
-import { UpdateAdCampaignAssignmentDto } from "./dto/update-ad-campaign-assignment.dto";
+} from './dto/ad-campaign-assignment-admin-response.dto';
+import { AdCampaignAssignmentQueryDto } from './dto/ad-campaign-assignment-query.dto';
+import { CreateAdCampaignAssignmentDto } from './dto/create-ad-campaign-assignment.dto';
+import { UpdateAdCampaignAssignmentDto } from './dto/update-ad-campaign-assignment.dto';
 
 interface AssignmentCampaignState {
   id: string;
@@ -53,7 +49,7 @@ export class AdCampaignAssignmentsService {
       this.prisma.adCampaignAssignment.findMany({
         where,
         include: adCampaignAssignmentAdminInclude,
-        orderBy: [{ createdAt: "desc" }, { id: "asc" }],
+        orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
         skip: (page - 1) * limit,
         take: limit,
       }),
@@ -78,7 +74,7 @@ export class AdCampaignAssignmentsService {
     });
 
     if (!assignment) {
-      throw new NotFoundException("Ad campaign assignment not found");
+      throw new NotFoundException('Ad campaign assignment not found');
     }
 
     return toAdCampaignAssignmentAdminResponse(assignment);
@@ -89,7 +85,7 @@ export class AdCampaignAssignmentsService {
     userId: string,
   ): Promise<AdCampaignAssignmentAdminResponseDto> {
     try {
-      return await runSerializableTransaction(this.prisma, async (tx) => {
+      return await runSerializableTransaction(this.prisma, async tx => {
         const isActive = dto.isActive ?? true;
         await this.validateReferences(tx, dto.campaignId, dto.slotId, isActive);
 
@@ -103,7 +99,7 @@ export class AdCampaignAssignmentsService {
         });
 
         if (existing?.deletedAt === null) {
-          throw new ConflictException("Ad campaign assignment already exists");
+          throw new ConflictException('Ad campaign assignment already exists');
         }
 
         const assignment = existing
@@ -141,21 +137,16 @@ export class AdCampaignAssignmentsService {
   ): Promise<AdCampaignAssignmentAdminResponseDto> {
     try {
       if (dto.isActive) {
-        return await runSerializableTransaction(this.prisma, async (tx) => {
+        return await runSerializableTransaction(this.prisma, async tx => {
           const existing = await tx.adCampaignAssignment.findFirst({
             where: { id, deletedAt: null },
           });
 
           if (!existing) {
-            throw new NotFoundException("Ad campaign assignment not found");
+            throw new NotFoundException('Ad campaign assignment not found');
           }
 
-          await this.validateReferences(
-            tx,
-            existing.campaignId,
-            existing.slotId,
-            true,
-          );
+          await this.validateReferences(tx, existing.campaignId, existing.slotId, true);
 
           const assignment = await tx.adCampaignAssignment.update({
             where: { id, deletedAt: null },
@@ -185,10 +176,7 @@ export class AdCampaignAssignmentsService {
     }
   }
 
-  async remove(
-    id: string,
-    userId: string,
-  ): Promise<AdCampaignAssignmentAdminResponseDto> {
+  async remove(id: string, userId: string): Promise<AdCampaignAssignmentAdminResponseDto> {
     const result = await this.prisma.adCampaignAssignment.updateMany({
       where: { id, deletedAt: null },
       data: {
@@ -199,7 +187,7 @@ export class AdCampaignAssignmentsService {
     });
 
     if (result.count === 0) {
-      throw new NotFoundException("Ad campaign assignment not found");
+      throw new NotFoundException('Ad campaign assignment not found');
     }
 
     const assignment = await this.prisma.adCampaignAssignment.findUnique({
@@ -208,7 +196,7 @@ export class AdCampaignAssignmentsService {
     });
 
     if (!assignment) {
-      throw new NotFoundException("Ad campaign assignment not found");
+      throw new NotFoundException('Ad campaign assignment not found');
     }
 
     return toAdCampaignAssignmentAdminResponse(assignment);
@@ -244,9 +232,7 @@ export class AdCampaignAssignmentsService {
     this.ensureSlotAvailable(slot);
 
     if (campaign.placement !== slot.placement) {
-      throw new ConflictException(
-        "Ad campaign and ad slot placements must match",
-      );
+      throw new ConflictException('Ad campaign and ad slot placements must match');
     }
 
     if (!isActive) {
@@ -254,21 +240,15 @@ export class AdCampaignAssignmentsService {
     }
 
     if (!campaign.isActive) {
-      throw new ConflictException(
-        "Active assignment requires an active ad campaign",
-      );
+      throw new ConflictException('Active assignment requires an active ad campaign');
     }
 
     if (!slot.isActive) {
-      throw new ConflictException(
-        "Active assignment requires an active ad slot",
-      );
+      throw new ConflictException('Active assignment requires an active ad slot');
     }
 
     if (campaign.endsAt !== null && campaign.endsAt <= new Date()) {
-      throw new ConflictException(
-        "Expired ad campaign cannot have an active assignment",
-      );
+      throw new ConflictException('Expired ad campaign cannot have an active assignment');
     }
   }
 
@@ -276,7 +256,7 @@ export class AdCampaignAssignmentsService {
     campaign: AssignmentCampaignState | null,
   ): asserts campaign is AssignmentCampaignState {
     if (!campaign || campaign.deletedAt !== null) {
-      throw new NotFoundException("Ad campaign not found");
+      throw new NotFoundException('Ad campaign not found');
     }
   }
 
@@ -284,24 +264,22 @@ export class AdCampaignAssignmentsService {
     slot: AssignmentSlotState | null,
   ): asserts slot is AssignmentSlotState {
     if (!slot || slot.deletedAt !== null) {
-      throw new NotFoundException("Ad slot not found");
+      throw new NotFoundException('Ad slot not found');
     }
   }
 
   private handlePrismaError(error: unknown): never {
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
-      if (error.code === "P2002") {
-        throw new ConflictException("Ad campaign assignment already exists");
+      if (error.code === 'P2002') {
+        throw new ConflictException('Ad campaign assignment already exists');
       }
 
-      if (error.code === "P2003") {
-        throw new NotFoundException(
-          "Referenced ad campaign, ad slot or audit user not found",
-        );
+      if (error.code === 'P2003') {
+        throw new NotFoundException('Referenced ad campaign, ad slot or audit user not found');
       }
 
-      if (error.code === "P2025") {
-        throw new NotFoundException("Ad campaign assignment not found");
+      if (error.code === 'P2025') {
+        throw new NotFoundException('Ad campaign assignment not found');
       }
     }
 

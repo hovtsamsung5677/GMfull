@@ -1,4 +1,4 @@
-import { IsString, Matches, MaxLength } from "class-validator";
+import { IsString, Matches, MaxLength } from 'class-validator';
 
 /**
  * Marks a property as a valid entity identifier. Accepts both Prisma CUIDs
@@ -20,7 +20,7 @@ export function IsIdentifier() {
   return function (target: object, propertyKey: string | symbol) {
     IsString()(target, propertyKey);
     Matches(CUID_OR_UUID, {
-      message: "value must be a valid CUID or UUID identifier",
+      message: 'value must be a valid CUID or UUID identifier',
     })(target, propertyKey);
     MaxLength(128)(target, propertyKey);
   };

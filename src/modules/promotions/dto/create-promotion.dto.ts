@@ -1,5 +1,5 @@
-import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
-import { Transform } from "class-transformer";
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 import {
   IsBoolean,
   IsDateString,
@@ -7,28 +7,26 @@ import {
   IsObject,
   IsOptional,
   IsString,
-  IsUUID,
   Max,
   MaxLength,
   Min,
   MinLength,
   Matches,
-} from "class-validator";
-import { IsIdentifier } from "../../../common/decorators/identifier.decorator";
-import { Nullable } from "../../../common/decorators/nullable.decorator";
-import { toOptionalBoolean } from "../../../common/transformers/query.transformers";
+} from 'class-validator';
+import { IsIdentifier } from '../../../common/decorators/identifier.decorator';
+import { Nullable } from '../../../common/decorators/nullable.decorator';
+import { toOptionalBoolean } from '../../../common/transformers/query.transformers';
 
 export class CreatePromotionDto {
-  @ApiProperty({ example: "Скидка 20% на спортивную одежду" })
+  @ApiProperty({ example: 'Скидка 20% на спортивную одежду' })
   @IsString()
   @MinLength(1)
   @MaxLength(200)
   title!: string;
 
   @ApiProperty({
-    example: "sportmaster-summer-sale",
-    description:
-      "Public identifier. The backend normalizes it to a lowercase URL-safe slug.",
+    example: 'sportmaster-summer-sale',
+    description: 'Public identifier. The backend normalizes it to a lowercase URL-safe slug.',
   })
   @IsString()
   @MinLength(1)
@@ -45,7 +43,7 @@ export class CreatePromotionDto {
   @ApiPropertyOptional({
     nullable: true,
     maxLength: 20000,
-    description: "Full promotion terms displayed to administrators.",
+    description: 'Full promotion terms displayed to administrators.',
   })
   @Nullable()
   @IsOptional()
@@ -55,7 +53,7 @@ export class CreatePromotionDto {
 
   @ApiPropertyOptional({
     nullable: true,
-    example: "详见详情",
+    example: '详见详情',
     maxLength: 120,
   })
   @Nullable()
@@ -66,9 +64,9 @@ export class CreatePromotionDto {
 
   @ApiPropertyOptional({
     nullable: true,
-    example: "/stores/sportmaster",
+    example: '/stores/sportmaster',
     description:
-      "Internal path or absolute CTA URL. Must be an application-relative path or an http(s) URL.",
+      'Internal path or absolute CTA URL. Must be an application-relative path or an http(s) URL.',
     maxLength: 2048,
   })
   @Nullable()
@@ -76,14 +74,14 @@ export class CreatePromotionDto {
   @IsString()
   @MaxLength(2048)
   @Matches(/^(\/|https?:\/\/)/i, {
-    message: "buttonUrl must be an application-relative path or an http(s) URL",
+    message: 'buttonUrl must be an application-relative path or an http(s) URL',
   })
   buttonUrl?: string | null;
 
   @ApiPropertyOptional({
     nullable: true,
     description:
-      "Required for an active promotion and must match the selected store tenant. Nullable for inactive drafts.",
+      'Required for an active promotion and must match the selected store tenant. Nullable for inactive drafts.',
   })
   @Nullable()
   @IsIdentifier()
@@ -92,8 +90,7 @@ export class CreatePromotionDto {
 
   @ApiPropertyOptional({
     nullable: true,
-    description:
-      "Required for an active promotion. Nullable for inactive drafts.",
+    description: 'Required for an active promotion. Nullable for inactive drafts.',
   })
   @Nullable()
   @IsIdentifier()
@@ -102,7 +99,7 @@ export class CreatePromotionDto {
 
   @ApiPropertyOptional({
     nullable: true,
-    description: "Active FileAsset id with kind IMAGE.",
+    description: 'Active FileAsset id with kind IMAGE.',
   })
   @Nullable()
   @IsIdentifier()
@@ -112,8 +109,8 @@ export class CreatePromotionDto {
   @ApiPropertyOptional({
     nullable: true,
     type: String,
-    format: "date-time",
-    example: "2026-07-20T07:00:00.000Z",
+    format: 'date-time',
+    example: '2026-07-20T07:00:00.000Z',
   })
   @Nullable()
   @IsOptional()
@@ -123,8 +120,8 @@ export class CreatePromotionDto {
   @ApiPropertyOptional({
     nullable: true,
     type: String,
-    format: "date-time",
-    example: "2026-08-20T20:00:00.000Z",
+    format: 'date-time',
+    example: '2026-08-20T20:00:00.000Z',
   })
   @Nullable()
   @IsOptional()

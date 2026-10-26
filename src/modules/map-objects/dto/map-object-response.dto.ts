@@ -1,5 +1,5 @@
-import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
-import { MapObjectType } from "@prisma/client";
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { MapObjectType } from '@prisma/client';
 
 class MapObjectFloorResponseDto {
   @ApiProperty()
@@ -95,8 +95,7 @@ export class MapObjectResponseDto {
   @ApiPropertyOptional({
     nullable: true,
     type: Object,
-    description:
-      "Object geometry. This public/admin response field maps to Prisma geometry.",
+    description: 'Object geometry. This public/admin response field maps to Prisma geometry.',
   })
   polygonData!: unknown | null;
 

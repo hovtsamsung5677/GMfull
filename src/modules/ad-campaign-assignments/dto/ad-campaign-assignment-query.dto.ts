@@ -1,27 +1,19 @@
-import { ApiPropertyOptional } from "@nestjs/swagger";
-import { Transform } from "class-transformer";
-import {
-  IsBoolean,
-  IsInt,
-  IsOptional,
-  IsString,
-  Max,
-  Min,
-  MinLength,
-} from "class-validator";
+import { ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
+import { IsBoolean, IsInt, IsOptional, IsString, Max, Min, MinLength } from 'class-validator';
 import {
   toOptionalBoolean,
   toOptionalNumber,
-} from "../../../common/transformers/query.transformers";
+} from '../../../common/transformers/query.transformers';
 
 export class AdCampaignAssignmentQueryDto {
-  @ApiPropertyOptional({ description: "Filter by exact AdCampaign id." })
+  @ApiPropertyOptional({ description: 'Filter by exact AdCampaign id.' })
   @IsOptional()
   @IsString()
   @MinLength(1)
   campaignId?: string;
 
-  @ApiPropertyOptional({ description: "Filter by exact AdSlot id." })
+  @ApiPropertyOptional({ description: 'Filter by exact AdSlot id.' })
   @IsOptional()
   @IsString()
   @MinLength(1)

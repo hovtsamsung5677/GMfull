@@ -1,19 +1,12 @@
-import {
-  ConflictException,
-  Injectable,
-  NotFoundException,
-} from "@nestjs/common";
-import { FileAssetKind, Prisma } from "@prisma/client";
-import { PrismaService } from "../../database/prisma.service";
-import { CreateFileAssetDto } from "./dto/create-file-asset.dto";
-import { FileAssetQueryDto } from "./dto/file-asset-query.dto";
-import { FileAssetResponseDto } from "./dto/file-asset-response.dto";
-import { PublicFileAssetResponseDto } from "./dto/public-file-asset-response.dto";
-import { UpdateFileAssetDto } from "./dto/update-file-asset.dto";
-import {
-  publicFileAssetSelect,
-  toPublicFileAssetResponse,
-} from "./public-file-asset.projection";
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { FileAssetKind, Prisma } from '@prisma/client';
+import { PrismaService } from '../../database/prisma.service';
+import { CreateFileAssetDto } from './dto/create-file-asset.dto';
+import { FileAssetQueryDto } from './dto/file-asset-query.dto';
+import { FileAssetResponseDto } from './dto/file-asset-response.dto';
+import { PublicFileAssetResponseDto } from './dto/public-file-asset-response.dto';
+import { UpdateFileAssetDto } from './dto/update-file-asset.dto';
+import { publicFileAssetSelect, toPublicFileAssetResponse } from './public-file-asset.projection';
 
 const buildFileAssetWithActiveUsage = (now: Date) =>
   ({
@@ -68,11 +61,11 @@ export class FileAssetsService {
     const assets = await this.prisma.fileAsset.findMany({
       where: this.buildWhere(query),
       include: buildFileAssetWithActiveUsage(new Date()),
-      orderBy: [{ createdAt: "desc" }, { id: "asc" }],
+      orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
       ...this.getPagination(query),
     });
 
-    return assets.map((asset) => this.toResponse(asset));
+    return assets.map(asset => this.toResponse(asset));
   }
 
   async findOne(id: string): Promise<FileAssetResponseDto> {
@@ -86,7 +79,7 @@ export class FileAssetsService {
     });
 
     if (!asset || !asset.isActive) {
-      throw new NotFoundException("File asset not found");
+      throw new NotFoundException('File asset not found');
     }
 
     return toPublicFileAssetResponse(asset);
@@ -118,10 +111,7 @@ export class FileAssetsService {
     return this.toResponse(asset);
   }
 
-  async update(
-    id: string,
-    dto: UpdateFileAssetDto,
-  ): Promise<FileAssetResponseDto> {
+  async update(id: string, dto: UpdateFileAssetDto): Promise<FileAssetResponseDto> {
     const existing = await this.findOneOrThrow(id);
 
     if (dto.isActive === false) {
@@ -171,7 +161,7 @@ export class FileAssetsService {
     });
 
     if (!asset) {
-      throw new NotFoundException("File asset not found");
+      throw new NotFoundException('File asset not found');
     }
 
     return asset;
@@ -184,14 +174,14 @@ export class FileAssetsService {
       ...(search
         ? {
             OR: [
-              { filename: { contains: search, mode: "insensitive" as const } },
+              { filename: { contains: search, mode: 'insensitive' as const } },
               {
                 originalName: {
                   contains: search,
-                  mode: "insensitive" as const,
+                  mode: 'insensitive' as const,
                 },
               },
-              { url: { contains: search, mode: "insensitive" as const } },
+              { url: { contains: search, mode: 'insensitive' as const } },
             ],
           }
         : {}),
@@ -199,7 +189,7 @@ export class FileAssetsService {
         ? {
             mimeType: {
               contains: query.mimeType,
-              mode: "insensitive" as const,
+              mode: 'insensitive' as const,
             },
           }
         : {}),
@@ -207,7 +197,7 @@ export class FileAssetsService {
         ? {
             provider: {
               equals: query.provider,
-              mode: "insensitive" as const,
+              mode: 'insensitive' as const,
             },
           }
         : {}),
@@ -239,11 +229,9 @@ export class FileAssetsService {
     );
   }
 
-  private getBlockingPromotionImageCount(
-    asset: FileAssetWithActiveUsage,
-  ): number {
+  private getBlockingPromotionImageCount(asset: FileAssetWithActiveUsage): number {
     return asset.promotionImages.filter(
-      (promotion) =>
+      promotion =>
         promotion.tenantId !== null &&
         promotion.store !== null &&
         promotion.store.tenantId === promotion.tenantId,

@@ -1,6 +1,6 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
-import { Prisma } from "@prisma/client";
-import { PrismaService } from "../../database/prisma.service";
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
+import { PrismaService } from '../../database/prisma.service';
 
 export type BlockState = {
   blocked: boolean;
@@ -33,25 +33,27 @@ type MetadataRecord = Record<string, unknown> & {
 };
 
 function extractBlock(metadata: unknown): BlockState {
-  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
-    return { blocked: false, reason: null, blockedAt: null, blockedUntil: null };
+  if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) {
+    return {
+      blocked: false,
+      reason: null,
+      blockedAt: null,
+      blockedUntil: null,
+    };
   }
 
   const m = metadata as MetadataRecord;
   return {
     blocked: m.blocked === true,
-    reason: typeof m.blockReason === "string" ? m.blockReason : null,
-    blockedAt: typeof m.blockedAt === "string" ? m.blockedAt : null,
-    blockedUntil: typeof m.blockedUntil === "string" ? m.blockedUntil : null,
+    reason: typeof m.blockReason === 'string' ? m.blockReason : null,
+    blockedAt: typeof m.blockedAt === 'string' ? m.blockedAt : null,
+    blockedUntil: typeof m.blockedUntil === 'string' ? m.blockedUntil : null,
   };
 }
 
-function mergeMetadata(
-  existing: unknown,
-  patch: Partial<MetadataRecord>,
-): Prisma.InputJsonValue {
+function mergeMetadata(existing: unknown, patch: Partial<MetadataRecord>): Prisma.InputJsonValue {
   const base: MetadataRecord =
-    existing && typeof existing === "object" && !Array.isArray(existing)
+    existing && typeof existing === 'object' && !Array.isArray(existing)
       ? { ...(existing as MetadataRecord) }
       : {};
 
@@ -88,7 +90,7 @@ export class RouteMaintenanceService {
       data: {
         metadata: mergeMetadata(edge.metadata, {
           blocked: true,
-          blockReason: params.reason ?? "maintenance",
+          blockReason: params.reason ?? 'maintenance',
           blockedUntil: params.blockedUntil,
           blockedAt: now,
         }),
@@ -140,7 +142,7 @@ export class RouteMaintenanceService {
       data: {
         metadata: mergeMetadata(node.metadata, {
           blocked: true,
-          blockReason: params.reason ?? "maintenance",
+          blockReason: params.reason ?? 'maintenance',
           blockedUntil: params.blockedUntil,
           blockedAt: now,
         }),
@@ -178,33 +180,31 @@ export class RouteMaintenanceService {
     const edges = await this.prisma.routeEdge.findMany({
       where: {
         metadata: {
-          path: ["blocked"],
+          path: ['blocked'],
           equals: true,
         },
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: 'desc' },
     });
 
-    return edges.map((edge) => this.toEdgeResult(edge));
+    return edges.map(edge => this.toEdgeResult(edge));
   }
 
   async listBlockedNodes(): Promise<BlockNodeResult[]> {
     const nodes = await this.prisma.routeNode.findMany({
       where: {
         metadata: {
-          path: ["blocked"],
+          path: ['blocked'],
           equals: true,
         },
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: 'desc' },
     });
 
-    return nodes.map((node) => this.toNodeResult(node));
+    return nodes.map(node => this.toNodeResult(node));
   }
 
-  private toEdgeResult(
-    edge: Prisma.RouteEdgeGetPayload<Record<string, never>>,
-  ): BlockEdgeResult {
+  private toEdgeResult(edge: Prisma.RouteEdgeGetPayload<Record<string, never>>): BlockEdgeResult {
     return {
       id: edge.id,
       fromNodeId: edge.fromNodeId,
@@ -214,9 +214,7 @@ export class RouteMaintenanceService {
     };
   }
 
-  private toNodeResult(
-    node: Prisma.RouteNodeGetPayload<Record<string, never>>,
-  ): BlockNodeResult {
+  private toNodeResult(node: Prisma.RouteNodeGetPayload<Record<string, never>>): BlockNodeResult {
     return {
       id: node.id,
       type: node.type,

@@ -1,6 +1,6 @@
-import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
-import { FileAssetKind } from "@prisma/client";
-import { Transform } from "class-transformer";
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { FileAssetKind } from '@prisma/client';
+import { Transform } from 'class-transformer';
 import {
   IsEnum,
   IsInt,
@@ -12,17 +12,17 @@ import {
   Max,
   MaxLength,
   Min,
-} from "class-validator";
-import { Nullable } from "../../../common/decorators/nullable.decorator";
-import { toOptionalNumber } from "../../../common/transformers/query.transformers";
+} from 'class-validator';
+import { Nullable } from '../../../common/decorators/nullable.decorator';
+import { toOptionalNumber } from '../../../common/transformers/query.transformers';
 
 const trimString = ({ value }: { value: unknown }) =>
-  typeof value === "string" ? value.trim() : value;
+  typeof value === 'string' ? value.trim() : value;
 
 export class CreateFileAssetDto {
   @ApiProperty({
-    example: "first-floor.glb",
-    description: "Registry filename. This endpoint does not upload a file.",
+    example: 'first-floor.glb',
+    description: 'Registry filename. This endpoint does not upload a file.',
   })
   @Transform(trimString)
   @IsString()
@@ -31,21 +31,21 @@ export class CreateFileAssetDto {
   filename!: string;
 
   @ApiProperty({
-    example: "https://cdn.example.com/maps/first-floor.glb",
+    example: 'https://cdn.example.com/maps/first-floor.glb',
     description:
-      "Existing HTTP(S) or application-relative file URL. No file is uploaded by this API.",
+      'Existing HTTP(S) or application-relative file URL. No file is uploaded by this API.',
   })
   @Transform(trimString)
   @IsString()
   @IsNotEmpty()
   @MaxLength(2048)
   @Matches(/^(https?:\/\/|\/)/i, {
-    message: "url must be an HTTP(S) or application-relative URL",
+    message: 'url must be an HTTP(S) or application-relative URL',
   })
   url!: string;
 
   @ApiPropertyOptional({
-    example: "GREEN MALL first floor.glb",
+    example: 'GREEN MALL first floor.glb',
     nullable: true,
   })
   @Transform(trimString)
@@ -55,7 +55,7 @@ export class CreateFileAssetDto {
   @MaxLength(255)
   originalName?: string | null;
 
-  @ApiPropertyOptional({ example: "model/gltf-binary", nullable: true })
+  @ApiPropertyOptional({ example: 'model/gltf-binary', nullable: true })
   @Transform(trimString)
   @Nullable()
   @IsOptional()
@@ -68,7 +68,7 @@ export class CreateFileAssetDto {
     minimum: 0,
     maximum: 2147483647,
     nullable: true,
-    description: "File size in bytes when known.",
+    description: 'File size in bytes when known.',
   })
   @Transform(toOptionalNumber)
   @Nullable()
@@ -79,9 +79,9 @@ export class CreateFileAssetDto {
   size?: number | null;
 
   @ApiPropertyOptional({
-    example: "maps/first-floor.glb",
+    example: 'maps/first-floor.glb',
     nullable: true,
-    description: "Optional provider-relative path or storage key.",
+    description: 'Optional provider-relative path or storage key.',
   })
   @Transform(trimString)
   @Nullable()
@@ -91,9 +91,9 @@ export class CreateFileAssetDto {
   path?: string | null;
 
   @ApiPropertyOptional({
-    example: "external-cdn",
+    example: 'external-cdn',
     nullable: true,
-    description: "Asset provider label; no storage integration is performed.",
+    description: 'Asset provider label; no storage integration is performed.',
   })
   @Transform(trimString)
   @Nullable()
@@ -114,8 +114,7 @@ export class CreateFileAssetDto {
   @ApiPropertyOptional({
     type: Object,
     nullable: true,
-    description:
-      "Optional rendering, dimensions, format or other asset-specific metadata.",
+    description: 'Optional rendering, dimensions, format or other asset-specific metadata.',
   })
   @Nullable()
   @IsOptional()

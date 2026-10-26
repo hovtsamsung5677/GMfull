@@ -1,24 +1,22 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
-import { AdTargetType, AnalyticsEventType } from "@prisma/client";
-import { PrismaService } from "../../database/prisma.service";
-import { normalizeAdSlotCode } from "../ad-slots/ad-slot-code";
-import { buildPublicPromotionWhere } from "../promotions/promotion-public.eligibility";
-import { PublicAdDeliveryResponseDto } from "./dto/public-ad-response.dto";
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { AdTargetType, AnalyticsEventType } from '@prisma/client';
+import { PrismaService } from '../../database/prisma.service';
+import { normalizeAdSlotCode } from '../ad-slots/ad-slot-code';
+import { buildPublicPromotionWhere } from '../promotions/promotion-public.eligibility';
+import { PublicAdDeliveryResponseDto } from './dto/public-ad-response.dto';
 import {
   hasAvailablePublicAdTarget,
   publicAdCandidateSelect,
   PublicAdCandidate,
   publicAdCreativeWhere,
   toPublicAdDeliveryResponse,
-} from "./public-ad.projection";
+} from './public-ad.projection';
 
 @Injectable()
 export class PublicAdsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async deliverBySlotCode(
-    slotCode: string,
-  ): Promise<PublicAdDeliveryResponseDto> {
+  async deliverBySlotCode(slotCode: string): Promise<PublicAdDeliveryResponseDto> {
     const slot = await this.prisma.adSlot.findFirst({
       where: {
         code: normalizeAdSlotCode(slotCode),
@@ -33,7 +31,7 @@ export class PublicAdsService {
     });
 
     if (!slot) {
-      throw new NotFoundException("Ad slot not found");
+      throw new NotFoundException('Ad slot not found');
     }
 
     const now = new Date();
@@ -88,24 +86,17 @@ export class PublicAdsService {
         },
       },
       orderBy: [
-        { campaign: { priority: "desc" } },
-        { campaign: { createdAt: "desc" } },
-        { campaign: { id: "asc" } },
+        { campaign: { priority: 'desc' } },
+        { campaign: { createdAt: 'desc' } },
+        { campaign: { id: 'asc' } },
       ],
       select: publicAdCandidateSelect,
     });
 
-    const targetEligibleCandidates = candidates.filter(
-      hasAvailablePublicAdTarget,
-    );
-    const candidate = await this.findWithinImpressionLimit(
-      targetEligibleCandidates,
-    );
+    const targetEligibleCandidates = candidates.filter(hasAvailablePublicAdTarget);
+    const candidate = await this.findWithinImpressionLimit(targetEligibleCandidates);
 
-    return toPublicAdDeliveryResponse(
-      { code: slot.code, placement: slot.placement },
-      candidate,
-    );
+    return toPublicAdDeliveryResponse({ code: slot.code, placement: slot.placement }, candidate);
   }
 
   private async findWithinImpressionLimit(
@@ -114,8 +105,8 @@ export class PublicAdsService {
     const limitedCampaignIds = [
       ...new Set(
         candidates
-          .filter((candidate) => candidate.campaign.impressionLimit !== null)
-          .map((candidate) => candidate.campaign.id),
+          .filter(candidate => candidate.campaign.impressionLimit !== null)
+          .map(candidate => candidate.campaign.id),
       ),
     ];
 
@@ -124,7 +115,7 @@ export class PublicAdsService {
     }
 
     const impressionCounts = await this.prisma.analyticsEvent.groupBy({
-      by: ["campaignId"],
+      by: ['campaignId'],
       where: {
         type: AnalyticsEventType.AD_IMPRESSION,
         campaignId: { in: limitedCampaignIds },
@@ -140,11 +131,10 @@ export class PublicAdsService {
     }
 
     return (
-      candidates.find((candidate) => {
+      candidates.find(candidate => {
         const limit = candidate.campaign.impressionLimit;
         return (
-          limit === null ||
-          (impressionCountByCampaignId.get(candidate.campaign.id) ?? 0) < limit
+          limit === null || (impressionCountByCampaignId.get(candidate.campaign.id) ?? 0) < limit
         );
       }) ?? null
     );

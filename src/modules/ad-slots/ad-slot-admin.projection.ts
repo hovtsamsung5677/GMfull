@@ -1,5 +1,5 @@
-import { Prisma } from "@prisma/client";
-import { AdSlotAdminResponseDto } from "./dto/ad-slot-admin-response.dto";
+import { Prisma } from '@prisma/client';
+import { AdSlotAdminResponseDto } from './dto/ad-slot-admin-response.dto';
 
 export const adSlotAdminInclude = {
   panel: {
@@ -29,9 +29,7 @@ export type AdSlotAdminRecord = Prisma.AdSlotGetPayload<{
   include: typeof adSlotAdminInclude;
 }>;
 
-export function toAdSlotAdminResponse(
-  slot: AdSlotAdminRecord,
-): AdSlotAdminResponseDto {
+export function toAdSlotAdminResponse(slot: AdSlotAdminRecord): AdSlotAdminResponseDto {
   return {
     id: slot.id,
     code: slot.code,

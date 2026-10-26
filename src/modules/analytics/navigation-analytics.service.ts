@@ -1,10 +1,10 @@
-import { BadRequestException, Injectable } from "@nestjs/common";
-import { AnalyticsEventType, Prisma } from "@prisma/client";
-import { PrismaService } from "../../database/prisma.service";
+import { BadRequestException, Injectable } from '@nestjs/common';
+import { AnalyticsEventType, Prisma } from '@prisma/client';
+import { PrismaService } from '../../database/prisma.service';
 import {
   NavigationAnalyticsQueryDto,
   NavigationAnalyticsReportsQueryDto,
-} from "./dto/navigation-analytics-query.dto";
+} from './dto/navigation-analytics-query.dto';
 import {
   NavigationAnalyticsDailyItemResponseDto,
   NavigationAnalyticsDailyResponseDto,
@@ -19,7 +19,7 @@ import {
   NavigationAnalyticsSearchQueriesResponseDto,
   NavigationAnalyticsSearchQueryItemResponseDto,
   NavigationAnalyticsCardToRouteConversionResponseDto,
-} from "./dto/navigation-analytics-response.dto";
+} from './dto/navigation-analytics-response.dto';
 
 const NAVIGATION_EVENT_TYPES = [
   AnalyticsEventType.SESSION_STARTED,
@@ -39,10 +39,10 @@ const NAVIGATION_EVENT_TYPES = [
 const DAILY_METRIC_TYPES: Partial<
   Record<AnalyticsEventType, keyof NavigationAnalyticsDailyItemResponseDto>
 > = {
-  [AnalyticsEventType.PANEL_USED]: "panelClicks",
-  [AnalyticsEventType.ROUTE_BUILT]: "routesBuilt",
-  [AnalyticsEventType.QR_SCANNED]: "qrScans",
-  [AnalyticsEventType.SESSION_STARTED]: "sessions",
+  [AnalyticsEventType.PANEL_USED]: 'panelClicks',
+  [AnalyticsEventType.ROUTE_BUILT]: 'routesBuilt',
+  [AnalyticsEventType.QR_SCANNED]: 'qrScans',
+  [AnalyticsEventType.SESSION_STARTED]: 'sessions',
 };
 
 const DEFAULT_SERIES_DAYS = 30;
@@ -130,7 +130,7 @@ export class NavigationAnalyticsService {
         AND: [where, { createdAt: { gte: todayStart } }],
       }),
       this.prisma.analyticsEvent.groupBy({
-        by: ["sessionId"],
+        by: ['sessionId'],
         where: { AND: [where, { sessionId: { not: null } }] },
       }),
     ]);
@@ -148,9 +148,7 @@ export class NavigationAnalyticsService {
     };
   }
 
-  async getDaily(
-    query: NavigationAnalyticsQueryDto,
-  ): Promise<NavigationAnalyticsDailyResponseDto> {
+  async getDaily(query: NavigationAnalyticsQueryDto): Promise<NavigationAnalyticsDailyResponseDto> {
     const period = this.resolveSeriesPeriod(query);
 
     const rows = await this.prisma.$queryRaw<DailyAggregateRow[]>`
@@ -178,16 +176,16 @@ export class NavigationAnalyticsService {
 
       if (bucket && metric) {
         switch (metric) {
-          case "panelClicks":
+          case 'panelClicks':
             bucket.panelClicks += row.count;
             break;
-          case "routesBuilt":
+          case 'routesBuilt':
             bucket.routesBuilt += row.count;
             break;
-          case "qrScans":
+          case 'qrScans':
             bucket.qrScans += row.count;
             break;
-          case "sessions":
+          case 'sessions':
             bucket.sessions += row.count;
             break;
         }
@@ -242,12 +240,9 @@ export class NavigationAnalyticsService {
     const where = this.buildWhere(query, period);
 
     const rows = await this.prisma.analyticsEvent.groupBy({
-      by: ["storeId"],
+      by: ['storeId'],
       where: {
-        AND: [
-          where,
-          { type: AnalyticsEventType.ROUTE_BUILT, storeId: { not: null } },
-        ],
+        AND: [where, { type: AnalyticsEventType.ROUTE_BUILT, storeId: { not: null } }],
       },
       _count: { _all: true },
     });
@@ -261,9 +256,7 @@ export class NavigationAnalyticsService {
 
     const storesById = await this.loadStores([...countsByStore.keys()]);
 
-    const items: NavigationAnalyticsRoutesByStoreItemResponseDto[] = [
-      ...countsByStore.entries(),
-    ]
+    const items: NavigationAnalyticsRoutesByStoreItemResponseDto[] = [...countsByStore.entries()]
       .map(([storeId, routesBuilt]) => ({
         storeId,
         store: storesById.get(storeId) ?? null,
@@ -271,8 +264,7 @@ export class NavigationAnalyticsService {
       }))
       .sort(
         (left, right) =>
-          right.routesBuilt - left.routesBuilt ||
-          left.storeId.localeCompare(right.storeId),
+          right.routesBuilt - left.routesBuilt || left.storeId.localeCompare(right.storeId),
       );
 
     return {
@@ -289,7 +281,7 @@ export class NavigationAnalyticsService {
     const where = this.buildEntityQuery(query, period);
 
     const rows = await this.prisma.analyticsEvent.groupBy({
-      by: ["categoryId"],
+      by: ['categoryId'],
       where: {
         AND: [{ type: AnalyticsEventType.CATEGORY_SELECTED }, where],
       },
@@ -304,13 +296,9 @@ export class NavigationAnalyticsService {
       }
     }
 
-    const categoriesById = await this.loadCategories([
-      ...categoryIdCounts.keys(),
-    ]);
+    const categoriesById = await this.loadCategories([...categoryIdCounts.keys()]);
 
-    const items: NavigationAnalyticsPopularCategoryResponseDto[] = [
-      ...categoryIdCounts.entries(),
-    ]
+    const items: NavigationAnalyticsPopularCategoryResponseDto[] = [...categoryIdCounts.entries()]
       .map(([categoryId, selections]) => {
         const cat = categoriesById.get(categoryId) ?? null;
         return {
@@ -323,8 +311,7 @@ export class NavigationAnalyticsService {
       })
       .sort(
         (left, right) =>
-          right.selections - left.selections ||
-          left.categoryId.localeCompare(right.categoryId),
+          right.selections - left.selections || left.categoryId.localeCompare(right.categoryId),
       );
 
     return {
@@ -361,22 +348,19 @@ export class NavigationAnalyticsService {
       LIMIT ${limit}
     `;
 
-    const items: NavigationAnalyticsSearchQueryItemResponseDto[] = rows.map(
-      (row) => {
-        const count = Number(row.count);
-        const zeroCount = Number(row.zeroCount ?? 0);
-        const noResults = zeroCount > 0 && zeroCount === count;
-        return {
-          query: row.query,
-          count,
-          noResults,
-        };
-      },
-    );
+    const items: NavigationAnalyticsSearchQueryItemResponseDto[] = rows.map(row => {
+      const count = Number(row.count);
+      const zeroCount = Number(row.zeroCount ?? 0);
+      const noResults = zeroCount > 0 && zeroCount === count;
+      return {
+        query: row.query,
+        count,
+        noResults,
+      };
+    });
 
     const filtered = items.filter(
-      (item) =>
-        query.noResults === undefined || item.noResults === query.noResults,
+      item => query.noResults === undefined || item.noResults === query.noResults,
     );
 
     return {
@@ -393,10 +377,7 @@ export class NavigationAnalyticsService {
     const period = this.resolvePeriod(query);
     const baseWhere = this.buildEntityQuery(query, period);
 
-    const cardViews = await this.countByType(
-      AnalyticsEventType.STORE_CARD_VIEWED,
-      baseWhere,
-    );
+    const cardViews = await this.countByType(AnalyticsEventType.STORE_CARD_VIEWED, baseWhere);
 
     if (cardViews === 0) {
       return {
@@ -408,8 +389,7 @@ export class NavigationAnalyticsService {
       };
     }
 
-    const routesFromCardSessions =
-      await this.countRoutesBuiltFromCardSessions(baseWhere);
+    const routesFromCardSessions = await this.countRoutesBuiltFromCardSessions(baseWhere);
 
     return {
       from: period.from?.toISOString() ?? null,
@@ -420,9 +400,7 @@ export class NavigationAnalyticsService {
     };
   }
 
-  private async loadCategories(
-    ids: string[],
-  ): Promise<Map<string, CategorySummary>> {
+  private async loadCategories(ids: string[]): Promise<Map<string, CategorySummary>> {
     if (ids.length === 0) {
       return new Map();
     }
@@ -433,7 +411,7 @@ export class NavigationAnalyticsService {
     });
 
     return new Map(
-      categories.map((category) => [
+      categories.map(category => [
         category.id,
         {
           id: category.id,
@@ -483,7 +461,7 @@ export class NavigationAnalyticsService {
       return Prisma.sql``;
     }
 
-    return Prisma.sql`AND ${Prisma.join(parts, " AND ")}`;
+    return Prisma.sql`AND ${Prisma.join(parts, ' AND ')}`;
   }
 
   private extractPeriodWhere(where: Prisma.AnalyticsEventWhereInput): {
@@ -552,7 +530,7 @@ export class NavigationAnalyticsService {
     });
 
     return new Map(
-      stores.map((store) => [
+      stores.map(store => [
         store.id,
         {
           id: store.id,
@@ -593,9 +571,7 @@ export class NavigationAnalyticsService {
   }
 
   private sqlEventTypeFilter(): Prisma.Sql {
-    return Prisma.sql`"type"::text IN (${Prisma.join([
-      ...NAVIGATION_EVENT_TYPES,
-    ])})`;
+    return Prisma.sql`"type"::text IN (${Prisma.join([...NAVIGATION_EVENT_TYPES])})`;
   }
 
   private sqlEntityFilters(query: NavigationAnalyticsQueryDto): Prisma.Sql {
@@ -619,22 +595,20 @@ export class NavigationAnalyticsService {
     const to = query.to ? new Date(query.to) : null;
 
     if (from !== null && to !== null && from.getTime() >= to.getTime()) {
-      throw new BadRequestException("from must be earlier than to");
+      throw new BadRequestException('from must be earlier than to');
     }
 
     return { from, to };
   }
 
-  private resolveSeriesPeriod(
-    query: NavigationAnalyticsQueryDto,
-  ): ResolvedSeriesPeriod {
+  private resolveSeriesPeriod(query: NavigationAnalyticsQueryDto): ResolvedSeriesPeriod {
     const to = query.to ? new Date(query.to) : new Date();
     const from = query.from
       ? new Date(query.from)
       : new Date(to.getTime() - DEFAULT_SERIES_DAYS * DAY_MS);
 
     if (from.getTime() >= to.getTime()) {
-      throw new BadRequestException("from must be earlier than to");
+      throw new BadRequestException('from must be earlier than to');
     }
 
     return { from, to };
@@ -643,15 +617,7 @@ export class NavigationAnalyticsService {
   private currentUtcDayStart(): Date {
     const now = new Date();
     return new Date(
-      Date.UTC(
-        now.getUTCFullYear(),
-        now.getUTCMonth(),
-        now.getUTCDate(),
-        0,
-        0,
-        0,
-        0,
-      ),
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0, 0),
     );
   }
 }

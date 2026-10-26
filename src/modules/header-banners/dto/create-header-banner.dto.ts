@@ -1,4 +1,4 @@
-import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsBoolean,
   IsInt,
@@ -8,10 +8,10 @@ import {
   MaxLength,
   Min,
   MinLength,
-} from "class-validator";
+} from 'class-validator';
 
 export class CreateHeaderBannerDto {
-  @ApiProperty({ example: "Гранд-открытие", minLength: 1, maxLength: 200 })
+  @ApiProperty({ example: 'Гранд-открытие', minLength: 1, maxLength: 200 })
   @IsString()
   @MinLength(1)
   title!: string;

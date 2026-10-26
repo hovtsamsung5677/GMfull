@@ -1,26 +1,26 @@
-import { ApiPropertyOptional, ApiProperty } from "@nestjs/swagger";
-import { Transform } from "class-transformer";
-import { IsEnum, IsIn, IsOptional, IsString, Min } from "class-validator";
-import { NavigationAnalyticsQueryDto } from "../../analytics/dto/navigation-analytics-query.dto";
+import { ApiPropertyOptional, ApiProperty } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
+import { IsEnum, IsIn, IsOptional, IsString } from 'class-validator';
+import { NavigationAnalyticsQueryDto } from '../../analytics/dto/navigation-analytics-query.dto';
 import {
   AdAnalyticsQueryDto,
   AdAnalyticsGroupBy,
-} from "../../analytics/dto/ad-analytics-query.dto";
+} from '../../analytics/dto/ad-analytics-query.dto';
 
 export enum AnalyticsExportFormat {
-  CSV = "csv",
-  XLSX = "xlsx",
+  CSV = 'csv',
+  XLSX = 'xlsx',
 }
 
 export class AnalyticsExportFormatQueryDto {
   @ApiPropertyOptional({
     enum: AnalyticsExportFormat,
-    description: "Output format. Defaults to csv.",
+    description: 'Output format. Defaults to csv.',
     default: AnalyticsExportFormat.CSV,
     example: AnalyticsExportFormat.XLSX,
   })
   @Transform(({ value }: { value: unknown }) =>
-    typeof value === "string" ? value.toLowerCase() : value,
+    typeof value === 'string' ? value.toLowerCase() : value,
   )
   @IsOptional()
   @IsEnum(AnalyticsExportFormat)
@@ -30,11 +30,11 @@ export class AnalyticsExportFormatQueryDto {
 export class AnalyticsExportNavigationQueryDto extends NavigationAnalyticsQueryDto {
   @ApiPropertyOptional({
     enum: AnalyticsExportFormat,
-    description: "Output format. Defaults to csv.",
+    description: 'Output format. Defaults to csv.',
     default: AnalyticsExportFormat.CSV,
   })
   @Transform(({ value }: { value: unknown }) =>
-    typeof value === "string" ? value.toLowerCase() : value,
+    typeof value === 'string' ? value.toLowerCase() : value,
   )
   @IsOptional()
   @IsEnum(AnalyticsExportFormat)
@@ -44,11 +44,10 @@ export class AnalyticsExportNavigationQueryDto extends NavigationAnalyticsQueryD
 export class AnalyticsExportAdsBreakdownQueryDto extends AdAnalyticsQueryDto {
   @ApiProperty({
     enum: AdAnalyticsGroupBy,
-    description:
-      "Entity dimension used to group advertising events for export.",
+    description: 'Entity dimension used to group advertising events for export.',
   })
   @Transform(({ value }: { value: unknown }) =>
-    typeof value === "string" ? value.toLowerCase() : value,
+    typeof value === 'string' ? value.toLowerCase() : value,
   )
   @IsString()
   @IsIn(Object.values(AdAnalyticsGroupBy))
@@ -56,11 +55,11 @@ export class AnalyticsExportAdsBreakdownQueryDto extends AdAnalyticsQueryDto {
 
   @ApiPropertyOptional({
     enum: AnalyticsExportFormat,
-    description: "Output format. Defaults to csv.",
+    description: 'Output format. Defaults to csv.',
     default: AnalyticsExportFormat.CSV,
   })
   @Transform(({ value }: { value: unknown }) =>
-    typeof value === "string" ? value.toLowerCase() : value,
+    typeof value === 'string' ? value.toLowerCase() : value,
   )
   @IsOptional()
   @IsEnum(AnalyticsExportFormat)

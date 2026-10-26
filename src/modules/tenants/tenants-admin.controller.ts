@@ -8,29 +8,29 @@ import {
   Post,
   Query,
   UseGuards,
-} from "@nestjs/common";
+} from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiCreatedResponse,
   ApiOperation,
   ApiOkResponse,
   ApiTags,
-} from "@nestjs/swagger";
-import { CurrentUser } from "../../common/decorators/current-user.decorator";
-import { Roles } from "../../common/decorators/roles.decorator";
-import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
-import { RolesGuard } from "../../common/guards/roles.guard";
-import { CreateTenantDto } from "./dto/create-tenant.dto";
-import { TenantQueryDto } from "./dto/tenant-query.dto";
-import { TenantResponseDto } from "./dto/tenant-response.dto";
-import { UpdateTenantDto } from "./dto/update-tenant.dto";
-import { TenantsService } from "./tenants.service";
+} from '@nestjs/swagger';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { CreateTenantDto } from './dto/create-tenant.dto';
+import { TenantQueryDto } from './dto/tenant-query.dto';
+import { TenantResponseDto } from './dto/tenant-response.dto';
+import { UpdateTenantDto } from './dto/update-tenant.dto';
+import { TenantsService } from './tenants.service';
 
-@ApiTags("admin/tenants")
+@ApiTags('admin/tenants')
 @ApiBearerAuth()
-@Controller("admin/tenants")
+@Controller('admin/tenants')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles("SUPER_ADMIN", "MALL_ADMIN", "CONTENT_MANAGER")
+@Roles('SUPER_ADMIN', 'MALL_ADMIN', 'CONTENT_MANAGER')
 export class TenantsAdminController {
   constructor(private readonly tenantsService: TenantsService) {}
 
@@ -40,9 +40,9 @@ export class TenantsAdminController {
     return this.tenantsService.findAdmin(query);
   }
 
-  @Get(":id")
+  @Get(':id')
   @ApiOkResponse({ type: TenantResponseDto })
-  findOne(@Param("id") id: string): Promise<TenantResponseDto> {
+  findOne(@Param('id') id: string): Promise<TenantResponseDto> {
     return this.tenantsService.findOne(id);
   }
 
@@ -52,32 +52,29 @@ export class TenantsAdminController {
     return this.tenantsService.create(dto);
   }
 
-  @Patch(":id")
+  @Patch(':id')
   @ApiOperation({
-    summary: "Update a tenant.",
+    summary: 'Update a tenant.',
     description:
-      "Changing isActive from true to false atomically deactivates active, non-deleted tenant promotions. Reactivating the tenant does not reactivate promotions or change store flags.",
+      'Changing isActive from true to false atomically deactivates active, non-deleted tenant promotions. Reactivating the tenant does not reactivate promotions or change store flags.',
   })
   @ApiOkResponse({ type: TenantResponseDto })
   update(
-    @Param("id") id: string,
+    @Param('id') id: string,
     @Body() dto: UpdateTenantDto,
-    @CurrentUser("id") userId: string,
+    @CurrentUser('id') userId: string,
   ): Promise<TenantResponseDto> {
     return this.tenantsService.update(id, dto, userId);
   }
 
-  @Delete(":id")
+  @Delete(':id')
   @ApiOperation({
-    summary: "Soft-disable a tenant using isActive=false.",
+    summary: 'Soft-disable a tenant using isActive=false.',
     description:
-      "Atomically deactivates active, non-deleted tenant promotions. Stores are not deleted or deactivated, and re-enabling the tenant does not reactivate promotions.",
+      'Atomically deactivates active, non-deleted tenant promotions. Stores are not deleted or deactivated, and re-enabling the tenant does not reactivate promotions.',
   })
   @ApiOkResponse({ type: TenantResponseDto })
-  remove(
-    @Param("id") id: string,
-    @CurrentUser("id") userId: string,
-  ): Promise<TenantResponseDto> {
+  remove(@Param('id') id: string, @CurrentUser('id') userId: string): Promise<TenantResponseDto> {
     return this.tenantsService.remove(id, userId);
   }
 }

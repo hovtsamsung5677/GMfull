@@ -62,7 +62,7 @@ export class RouteNodesService {
       ...this.getPagination(query),
     });
 
-    return nodes.map((node) => this.toResponse(node));
+    return nodes.map(node => this.toResponse(node));
   }
 
   async findAdmin(query: RouteNodeQueryDto): Promise<RouteNodeResponseDto[]> {
@@ -73,7 +73,7 @@ export class RouteNodesService {
       ...this.getPagination(query),
     });
 
-    return nodes.map((node) => this.toResponse(node));
+    return nodes.map(node => this.toResponse(node));
   }
 
   async findPublicByFloor(
@@ -89,9 +89,7 @@ export class RouteNodesService {
    * Пожарные (эвакуационные) лестницы этажа: активные узлы типа STAIRS
    * с metadata.isEvacuation. Панель рисует по ним маркеры на 3D-модели.
    */
-  async findEvacuationStairsByFloor(
-    floorId: string,
-  ): Promise<RouteNodeResponseDto[]> {
+  async findEvacuationStairsByFloor(floorId: string): Promise<RouteNodeResponseDto[]> {
     await this.ensureFloorExists(floorId);
 
     const nodes = await this.prisma.routeNode.findMany({
@@ -104,7 +102,7 @@ export class RouteNodesService {
       orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
     });
 
-    return nodes.filter(isEvacuationStairNode).map((node) => this.toResponse(node));
+    return nodes.filter(isEvacuationStairNode).map(node => this.toResponse(node));
   }
 
   async findPublicRouteGraph(floorId: string): Promise<RouteGraphResponseDto> {
@@ -131,8 +129,8 @@ export class RouteNodesService {
 
     return {
       floor,
-      nodes: nodes.map((node) => this.toResponse(node)),
-      edges: edges.map((edge) => this.toRouteEdgeResponse(edge)),
+      nodes: nodes.map(node => this.toResponse(node)),
+      edges: edges.map(edge => this.toRouteEdgeResponse(edge)),
     };
   }
 
@@ -168,17 +166,12 @@ export class RouteNodesService {
     });
 
     if (
-      (node.type === 'ELEVATOR' ||
-        node.type === 'ESCALATOR' ||
-        node.type === 'STAIRS') &&
+      (node.type === 'ELEVATOR' || node.type === 'ESCALATOR' || node.type === 'STAIRS') &&
       !node.mapObjectId
     ) {
       const mapObject = await this.prisma.mapObject.create({
         data: {
-          type:
-            node.type === RouteNodeType.STAIRS
-              ? MapObjectType.STAIRS
-              : MapObjectType.ELEVATOR,
+          type: node.type === RouteNodeType.STAIRS ? MapObjectType.STAIRS : MapObjectType.ELEVATOR,
           name: node.name || node.type,
           floorId: node.floorId,
           storeId: null,
@@ -194,14 +187,10 @@ export class RouteNodesService {
     return this.toResponse(node);
   }
 
-  async update(
-    id: string,
-    dto: UpdateRouteNodeDto,
-  ): Promise<RouteNodeResponseDto> {
+  async update(id: string, dto: UpdateRouteNodeDto): Promise<RouteNodeResponseDto> {
     const existing = await this.ensureExists(id);
     const floorId = dto.floorId ?? existing.floorId;
-    const mapObjectId =
-      dto.mapObjectId === undefined ? existing.mapObjectId : dto.mapObjectId;
+    const mapObjectId = dto.mapObjectId === undefined ? existing.mapObjectId : dto.mapObjectId;
 
     await this.ensureFloorExists(floorId);
     await this.ensureMapObjectExists(mapObjectId, floorId);
@@ -214,9 +203,7 @@ export class RouteNodesService {
 
     let effectiveMapObjectId = mapObjectId;
     if (
-      (dto.type === 'ELEVATOR' ||
-        dto.type === 'ESCALATOR' ||
-        dto.type === 'STAIRS') &&
+      (dto.type === 'ELEVATOR' || dto.type === 'ESCALATOR' || dto.type === 'STAIRS') &&
       !effectiveMapObjectId
     ) {
       const created = await this.prisma.mapObject.create({
@@ -253,10 +240,7 @@ export class RouteNodesService {
         metadata:
           dto.metadata === undefined
             ? undefined
-            : preserveStorePrimaryRelationMetadata(
-                existing.metadata,
-                dto.metadata,
-              ),
+            : preserveStorePrimaryRelationMetadata(existing.metadata, dto.metadata),
         sortOrder: dto.sortOrder,
         isActive: dto.isActive,
       },
@@ -264,17 +248,12 @@ export class RouteNodesService {
     });
 
     if (
-      (node.type === 'ELEVATOR' ||
-        node.type === 'ESCALATOR' ||
-        node.type === 'STAIRS') &&
+      (node.type === 'ELEVATOR' || node.type === 'ESCALATOR' || node.type === 'STAIRS') &&
       !node.mapObjectId
     ) {
       const mapObject = await this.prisma.mapObject.create({
         data: {
-          type:
-            node.type === RouteNodeType.STAIRS
-              ? MapObjectType.STAIRS
-              : MapObjectType.ELEVATOR,
+          type: node.type === RouteNodeType.STAIRS ? MapObjectType.STAIRS : MapObjectType.ELEVATOR,
           name: node.name || node.type,
           floorId: node.floorId,
           storeId: null,
@@ -301,10 +280,7 @@ export class RouteNodesService {
     return this.toResponse(node);
   }
 
-  private buildWhere(
-    query: RouteNodeQueryDto,
-    publicOnly = false,
-  ): Prisma.RouteNodeWhereInput {
+  private buildWhere(query: RouteNodeQueryDto, publicOnly = false): Prisma.RouteNodeWhereInput {
     const where: Prisma.RouteNodeWhereInput = {};
 
     if (publicOnly) {
@@ -347,7 +323,14 @@ export class RouteNodesService {
   private async ensureExists(id: string) {
     const node = await this.prisma.routeNode.findUnique({
       where: { id },
-      select: { id: true, floorId: true, type: true, isActive: true, mapObjectId: true, metadata: true },
+      select: {
+        id: true,
+        floorId: true,
+        type: true,
+        isActive: true,
+        mapObjectId: true,
+        metadata: true,
+      },
     });
 
     if (!node) {
@@ -386,9 +369,7 @@ export class RouteNodesService {
     }
 
     if (floorId !== undefined && mapObject.floorId !== floorId) {
-      throw new BadRequestException(
-        'Route node and map object must belong to the same floor',
-      );
+      throw new BadRequestException('Route node and map object must belong to the same floor');
     }
   }
 
@@ -409,14 +390,12 @@ export class RouteNodesService {
     }
 
     if (!isActive) {
-      throw new ConflictException(
-        "Cannot deactivate route node because its Panel is active",
-      );
+      throw new ConflictException('Cannot deactivate route node because its Panel is active');
     }
 
     if (type !== RouteNodeType.PANEL || panel.floorId !== floorId) {
       throw new ConflictException(
-        "Route node update would make its active Panel configuration inconsistent",
+        'Route node update would make its active Panel configuration inconsistent',
       );
     }
   }
@@ -464,9 +443,7 @@ export class RouteNodesService {
     };
   }
 
-  private toRouteEdgeResponse(
-    edge: RouteGraphEdgeWithRelations,
-  ): RouteEdgeResponseDto {
+  private toRouteEdgeResponse(edge: RouteGraphEdgeWithRelations): RouteEdgeResponseDto {
     return {
       id: edge.id,
       type: edge.type,
@@ -486,11 +463,3 @@ export class RouteNodesService {
     };
   }
 }
-
-
-
-
-
-
-
-

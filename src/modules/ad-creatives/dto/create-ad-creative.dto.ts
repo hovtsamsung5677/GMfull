@@ -1,4 +1,4 @@
-import { ApiPropertyOptional } from "@nestjs/swagger";
+import { ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsBoolean,
   IsInt,
@@ -10,14 +10,13 @@ import {
   Min,
   MinLength,
   ValidateIf,
-} from "class-validator";
+} from 'class-validator';
 
 export class CreateAdCreativeDto {
   @ApiPropertyOptional({
     type: String,
     nullable: true,
-    description:
-      "Existing FileAsset id. Active creatives require an active IMAGE asset.",
+    description: 'Existing FileAsset id. Active creatives require an active IMAGE asset.',
   })
   @IsOptional()
   @IsString()
@@ -40,7 +39,7 @@ export class CreateAdCreativeDto {
     type: String,
     nullable: true,
     maxLength: 500,
-    description: "Alternative text for the advertising image.",
+    description: 'Alternative text for the advertising image.',
   })
   @IsOptional()
   @IsString()
@@ -51,7 +50,7 @@ export class CreateAdCreativeDto {
     type: String,
     nullable: true,
     maxLength: 200,
-    description: "Call-to-action label rendered with the creative.",
+    description: 'Call-to-action label rendered with the creative.',
   })
   @IsOptional()
   @IsString()
@@ -60,8 +59,7 @@ export class CreateAdCreativeDto {
 
   @ApiPropertyOptional({
     default: true,
-    description:
-      "Active creatives must reference an active FileAsset with kind IMAGE.",
+    description: 'Active creatives must reference an active FileAsset with kind IMAGE.',
   })
   @ValidateIf((_object, value) => value !== undefined)
   @IsBoolean()
@@ -71,7 +69,7 @@ export class CreateAdCreativeDto {
     default: 0,
     minimum: 0,
     maximum: 1_000_000,
-    description: "Lower values are returned first in campaign creative lists.",
+    description: 'Lower values are returned first in campaign creative lists.',
   })
   @ValidateIf((_object, value) => value !== undefined)
   @IsInt()

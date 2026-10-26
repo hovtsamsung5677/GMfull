@@ -1,5 +1,5 @@
-import { Prisma } from "@prisma/client";
-import { PrismaService } from "./prisma.service";
+import { Prisma } from '@prisma/client';
+import { PrismaService } from './prisma.service';
 
 const MAX_SERIALIZABLE_ATTEMPTS = 3;
 
@@ -14,8 +14,7 @@ export async function runSerializableTransaction<T>(
       });
     } catch (error) {
       const isSerializationConflict =
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === "P2034";
+        error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2034';
 
       if (!isSerializationConflict || attempt === MAX_SERIALIZABLE_ATTEMPTS) {
         throw error;
@@ -23,5 +22,5 @@ export async function runSerializableTransaction<T>(
     }
   }
 
-  throw new Error("Serializable transaction retry limit exhausted");
+  throw new Error('Serializable transaction retry limit exhausted');
 }

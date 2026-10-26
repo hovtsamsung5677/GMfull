@@ -1,5 +1,5 @@
-import { ApiProperty } from "@nestjs/swagger";
-import { AdPlacement } from "@prisma/client";
+import { ApiProperty } from '@nestjs/swagger';
+import { AdPlacement } from '@prisma/client';
 
 export class AdCampaignAssignmentCampaignResponseDto {
   @ApiProperty()
@@ -8,13 +8,13 @@ export class AdCampaignAssignmentCampaignResponseDto {
   @ApiProperty()
   name!: string;
 
-  @ApiProperty({ enum: AdPlacement, enumName: "AdPlacement" })
+  @ApiProperty({ enum: AdPlacement, enumName: 'AdPlacement' })
   placement!: AdPlacement;
 
-  @ApiProperty({ type: String, format: "date-time", nullable: true })
+  @ApiProperty({ type: String, format: 'date-time', nullable: true })
   startsAt!: Date | null;
 
-  @ApiProperty({ type: String, format: "date-time", nullable: true })
+  @ApiProperty({ type: String, format: 'date-time', nullable: true })
   endsAt!: Date | null;
 
   @ApiProperty({ minimum: 0, maximum: 1_000_000 })
@@ -31,7 +31,7 @@ export class AdCampaignAssignmentCampaignResponseDto {
   @ApiProperty()
   isActive!: boolean;
 
-  @ApiProperty({ type: String, format: "date-time", nullable: true })
+  @ApiProperty({ type: String, format: 'date-time', nullable: true })
   deletedAt!: Date | null;
 }
 
@@ -45,13 +45,13 @@ export class AdCampaignAssignmentSlotResponseDto {
   @ApiProperty()
   name!: string;
 
-  @ApiProperty({ enum: AdPlacement, enumName: "AdPlacement" })
+  @ApiProperty({ enum: AdPlacement, enumName: 'AdPlacement' })
   placement!: AdPlacement;
 
   @ApiProperty({
     type: String,
     nullable: true,
-    description: "Null identifies a global advertising slot.",
+    description: 'Null identifies a global advertising slot.',
   })
   panelId!: string | null;
 
@@ -61,7 +61,7 @@ export class AdCampaignAssignmentSlotResponseDto {
   @ApiProperty()
   isActive!: boolean;
 
-  @ApiProperty({ type: String, format: "date-time", nullable: true })
+  @ApiProperty({ type: String, format: 'date-time', nullable: true })
   deletedAt!: Date | null;
 }
 
@@ -89,7 +89,7 @@ export class AdCampaignAssignmentAdminResponseDto {
   @ApiProperty()
   isActive!: boolean;
 
-  @ApiProperty({ type: String, format: "date-time", nullable: true })
+  @ApiProperty({ type: String, format: 'date-time', nullable: true })
   deletedAt!: Date | null;
 
   @ApiProperty({ type: String, nullable: true })
@@ -116,10 +116,10 @@ export class AdCampaignAssignmentAdminResponseDto {
   })
   updatedBy!: AdCampaignAssignmentUserResponseDto | null;
 
-  @ApiProperty({ type: String, format: "date-time" })
+  @ApiProperty({ type: String, format: 'date-time' })
   createdAt!: Date;
 
-  @ApiProperty({ type: String, format: "date-time" })
+  @ApiProperty({ type: String, format: 'date-time' })
   updatedAt!: Date;
 }
 

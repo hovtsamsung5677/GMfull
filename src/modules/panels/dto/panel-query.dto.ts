@@ -1,6 +1,6 @@
-import { ApiPropertyOptional } from "@nestjs/swagger";
-import { PanelStatus } from "@prisma/client";
-import { Transform } from "class-transformer";
+import { ApiPropertyOptional } from '@nestjs/swagger';
+import { PanelStatus } from '@prisma/client';
+import { Transform } from 'class-transformer';
 import {
   IsBoolean,
   IsEnum,
@@ -10,15 +10,15 @@ import {
   Max,
   MaxLength,
   Min,
-} from "class-validator";
+} from 'class-validator';
 import {
   toOptionalBoolean,
   toOptionalNumber,
-} from "../../../common/transformers/query.transformers";
+} from '../../../common/transformers/query.transformers';
 
 export class PanelQueryDto {
   @ApiPropertyOptional({
-    description: "Case-insensitive search by Panel code or name.",
+    description: 'Case-insensitive search by Panel code or name.',
     maxLength: 500,
   })
   @IsOptional()
@@ -28,13 +28,13 @@ export class PanelQueryDto {
 
   @ApiPropertyOptional({
     type: String,
-    description: "Return Panels assigned to this Floor id.",
+    description: 'Return Panels assigned to this Floor id.',
   })
   @IsOptional()
   @IsString()
   floorId?: string;
 
-  @ApiPropertyOptional({ enum: PanelStatus, enumName: "PanelStatus" })
+  @ApiPropertyOptional({ enum: PanelStatus, enumName: 'PanelStatus' })
   @IsOptional()
   @IsEnum(PanelStatus)
   status?: PanelStatus;

@@ -1,17 +1,15 @@
-import { Prisma } from "@prisma/client";
+import { Prisma } from '@prisma/client';
 
-export type StorePrimaryRelation = "mapObject" | "routeNode";
+export type StorePrimaryRelation = 'mapObject' | 'routeNode';
 
-const metadataNamespace = "greenMall";
+const metadataNamespace = 'greenMall';
 const relationKeys: Record<StorePrimaryRelation, string> = {
-  mapObject: "primaryMapObjectForStoreId",
-  routeNode: "primaryRouteNodeForStoreId",
+  mapObject: 'primaryMapObjectForStoreId',
+  routeNode: 'primaryRouteNodeForStoreId',
 };
 
-function isJsonObject(
-  value: Prisma.JsonValue | null | undefined,
-): value is Prisma.JsonObject {
-  return value !== null && typeof value === "object" && !Array.isArray(value);
+function isJsonObject(value: Prisma.JsonValue | null | undefined): value is Prisma.JsonObject {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 
 export function isPrimaryStoreRelation(
@@ -25,9 +23,7 @@ export function isPrimaryStoreRelation(
 
   const namespace = metadata[metadataNamespace];
 
-  return (
-    isJsonObject(namespace) && namespace[relationKeys[relation]] === storeId
-  );
+  return isJsonObject(namespace) && namespace[relationKeys[relation]] === storeId;
 }
 
 export function updatePrimaryStoreRelationMetadata(params: {
@@ -42,9 +38,7 @@ export function updatePrimaryStoreRelationMetadata(params: {
     ? ({ ...metadata } as Record<string, Prisma.JsonValue>)
     : {};
   const currentNamespace = root[metadataNamespace];
-  const namespace: Record<string, Prisma.JsonValue> = isJsonObject(
-    currentNamespace,
-  )
+  const namespace: Record<string, Prisma.JsonValue> = isJsonObject(currentNamespace)
     ? ({ ...currentNamespace } as Record<string, Prisma.JsonValue>)
     : {};
 
@@ -87,9 +81,7 @@ export function preserveStorePrimaryRelationMetadata(
 
   const nextRoot = { ...nextMetadata } as Record<string, Prisma.JsonValue>;
   const requestedNamespace = nextRoot[metadataNamespace];
-  const nextNamespace: Record<string, Prisma.JsonValue> = isJsonObject(
-    requestedNamespace,
-  )
+  const nextNamespace: Record<string, Prisma.JsonValue> = isJsonObject(requestedNamespace)
     ? ({ ...requestedNamespace } as Record<string, Prisma.JsonValue>)
     : {};
 

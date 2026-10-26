@@ -1,10 +1,10 @@
-import { AdTargetType, FileAssetKind, Prisma } from "@prisma/client";
+import { AdTargetType, FileAssetKind, Prisma } from '@prisma/client';
 import {
   publicFileAssetSelect,
   toPublicFileAssetResponse,
-} from "../file-assets/public-file-asset.projection";
-import { hasConsistentPublicPromotionTenant } from "../promotions/promotion-public.eligibility";
-import { PublicAdDeliveryResponseDto } from "./dto/public-ad-response.dto";
+} from '../file-assets/public-file-asset.projection';
+import { hasConsistentPublicPromotionTenant } from '../promotions/promotion-public.eligibility';
+import { PublicAdDeliveryResponseDto } from './dto/public-ad-response.dto';
 
 export const publicAdCreativeWhere = {
   isActive: true,
@@ -49,7 +49,7 @@ export const publicAdCandidateSelect = {
       },
       creatives: {
         where: publicAdCreativeWhere,
-        orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }, { id: "asc" }],
+        orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }, { id: 'asc' }],
         take: 1,
         select: {
           id: true,
@@ -72,12 +72,10 @@ export type PublicAdCandidate = Prisma.AdCampaignAssignmentGetPayload<{
 
 interface PublicAdSlotRecord {
   code: string;
-  placement: PublicAdDeliveryResponseDto["slot"]["placement"];
+  placement: PublicAdDeliveryResponseDto['slot']['placement'];
 }
 
-export function hasAvailablePublicAdTarget(
-  candidate: PublicAdCandidate,
-): boolean {
+export function hasAvailablePublicAdTarget(candidate: PublicAdCandidate): boolean {
   const campaign = candidate.campaign;
 
   if (campaign.targetType === AdTargetType.NONE) {
@@ -142,16 +140,14 @@ export function toPublicAdDeliveryResponse(
               }
             : null,
         promotion:
-          campaign.targetType === AdTargetType.PROMOTION &&
-          campaign.targetPromotion
+          campaign.targetType === AdTargetType.PROMOTION && campaign.targetPromotion
             ? {
                 id: campaign.targetPromotion.id,
                 slug: campaign.targetPromotion.slug,
                 title: campaign.targetPromotion.title,
               }
             : null,
-        url:
-          campaign.targetType === AdTargetType.URL ? campaign.targetUrl : null,
+        url: campaign.targetType === AdTargetType.URL ? campaign.targetUrl : null,
       },
     },
   };

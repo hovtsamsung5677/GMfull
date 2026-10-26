@@ -1,11 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import {
-  IsBoolean,
-  IsEnum,
-  IsNumber,
-  IsOptional,
-  IsString,
-} from 'class-validator';
+import { IsBoolean, IsEnum, IsNumber, IsOptional, IsString } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { toOptionalNumber } from '../../../common/transformers/query.transformers';
 
@@ -19,7 +13,11 @@ export class CreateFloorIconDto {
   @IsString()
   name!: string;
 
-  @ApiPropertyOptional({ enum: FloorIconTypeEnum, example: FloorIconTypeEnum.IMAGE, default: FloorIconTypeEnum.IMAGE })
+  @ApiPropertyOptional({
+    enum: FloorIconTypeEnum,
+    example: FloorIconTypeEnum.IMAGE,
+    default: FloorIconTypeEnum.IMAGE,
+  })
   @IsOptional()
   @IsEnum(FloorIconTypeEnum)
   type?: FloorIconTypeEnum;
@@ -33,22 +31,35 @@ export class CreateFloorIconDto {
   @IsString()
   storeId?: string | null;
 
-  @ApiPropertyOptional({ example: 'asset_456', nullable: true, description: 'Required for IMAGE type, ignored for TEXT type.' })
+  @ApiPropertyOptional({
+    example: 'asset_456',
+    nullable: true,
+    description: 'Required for IMAGE type, ignored for TEXT type.',
+  })
   @IsOptional()
   @IsString()
   assetId?: string | null;
 
-  @ApiProperty({ example: 120, description: 'X coordinate in floor-local plan units.' })
+  @ApiProperty({
+    example: 120,
+    description: 'X coordinate in floor-local plan units.',
+  })
   @Transform(toOptionalNumber)
   @IsNumber()
   x!: number;
 
-  @ApiProperty({ example: 240, description: 'Y coordinate in floor-local plan units.' })
+  @ApiProperty({
+    example: 240,
+    description: 'Y coordinate in floor-local plan units.',
+  })
   @Transform(toOptionalNumber)
   @IsNumber()
   y!: number;
 
-  @ApiPropertyOptional({ example: 0, description: 'Z coordinate (height) in floor-local units.' })
+  @ApiPropertyOptional({
+    example: 0,
+    description: 'Z coordinate (height) in floor-local units.',
+  })
   @Transform(toOptionalNumber)
   @IsOptional()
   @IsNumber()

@@ -1,12 +1,11 @@
-import { ApiPropertyOptional } from "@nestjs/swagger";
-import { Transform } from "class-transformer";
-import { IsInt, IsOptional, IsString, Max, Min } from "class-validator";
-import { toOptionalNumber } from "../../../common/transformers/query.transformers";
+import { ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
+import { IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import { toOptionalNumber } from '../../../common/transformers/query.transformers';
 
 export class PublicPromotionQueryDto {
   @ApiPropertyOptional({
-    description:
-      "Return current promotions assigned to this active and visible store.",
+    description: 'Return current promotions assigned to this active and visible store.',
   })
   @IsOptional()
   @IsString()

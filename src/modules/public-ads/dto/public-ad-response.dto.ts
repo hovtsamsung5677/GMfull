@@ -1,12 +1,12 @@
-import { ApiProperty } from "@nestjs/swagger";
-import { AdPlacement, AdTargetType } from "@prisma/client";
-import { PublicFileAssetResponseDto } from "../../file-assets/dto/public-file-asset-response.dto";
+import { ApiProperty } from '@nestjs/swagger';
+import { AdPlacement, AdTargetType } from '@prisma/client';
+import { PublicFileAssetResponseDto } from '../../file-assets/dto/public-file-asset-response.dto';
 
 export class PublicAdSlotResponseDto {
-  @ApiProperty({ example: "main-panel-home" })
+  @ApiProperty({ example: 'main-panel-home' })
   code!: string;
 
-  @ApiProperty({ enum: AdPlacement, enumName: "AdPlacement" })
+  @ApiProperty({ enum: AdPlacement, enumName: 'AdPlacement' })
   placement!: AdPlacement;
 }
 
@@ -33,7 +33,7 @@ export class PublicAdPromotionTargetResponseDto {
 }
 
 export class PublicAdTargetResponseDto {
-  @ApiProperty({ enum: AdTargetType, enumName: "AdTargetType" })
+  @ApiProperty({ enum: AdTargetType, enumName: 'AdTargetType' })
   type!: AdTargetType;
 
   @ApiProperty({

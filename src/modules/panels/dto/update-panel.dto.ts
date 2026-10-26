@@ -1,5 +1,5 @@
-import { PartialType } from "@nestjs/swagger";
-import { CreatePanelDto } from "./create-panel.dto";
+import { PartialType } from '@nestjs/swagger';
+import { CreatePanelDto } from './create-panel.dto';
 
 export class UpdatePanelDto extends PartialType(CreatePanelDto, {
   skipNullProperties: false,

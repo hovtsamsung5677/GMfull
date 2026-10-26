@@ -1,10 +1,10 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
-import { Prisma } from "@prisma/client";
-import { PrismaService } from "../../database/prisma.service";
-import { CreateTenantDto } from "./dto/create-tenant.dto";
-import { TenantQueryDto } from "./dto/tenant-query.dto";
-import { TenantResponseDto } from "./dto/tenant-response.dto";
-import { UpdateTenantDto } from "./dto/update-tenant.dto";
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
+import { PrismaService } from '../../database/prisma.service';
+import { CreateTenantDto } from './dto/create-tenant.dto';
+import { TenantQueryDto } from './dto/tenant-query.dto';
+import { TenantResponseDto } from './dto/tenant-response.dto';
+import { UpdateTenantDto } from './dto/update-tenant.dto';
 
 @Injectable()
 export class TenantsService {
@@ -13,7 +13,7 @@ export class TenantsService {
   async findAdmin(query: TenantQueryDto): Promise<TenantResponseDto[]> {
     return this.prisma.tenant.findMany({
       where: this.buildWhere(query),
-      orderBy: [{ createdAt: "desc" }],
+      orderBy: [{ createdAt: 'desc' }],
       ...this.getPagination(query),
     });
   }
@@ -24,7 +24,7 @@ export class TenantsService {
     });
 
     if (!tenant) {
-      throw new NotFoundException("Tenant not found");
+      throw new NotFoundException('Tenant not found');
     }
 
     return tenant;
@@ -47,21 +47,17 @@ export class TenantsService {
     });
   }
 
-  async update(
-    id: string,
-    dto: UpdateTenantDto,
-    userId: string,
-  ): Promise<TenantResponseDto> {
+  async update(id: string, dto: UpdateTenantDto, userId: string): Promise<TenantResponseDto> {
     await this.ensureActiveLogoAssetExists(dto.logoAssetId);
 
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async tx => {
       const existing = await tx.tenant.findUnique({
         where: { id },
         select: { id: true, isActive: true },
       });
 
       if (!existing) {
-        throw new NotFoundException("Tenant not found");
+        throw new NotFoundException('Tenant not found');
       }
 
       const tenant = await tx.tenant.update({
@@ -97,13 +93,13 @@ export class TenantsService {
   }
 
   async remove(id: string, userId: string): Promise<TenantResponseDto> {
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async tx => {
       const existing = await tx.tenant.findUnique({
         where: { id },
       });
 
       if (!existing) {
-        throw new NotFoundException("Tenant not found");
+        throw new NotFoundException('Tenant not found');
       }
 
       if (!existing.isActive) {
@@ -153,12 +149,12 @@ export class TenantsService {
 
     if (query.search) {
       where.OR = [
-        { name: { contains: query.search, mode: "insensitive" } },
-        { legalName: { contains: query.search, mode: "insensitive" } },
-        { description: { contains: query.search, mode: "insensitive" } },
-        { phone: { contains: query.search, mode: "insensitive" } },
-        { email: { contains: query.search, mode: "insensitive" } },
-        { website: { contains: query.search, mode: "insensitive" } },
+        { name: { contains: query.search, mode: 'insensitive' } },
+        { legalName: { contains: query.search, mode: 'insensitive' } },
+        { description: { contains: query.search, mode: 'insensitive' } },
+        { phone: { contains: query.search, mode: 'insensitive' } },
+        { email: { contains: query.search, mode: 'insensitive' } },
+        { website: { contains: query.search, mode: 'insensitive' } },
       ];
     }
 
@@ -172,13 +168,11 @@ export class TenantsService {
     });
 
     if (!tenant) {
-      throw new NotFoundException("Tenant not found");
+      throw new NotFoundException('Tenant not found');
     }
   }
 
-  private async ensureActiveLogoAssetExists(
-    assetId: string | null | undefined,
-  ): Promise<void> {
+  private async ensureActiveLogoAssetExists(assetId: string | null | undefined): Promise<void> {
     if (assetId === null || assetId === undefined) {
       return;
     }
@@ -189,7 +183,7 @@ export class TenantsService {
     });
 
     if (!asset) {
-      throw new NotFoundException("Tenant logo asset not found or inactive");
+      throw new NotFoundException('Tenant logo asset not found or inactive');
     }
   }
 

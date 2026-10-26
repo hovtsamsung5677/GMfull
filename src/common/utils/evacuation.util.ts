@@ -22,7 +22,5 @@ export function isEvacuationStairNode(node: EvacuationStairCandidate): boolean {
     return false;
   }
 
-  return Boolean(
-    (metadata as Record<string, unknown>)[EVACUATION_STAIRS_METADATA_KEY],
-  );
+  return Boolean((metadata as Record<string, unknown>)[EVACUATION_STAIRS_METADATA_KEY]);
 }

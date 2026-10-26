@@ -1,5 +1,5 @@
-import { Prisma } from "@prisma/client";
-import { AdCreativeAdminResponseDto } from "./dto/ad-creative-admin-response.dto";
+import { Prisma } from '@prisma/client';
+import { AdCreativeAdminResponseDto } from './dto/ad-creative-admin-response.dto';
 
 export const adCreativeAdminInclude = {
   campaign: {

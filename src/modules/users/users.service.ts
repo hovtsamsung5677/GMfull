@@ -1,18 +1,11 @@
-import {
-  ConflictException,
-  Injectable,
-  NotFoundException,
-} from "@nestjs/common";
-import { Prisma } from "@prisma/client";
-import * as bcrypt from "bcrypt";
-import {
-  AuthenticatedUser,
-  SUPER_ADMIN_ROLE,
-} from "../../common/types/authenticated-user.type";
-import { PrismaService } from "../../database/prisma.service";
-import { CreateUserDto } from "./dto/create-user.dto";
-import { UpdateUserDto } from "./dto/update-user.dto";
-import { UserResponseDto } from "./dto/user-response.dto";
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
+import { AuthenticatedUser, SUPER_ADMIN_ROLE } from '../../common/types/authenticated-user.type';
+import { PrismaService } from '../../database/prisma.service';
+import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { UserResponseDto } from './dto/user-response.dto';
 
 const userWithRole = {
   role: true,
@@ -29,10 +22,10 @@ export class UsersService {
   async findAll(): Promise<UserResponseDto[]> {
     const users = await this.prisma.user.findMany({
       include: userWithRole,
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: 'desc' },
     });
 
-    return users.map((user) => this.toResponse(user));
+    return users.map(user => this.toResponse(user));
   }
 
   async findOne(id: string): Promise<UserResponseDto> {
@@ -42,7 +35,7 @@ export class UsersService {
     });
 
     if (!user) {
-      throw new NotFoundException("User not found");
+      throw new NotFoundException('User not found');
     }
 
     return this.toResponse(user);
@@ -79,9 +72,7 @@ export class UsersService {
       await this.ensureRoleExists(dto.roleId);
     }
 
-    const passwordHash = dto.password
-      ? await bcrypt.hash(dto.password, 10)
-      : undefined;
+    const passwordHash = dto.password ? await bcrypt.hash(dto.password, 10) : undefined;
 
     try {
       const user = await this.prisma.user.update({
@@ -170,7 +161,7 @@ export class UsersService {
     });
 
     if (!user) {
-      throw new NotFoundException("User not found");
+      throw new NotFoundException('User not found');
     }
   }
 
@@ -181,16 +172,13 @@ export class UsersService {
     });
 
     if (!role) {
-      throw new NotFoundException("Role not found");
+      throw new NotFoundException('Role not found');
     }
   }
 
   private handlePrismaError(error: unknown): never {
-    if (
-      error instanceof Prisma.PrismaClientKnownRequestError &&
-      error.code === "P2002"
-    ) {
-      throw new ConflictException("User with this email already exists");
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      throw new ConflictException('User with this email already exists');
     }
 
     throw error;

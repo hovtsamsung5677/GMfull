@@ -1,18 +1,14 @@
-import { Logger } from "@nestjs/common";
-import {
-  WebSocketGateway,
-  WebSocketServer,
-  OnGatewayInit,
-} from "@nestjs/websockets";
-import { Server } from "socket.io";
-import { PanelStatusBroadcasterService } from "./panel-status-broadcaster.service";
+import { Logger } from '@nestjs/common';
+import { WebSocketGateway, WebSocketServer, OnGatewayInit } from '@nestjs/websockets';
+import { Server } from 'socket.io';
+import { PanelStatusBroadcasterService } from './panel-status-broadcaster.service';
 
 @WebSocketGateway({
   cors: {
-    origin: "*",
-    methods: ["GET", "POST"],
+    origin: '*',
+    methods: ['GET', 'POST'],
   },
-  namespace: "panels",
+  namespace: 'panels',
 })
 export class PanelsGateway implements OnGatewayInit {
   private readonly logger = new Logger(PanelsGateway.name);

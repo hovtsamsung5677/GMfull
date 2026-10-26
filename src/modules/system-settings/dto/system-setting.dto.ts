@@ -1,18 +1,10 @@
-import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
-import { Transform } from "class-transformer";
-import {
-  IsBoolean,
-  IsInt,
-  IsObject,
-  IsOptional,
-  IsString,
-  Max,
-  Min,
-} from "class-validator";
-import { toOptionalBoolean } from "../../../common/transformers/query.transformers";
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
+import { IsBoolean, IsInt, IsObject, IsOptional, IsString, Max, Min } from 'class-validator';
+import { toOptionalBoolean } from '../../../common/transformers/query.transformers';
 
 export class SystemSettingQueryDto {
-  @ApiPropertyOptional({ example: "routing" })
+  @ApiPropertyOptional({ example: 'routing' })
   @IsOptional()
   @IsString()
   keyPrefix?: string;
@@ -38,7 +30,7 @@ export class SystemSettingQueryDto {
 }
 
 export class UpsertSystemSettingDto {
-  @ApiProperty({ example: "routing.overloadThreshold" })
+  @ApiProperty({ example: 'routing.overloadThreshold' })
   @IsString()
   key!: string;
 
@@ -47,7 +39,7 @@ export class UpsertSystemSettingDto {
   @IsObject()
   value?: Record<string, unknown>;
 
-  @ApiPropertyOptional({ example: "Adaptive routing overload threshold." })
+  @ApiPropertyOptional({ example: 'Adaptive routing overload threshold.' })
   @IsOptional()
   @IsString()
   description?: string;

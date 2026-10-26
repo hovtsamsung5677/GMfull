@@ -1,23 +1,14 @@
-import { ApiPropertyOptional } from "@nestjs/swagger";
-import { Transform } from "class-transformer";
-import {
-  IsBoolean,
-  IsInt,
-  IsOptional,
-  IsString,
-  Max,
-  MaxLength,
-  Min,
-} from "class-validator";
+import { ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
+import { IsBoolean, IsInt, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
 import {
   toOptionalBoolean,
   toOptionalNumber,
-} from "../../../common/transformers/query.transformers";
+} from '../../../common/transformers/query.transformers';
 
 export class AdCreativeQueryDto {
   @ApiPropertyOptional({
-    description:
-      "Case-insensitive search by title, description, alt text or CTA text.",
+    description: 'Case-insensitive search by title, description, alt text or CTA text.',
     maxLength: 500,
   })
   @IsOptional()
@@ -33,7 +24,7 @@ export class AdCreativeQueryDto {
 
   @ApiPropertyOptional({
     type: String,
-    description: "Return creatives linked to this FileAsset id.",
+    description: 'Return creatives linked to this FileAsset id.',
   })
   @IsOptional()
   @IsString()

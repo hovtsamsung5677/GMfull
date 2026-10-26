@@ -3,21 +3,21 @@
   ConflictException,
   Injectable,
   NotFoundException,
-} from "@nestjs/common";
-import { MapObjectType, Prisma, RouteNodeType } from "@prisma/client";
+} from '@nestjs/common';
+import { MapObjectType, Prisma, RouteNodeType } from '@prisma/client';
 import {
   isPrimaryStoreRelation,
   updatePrimaryStoreRelationMetadata,
-} from "../../common/utils/store-primary.util";
-import { slugify } from "../../common/utils/slugify.util";
-import { PrismaService } from "../../database/prisma.service";
-import { CreateStoreDto } from "./dto/create-store.dto";
-import { StoreAdminResponseDto } from "./dto/store-admin-response.dto";
-import { StoreSearchQueryDto } from "./dto/store-search-query.dto";
-import { StoreSearchResponseDto } from "./dto/store-search-response.dto";
-import { StoreQueryDto } from "./dto/store-query.dto";
-import { StoreResponseDto } from "./dto/store-response.dto";
-import { UpdateStoreDto } from "./dto/update-store.dto";
+} from '../../common/utils/store-primary.util';
+import { slugify } from '../../common/utils/slugify.util';
+import { PrismaService } from '../../database/prisma.service';
+import { CreateStoreDto } from './dto/create-store.dto';
+import { StoreAdminResponseDto } from './dto/store-admin-response.dto';
+import { StoreSearchQueryDto } from './dto/store-search-query.dto';
+import { StoreSearchResponseDto } from './dto/store-search-response.dto';
+import { StoreQueryDto } from './dto/store-query.dto';
+import { StoreResponseDto } from './dto/store-response.dto';
+import { UpdateStoreDto } from './dto/update-store.dto';
 
 const storeInclude = {
   tenant: {
@@ -89,10 +89,10 @@ const storeAdminInclude = {
           sortOrder: true,
           createdAt: true,
         },
-        orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+        orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
       },
     },
-    orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+    orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
   },
 } satisfies Prisma.StoreInclude;
 
@@ -126,10 +126,10 @@ const storeSearchInclude = {
           sortOrder: true,
           createdAt: true,
         },
-        orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+        orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
       },
     },
-    orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+    orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
   },
 } satisfies Prisma.StoreInclude;
 
@@ -152,16 +152,14 @@ export class StoresService {
     const stores = await this.prisma.store.findMany({
       where: this.buildWhere(query, true),
       include: storeInclude,
-      orderBy: [{ name: "asc" }],
+      orderBy: [{ name: 'asc' }],
       ...this.getPagination(query),
     });
 
-    return stores.map((store) => this.toResponse(store));
+    return stores.map(store => this.toResponse(store));
   }
 
-  async searchPublic(
-    query: StoreSearchQueryDto,
-  ): Promise<StoreSearchResponseDto[]> {
+  async searchPublic(query: StoreSearchQueryDto): Promise<StoreSearchResponseDto[]> {
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
     const search = query.query?.trim();
@@ -177,11 +175,11 @@ export class StoresService {
       ...(search
         ? {
             OR: [
-              { name: { contains: search, mode: "insensitive" } },
-              { slug: { contains: search, mode: "insensitive" } },
-              { description: { contains: search, mode: "insensitive" } },
-              { searchKeywords: { contains: search, mode: "insensitive" } },
-              { roomNumber: { contains: search, mode: "insensitive" } },
+              { name: { contains: search, mode: 'insensitive' } },
+              { slug: { contains: search, mode: 'insensitive' } },
+              { description: { contains: search, mode: 'insensitive' } },
+              { searchKeywords: { contains: search, mode: 'insensitive' } },
+              { roomNumber: { contains: search, mode: 'insensitive' } },
             ],
           }
         : {}),
@@ -190,23 +188,23 @@ export class StoresService {
     const stores = await this.prisma.store.findMany({
       where,
       include: storeSearchInclude,
-      orderBy: [{ name: "asc" }],
+      orderBy: [{ name: 'asc' }],
       skip: (page - 1) * limit,
       take: limit,
     });
 
-    return stores.map((store) => this.toSearchResponse(store));
+    return stores.map(store => this.toSearchResponse(store));
   }
 
   async findAdmin(query: StoreQueryDto): Promise<StoreAdminResponseDto[]> {
     const stores = await this.prisma.store.findMany({
       where: this.buildWhere(query),
       include: storeAdminInclude,
-      orderBy: [{ createdAt: "desc" }],
+      orderBy: [{ createdAt: 'desc' }],
       ...this.getPagination(query),
     });
 
-    return stores.map((store) => this.toAdminResponse(store));
+    return stores.map(store => this.toAdminResponse(store));
   }
 
   async findPublicOne(id: string): Promise<StoreResponseDto> {
@@ -220,21 +218,18 @@ export class StoresService {
     });
 
     if (!store) {
-      throw new NotFoundException("Store not found");
+      throw new NotFoundException('Store not found');
     }
 
     return this.toAdminResponse(store);
   }
 
-  async create(
-    dto: CreateStoreDto,
-    isSuperAdmin: boolean,
-  ): Promise<StoreAdminResponseDto> {
+  async create(dto: CreateStoreDto, isSuperAdmin: boolean): Promise<StoreAdminResponseDto> {
     await this.ensureReferencesExist(dto, dto.isActive ?? true, isSuperAdmin);
     const slug = await this.resolveSlug(dto.slug, dto.name);
 
     try {
-      const store = await this.prisma.$transaction(async (tx) => {
+      const store = await this.prisma.$transaction(async tx => {
         const created = await tx.store.create({
           data: {
             name: dto.name,
@@ -256,12 +251,7 @@ export class StoresService {
           },
         });
 
-        await this.syncStoreMapRelations(
-          tx,
-          created.id,
-          dto,
-          dto.floorId ?? null,
-        );
+        await this.syncStoreMapRelations(tx, created.id, dto, dto.floorId ?? null);
 
         if (dto.floorId) {
           const existingMapObject = await tx.mapObject.findFirst({
@@ -296,8 +286,7 @@ export class StoresService {
     isSuperAdmin: boolean,
   ): Promise<StoreAdminResponseDto> {
     const existing = await this.ensureExists(id);
-    const tenantChanged =
-      dto.tenantId !== undefined && dto.tenantId !== existing.tenantId;
+    const tenantChanged = dto.tenantId !== undefined && dto.tenantId !== existing.tenantId;
 
     if (tenantChanged) {
       await this.ensureTenantChangeAllowed(id);
@@ -308,14 +297,11 @@ export class StoresService {
       tenantChanged && (dto.isActive ?? existing.isActive),
       isSuperAdmin,
     );
-    const slug = dto.slug
-      ? await this.resolveSlug(dto.slug, dto.slug, id, true)
-      : undefined;
-    const effectiveFloorId =
-      dto.floorId === undefined ? existing.floorId : dto.floorId;
+    const slug = dto.slug ? await this.resolveSlug(dto.slug, dto.slug, id, true) : undefined;
+    const effectiveFloorId = dto.floorId === undefined ? existing.floorId : dto.floorId;
 
     try {
-      const store = await this.prisma.$transaction(async (tx) => {
+      const store = await this.prisma.$transaction(async tx => {
         await tx.store.update({
           where: { id },
           data: {
@@ -352,13 +338,7 @@ export class StoresService {
           });
         }
 
-        await this.syncStoreMapRelations(
-          tx,
-          id,
-          dto,
-          effectiveFloorId,
-          dto.floorId !== undefined,
-        );
+        await this.syncStoreMapRelations(tx, id, dto, effectiveFloorId, dto.floorId !== undefined);
 
         if (effectiveFloorId) {
           const existingMapObject = await tx.mapObject.findFirst({
@@ -393,7 +373,7 @@ export class StoresService {
       return this.findOne(id);
     }
 
-    const store = await this.prisma.$transaction(async (tx) => {
+    const store = await this.prisma.$transaction(async tx => {
       await tx.store.update({
         where: { id },
         data: { isActive: false },
@@ -416,10 +396,7 @@ export class StoresService {
     return this.toAdminResponse(store);
   }
 
-  private buildWhere(
-    query: StoreQueryDto,
-    publicOnly = false,
-  ): Prisma.StoreWhereInput {
+  private buildWhere(query: StoreQueryDto, publicOnly = false): Prisma.StoreWhereInput {
     const where: Prisma.StoreWhereInput = {};
 
     if (publicOnly) {
@@ -444,20 +421,17 @@ export class StoresService {
 
     if (query.search) {
       where.OR = [
-        { name: { contains: query.search, mode: "insensitive" } },
-        { description: { contains: query.search, mode: "insensitive" } },
-        { searchKeywords: { contains: query.search, mode: "insensitive" } },
-        { roomNumber: { contains: query.search, mode: "insensitive" } },
+        { name: { contains: query.search, mode: 'insensitive' } },
+        { description: { contains: query.search, mode: 'insensitive' } },
+        { searchKeywords: { contains: query.search, mode: 'insensitive' } },
+        { roomNumber: { contains: query.search, mode: 'insensitive' } },
       ];
     }
 
     return where;
   }
 
-  private async findOneOrThrow(
-    id: string,
-    publicOnly = false,
-  ): Promise<StoreResponseDto> {
+  private async findOneOrThrow(id: string, publicOnly = false): Promise<StoreResponseDto> {
     const store = await this.prisma.store.findFirst({
       where: {
         id,
@@ -477,7 +451,7 @@ export class StoresService {
     });
 
     if (!store) {
-      throw new NotFoundException("Store not found");
+      throw new NotFoundException('Store not found');
     }
 
     return this.toResponse(store);
@@ -495,7 +469,7 @@ export class StoresService {
     });
 
     if (!store) {
-      throw new NotFoundException("Store not found");
+      throw new NotFoundException('Store not found');
     }
 
     return store;
@@ -504,14 +478,14 @@ export class StoresService {
   private async ensureReferencesExist(
     dto: Pick<
       CreateStoreDto,
-      "tenantId" | "categoryId" | "floorId" | "logoAssetId" | "coverAssetId"
+      'tenantId' | 'categoryId' | 'floorId' | 'logoAssetId' | 'coverAssetId'
     >,
     requireActiveTenant = false,
     isSuperAdmin = false,
   ): Promise<void> {
     if (!isSuperAdmin && dto.tenantId !== null && dto.tenantId !== undefined) {
       throw new BadRequestException(
-        "Non-admin users cannot specify tenantId; it is derived from the store context",
+        'Non-admin users cannot specify tenantId; it is derived from the store context',
       );
     }
 
@@ -522,13 +496,11 @@ export class StoresService {
       });
 
       if (!tenant) {
-        throw new NotFoundException("Tenant not found");
+        throw new NotFoundException('Tenant not found');
       }
 
       if (requireActiveTenant && !tenant.isActive) {
-        throw new BadRequestException(
-          "An active store requires an active tenant",
-        );
+        throw new BadRequestException('An active store requires an active tenant');
       }
     }
 
@@ -539,7 +511,7 @@ export class StoresService {
       });
 
       if (!category) {
-        throw new NotFoundException("Category not found");
+        throw new NotFoundException('Category not found');
       }
     }
 
@@ -550,15 +522,12 @@ export class StoresService {
       });
 
       if (!floor) {
-        throw new NotFoundException("Floor not found");
+        throw new NotFoundException('Floor not found');
       }
     }
 
-    await this.ensureActiveFileAssetExists(dto.logoAssetId, "Store logo asset");
-    await this.ensureActiveFileAssetExists(
-      dto.coverAssetId,
-      "Store cover asset",
-    );
+    await this.ensureActiveFileAssetExists(dto.logoAssetId, 'Store logo asset');
+    await this.ensureActiveFileAssetExists(dto.coverAssetId, 'Store cover asset');
   }
 
   private async ensureTenantChangeAllowed(storeId: string): Promise<void> {
@@ -572,7 +541,7 @@ export class StoresService {
 
     if (promotion) {
       throw new ConflictException(
-        "Store tenant cannot be changed while non-deleted promotions exist. Delete, reassign, or otherwise handle the store promotions first.",
+        'Store tenant cannot be changed while non-deleted promotions exist. Delete, reassign, or otherwise handle the store promotions first.',
       );
     }
   }
@@ -618,19 +587,12 @@ export class StoresService {
     });
     const replacesMapObjects = dto.mapObjectIds !== undefined;
     const desiredMapObjectIds = new Set(
-      replacesMapObjects
-        ? dto.mapObjectIds
-        : currentMapObjects.map((object) => object.id),
+      replacesMapObjects ? dto.mapObjectIds : currentMapObjects.map(object => object.id),
     );
 
     if (dto.primaryMapObjectId) {
-      if (
-        replacesMapObjects &&
-        !desiredMapObjectIds.has(dto.primaryMapObjectId)
-      ) {
-        throw new BadRequestException(
-          "primaryMapObjectId must be included in mapObjectIds",
-        );
+      if (replacesMapObjects && !desiredMapObjectIds.has(dto.primaryMapObjectId)) {
+        throw new BadRequestException('primaryMapObjectId must be included in mapObjectIds');
       }
 
       desiredMapObjectIds.add(dto.primaryMapObjectId);
@@ -655,20 +617,18 @@ export class StoresService {
       : [];
 
     if (requestedRouteNodes.length !== requestedRouteNodeIds.size) {
-      throw new NotFoundException("Route node not found");
+      throw new NotFoundException('Route node not found');
     }
 
     for (const node of requestedRouteNodes) {
       if (node.mapObjectId === null) {
         throw new BadRequestException(
-          "Route node must be linked to a map object before linking it to a store",
+          'Route node must be linked to a map object before linking it to a store',
         );
       }
 
       if (replacesMapObjects && !desiredMapObjectIds.has(node.mapObjectId)) {
-        throw new BadRequestException(
-          "Route node mapObjectId must be included in mapObjectIds",
-        );
+        throw new BadRequestException('Route node mapObjectId must be included in mapObjectIds');
       }
 
       desiredMapObjectIds.add(node.mapObjectId);
@@ -689,29 +649,23 @@ export class StoresService {
       : [];
 
     if (desiredMapObjects.length !== desiredMapObjectIds.size) {
-      throw new NotFoundException("Map object not found");
+      throw new NotFoundException('Map object not found');
     }
 
-    const mapObjectById = new Map(
-      desiredMapObjects.map((object) => [object.id, object]),
-    );
+    const mapObjectById = new Map(desiredMapObjects.map(object => [object.id, object]));
 
     for (const object of desiredMapObjects) {
       if (object.storeId !== null && object.storeId !== storeId) {
-        throw new ConflictException(
-          "Map object is already linked to another store",
-        );
+        throw new ConflictException('Map object is already linked to another store');
       }
 
       if (floorId !== null && object.floorId !== floorId) {
-        throw new BadRequestException(
-          "Store and map objects must belong to the same floor",
-        );
+        throw new BadRequestException('Store and map objects must belong to the same floor');
       }
 
-      if (object.routeNodes.some((node) => node.floorId !== object.floorId)) {
+      if (object.routeNodes.some(node => node.floorId !== object.floorId)) {
         throw new BadRequestException(
-          "Map object and linked route nodes must belong to the same floor",
+          'Map object and linked route nodes must belong to the same floor',
         );
       }
     }
@@ -720,46 +674,34 @@ export class StoresService {
       const mapObject = mapObjectById.get(node.mapObjectId!);
 
       if (!mapObject) {
-        throw new BadRequestException(
-          "Route node must be linked through a selected map object",
-        );
+        throw new BadRequestException('Route node must be linked through a selected map object');
       }
 
       if (node.floorId !== mapObject.floorId) {
-        throw new BadRequestException(
-          "Route node and map object must belong to the same floor",
-        );
+        throw new BadRequestException('Route node and map object must belong to the same floor');
       }
 
       if (floorId !== null && node.floorId !== floorId) {
-        throw new BadRequestException(
-          "Store and route nodes must belong to the same floor",
-        );
+        throw new BadRequestException('Store and route nodes must belong to the same floor');
       }
     }
 
     if (dto.primaryRouteNodeId) {
-      const primaryRouteNode = requestedRouteNodes.find(
-        (node) => node.id === dto.primaryRouteNodeId,
-      );
+      const primaryRouteNode = requestedRouteNodes.find(node => node.id === dto.primaryRouteNodeId);
 
       if (primaryRouteNode?.type !== RouteNodeType.STORE_ANCHOR) {
         throw new BadRequestException(
-          "primaryRouteNodeId must reference a STORE_ANCHOR route node",
+          'primaryRouteNodeId must reference a STORE_ANCHOR route node',
         );
       }
     }
 
     if (replacesMapObjects) {
       const detachedMapObjectIds = currentMapObjects
-        .map((object) => object.id)
-        .filter((id) => !desiredMapObjectIds.has(id));
+        .map(object => object.id)
+        .filter(id => !desiredMapObjectIds.has(id));
 
-      await this.clearPrimaryMarkersForDetachedMapObjects(
-        tx,
-        storeId,
-        detachedMapObjectIds,
-      );
+      await this.clearPrimaryMarkersForDetachedMapObjects(tx, storeId, detachedMapObjectIds);
 
       await tx.mapObject.updateMany({
         where: {
@@ -788,7 +730,7 @@ export class StoresService {
 
   private async applyMetadataUpdates(
     tx: Prisma.TransactionClient,
-    model: "mapObject" | "routeNode",
+    model: 'mapObject' | 'routeNode',
     updates: Array<{ id: string; metadata: Prisma.InputJsonValue | undefined }>,
   ): Promise<void> {
     if (updates.length === 0) {
@@ -798,10 +740,9 @@ export class StoresService {
     const groups = new Map<string, string[]>();
 
     for (const { id, metadata } of updates) {
-      const key =
-        metadata === undefined ? "__noop__" : JSON.stringify(metadata);
+      const key = metadata === undefined ? '__noop__' : JSON.stringify(metadata);
 
-      if (key === "__noop__") {
+      if (key === '__noop__') {
         continue;
       }
 
@@ -816,7 +757,7 @@ export class StoresService {
     for (const [key, ids] of groups) {
       const metadata = JSON.parse(key) as Prisma.InputJsonValue;
 
-      if (model === "mapObject") {
+      if (model === 'mapObject') {
         await tx.mapObject.updateMany({
           where: { id: { in: ids } },
           data: { metadata },
@@ -862,7 +803,7 @@ export class StoresService {
     for (const object of mapObjects) {
       const objectMetadata = updatePrimaryStoreRelationMetadata({
         metadata: object.metadata,
-        relation: "mapObject",
+        relation: 'mapObject',
         storeId,
         isPrimary: false,
       });
@@ -874,7 +815,7 @@ export class StoresService {
       for (const node of object.routeNodes) {
         const nodeMetadata = updatePrimaryStoreRelationMetadata({
           metadata: node.metadata,
-          relation: "routeNode",
+          relation: 'routeNode',
           storeId,
           isPrimary: false,
         });
@@ -885,8 +826,8 @@ export class StoresService {
       }
     }
 
-    await this.applyMetadataUpdates(tx, "mapObject", mapObjectUpdates);
-    await this.applyMetadataUpdates(tx, "routeNode", routeNodeUpdates);
+    await this.applyMetadataUpdates(tx, 'mapObject', mapObjectUpdates);
+    await this.applyMetadataUpdates(tx, 'routeNode', routeNodeUpdates);
   }
 
   private async syncPrimaryMapObject(
@@ -901,10 +842,10 @@ export class StoresService {
 
     if (
       primaryMapObjectId !== null &&
-      !mapObjects.some((object) => object.id === primaryMapObjectId)
+      !mapObjects.some(object => object.id === primaryMapObjectId)
     ) {
       throw new BadRequestException(
-        "primaryMapObjectId must reference a map object linked to the store",
+        'primaryMapObjectId must reference a map object linked to the store',
       );
     }
 
@@ -916,7 +857,7 @@ export class StoresService {
     for (const object of mapObjects) {
       const metadata = updatePrimaryStoreRelationMetadata({
         metadata: object.metadata,
-        relation: "mapObject",
+        relation: 'mapObject',
         storeId,
         isPrimary: object.id === primaryMapObjectId,
       });
@@ -926,7 +867,7 @@ export class StoresService {
       }
     }
 
-    await this.applyMetadataUpdates(tx, "mapObject", updates);
+    await this.applyMetadataUpdates(tx, 'mapObject', updates);
   }
 
   private async syncPrimaryRouteNode(
@@ -939,29 +880,22 @@ export class StoresService {
       select: { id: true, type: true, metadata: true },
     });
 
-    const primaryRouteNode = routeNodes.find(
-      (node) => node.id === primaryRouteNodeId,
-    );
+    const primaryRouteNode = routeNodes.find(node => node.id === primaryRouteNodeId);
 
     if (primaryRouteNodeId !== null && !primaryRouteNode) {
       throw new BadRequestException(
-        "primaryRouteNodeId must reference a route node linked to the store",
+        'primaryRouteNodeId must reference a route node linked to the store',
       );
     }
 
-    if (
-      primaryRouteNode &&
-      primaryRouteNode.type !== RouteNodeType.STORE_ANCHOR
-    ) {
-      throw new BadRequestException(
-        "primaryRouteNodeId must reference a STORE_ANCHOR route node",
-      );
+    if (primaryRouteNode && primaryRouteNode.type !== RouteNodeType.STORE_ANCHOR) {
+      throw new BadRequestException('primaryRouteNodeId must reference a STORE_ANCHOR route node');
     }
 
     for (const node of routeNodes) {
       const metadata = updatePrimaryStoreRelationMetadata({
         metadata: node.metadata,
-        relation: "routeNode",
+        relation: 'routeNode',
         storeId,
         isPrimary: node.id === primaryRouteNodeId,
       });
@@ -985,7 +919,7 @@ export class StoresService {
     });
 
     if (!store) {
-      throw new NotFoundException("Store not found");
+      throw new NotFoundException('Store not found');
     }
 
     return store;
@@ -1009,7 +943,7 @@ export class StoresService {
       });
 
       if (conflict) {
-        throw new ConflictException("Store slug already exists");
+        throw new ConflictException('Store slug already exists');
       }
 
       return baseSlug;
@@ -1071,23 +1005,19 @@ export class StoresService {
     };
   }
 
-  private toAdminResponse(
-    store: StoreAdminWithRelations,
-  ): StoreAdminResponseDto {
-    const routeNodes = store.mapObjects.flatMap((object) => object.routeNodes);
+  private toAdminResponse(store: StoreAdminWithRelations): StoreAdminResponseDto {
+    const routeNodes = store.mapObjects.flatMap(object => object.routeNodes);
     const primaryRouteNode =
-      routeNodes.find((node) =>
-        isPrimaryStoreRelation(node.metadata, "routeNode", store.id),
-      ) ??
-      routeNodes.find((node) => node.type === RouteNodeType.STORE_ANCHOR) ??
+      routeNodes.find(node => isPrimaryStoreRelation(node.metadata, 'routeNode', store.id)) ??
+      routeNodes.find(node => node.type === RouteNodeType.STORE_ANCHOR) ??
       routeNodes[0] ??
       null;
     const primaryMapObject =
-      store.mapObjects.find((object) =>
-        isPrimaryStoreRelation(object.metadata, "mapObject", store.id),
+      store.mapObjects.find(object =>
+        isPrimaryStoreRelation(object.metadata, 'mapObject', store.id),
       ) ??
-      store.mapObjects.find((object) =>
-        object.routeNodes.some((node) => node.id === primaryRouteNode?.id),
+      store.mapObjects.find(object =>
+        object.routeNodes.some(node => node.id === primaryRouteNode?.id),
       ) ??
       store.mapObjects[0] ??
       null;
@@ -1097,32 +1027,28 @@ export class StoresService {
       tenantId: store.tenantId,
       categoryId: store.categoryId,
       floorId: store.floorId,
-      mapObjectIds: store.mapObjects.map((object) => object.id),
-      routeNodeIds: routeNodes.map((node) => node.id),
+      mapObjectIds: store.mapObjects.map(object => object.id),
+      routeNodeIds: routeNodes.map(node => node.id),
       primaryMapObjectId: primaryMapObject?.id ?? null,
       primaryRouteNodeId: primaryRouteNode?.id ?? null,
     };
   }
 
-  private toSearchResponse(
-    store: StoreSearchWithRelations,
-  ): StoreSearchResponseDto {
-    const mapObjectIds = store.mapObjects.map((object) => object.id);
-    const routeNodes = store.mapObjects.flatMap((object) => object.routeNodes);
-    const routeNodeIds = routeNodes.map((node) => node.id);
+  private toSearchResponse(store: StoreSearchWithRelations): StoreSearchResponseDto {
+    const mapObjectIds = store.mapObjects.map(object => object.id);
+    const routeNodes = store.mapObjects.flatMap(object => object.routeNodes);
+    const routeNodeIds = routeNodes.map(node => node.id);
     const primaryRouteNode =
-      routeNodes.find((node) =>
-        isPrimaryStoreRelation(node.metadata, "routeNode", store.id),
-      ) ??
-      routeNodes.find((node) => node.type === RouteNodeType.STORE_ANCHOR) ??
+      routeNodes.find(node => isPrimaryStoreRelation(node.metadata, 'routeNode', store.id)) ??
+      routeNodes.find(node => node.type === RouteNodeType.STORE_ANCHOR) ??
       routeNodes[0] ??
       null;
     const primaryMapObject =
-      store.mapObjects.find((object) =>
-        isPrimaryStoreRelation(object.metadata, "mapObject", store.id),
+      store.mapObjects.find(object =>
+        isPrimaryStoreRelation(object.metadata, 'mapObject', store.id),
       ) ??
-      store.mapObjects.find((object) =>
-        object.routeNodes.some((node) => node.id === primaryRouteNode?.id),
+      store.mapObjects.find(object =>
+        object.routeNodes.some(node => node.id === primaryRouteNode?.id),
       ) ??
       store.mapObjects[0] ??
       null;
@@ -1143,11 +1069,8 @@ export class StoresService {
   }
 
   private handlePrismaError(error: unknown): never {
-    if (
-      error instanceof Prisma.PrismaClientKnownRequestError &&
-      error.code === "P2002"
-    ) {
-      throw new ConflictException("Store slug already exists");
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      throw new ConflictException('Store slug already exists');
     }
 
     throw error;

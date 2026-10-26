@@ -1,29 +1,25 @@
-﻿import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from "@nestjs/common";
-import { Prisma, RouteNodeType } from "@prisma/client";
-import { isEvacuationStairNode } from "../../common/utils/evacuation.util";
-import { isPrimaryStoreRelation } from "../../common/utils/store-primary.util";
-import { PrismaService } from "../../database/prisma.service";
-import { AnalyticsService } from "../analytics/analytics.service";
-import { RouteEdgeResponseDto } from "../route-edges/dto/route-edge-response.dto";
-import { RouteNodeResponseDto } from "../route-nodes/dto/route-node-response.dto";
-import { BuildRouteToStoreQueryDto } from "./dto/build-route-to-store-query.dto";
+﻿import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma, RouteNodeType } from '@prisma/client';
+import { isEvacuationStairNode } from '../../common/utils/evacuation.util';
+import { isPrimaryStoreRelation } from '../../common/utils/store-primary.util';
+import { PrismaService } from '../../database/prisma.service';
+import { AnalyticsService } from '../analytics/analytics.service';
+import { RouteEdgeResponseDto } from '../route-edges/dto/route-edge-response.dto';
+import { RouteNodeResponseDto } from '../route-nodes/dto/route-node-response.dto';
+import { BuildRouteToStoreQueryDto } from './dto/build-route-to-store-query.dto';
 import {
   BuildRouteToStoreResponseDto,
   RouteToStoreEvacuationDto,
   RouteToStoreTargetStoreDto,
-} from "./dto/build-route-to-store-response.dto";
-import { BuildRouteQueryDto } from "./dto/build-route-query.dto";
+} from './dto/build-route-to-store-response.dto';
+import { BuildRouteQueryDto } from './dto/build-route-query.dto';
 import {
   BuildRouteResponseDto,
   RouteInstructionDto,
   RouteMetaDto,
   RoutePathPointDto,
   RouteSegmentDto,
-} from "./dto/build-route-response.dto";
+} from './dto/build-route-response.dto';
 
 const routeNodeInclude = {
   floor: {
@@ -84,10 +80,10 @@ const routeTargetStoreInclude = {
           metadata: true,
           sortOrder: true,
         },
-        orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+        orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
       },
     },
-    orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+    orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
   },
 } satisfies Prisma.StoreInclude;
 
@@ -119,7 +115,7 @@ type ShortestPath = {
 const routeRenderingMeta = {
   supports2D: true,
   supports3D: true,
-  coordinateSystem: "mall-local",
+  coordinateSystem: 'mall-local',
   usesXYZ: true,
 };
 
@@ -131,7 +127,7 @@ export class RoutesService {
   ) {}
 
   async build(query: BuildRouteQueryDto): Promise<BuildRouteResponseDto> {
-    const mode = query.emergencyMode ? "emergency" : "normal";
+    const mode = query.emergencyMode ? 'emergency' : 'normal';
     const [fromNode, toNode] = await this.prisma.$transaction([
       this.prisma.routeNode.findUnique({
         where: { id: query.fromNodeId },
@@ -144,11 +140,11 @@ export class RoutesService {
     ]);
 
     if (!fromNode || !fromNode.isActive) {
-      throw new NotFoundException("From route node not found");
+      throw new NotFoundException('From route node not found');
     }
 
-    if (mode !== "emergency" && (!toNode || !toNode.isActive)) {
-      throw new NotFoundException("To route node not found");
+    if (mode !== 'emergency' && (!toNode || !toNode.isActive)) {
+      throw new NotFoundException('To route node not found');
     }
 
     if (query.floorId) {
@@ -158,19 +154,15 @@ export class RoutesService {
       });
 
       if (!floor) {
-        throw new NotFoundException("Floor not found");
+        throw new NotFoundException('Floor not found');
       }
 
       if (fromNode.floorId !== query.floorId) {
-        throw new NotFoundException(
-          "From route node not found on selected floor",
-        );
+        throw new NotFoundException('From route node not found on selected floor');
       }
 
       if (toNode && toNode.floorId !== query.floorId) {
-        throw new NotFoundException(
-          "To route node not found on selected floor",
-        );
+        throw new NotFoundException('To route node not found on selected floor');
       }
     }
 
@@ -204,15 +196,15 @@ export class RoutesService {
     ]);
 
     // Exclude edges temporarily blocked for maintenance (metadata.blocked=true).
-    const activeEdges = edges.filter((edge) => !this.isBlockedEdge(edge));
+    const activeEdges = edges.filter(edge => !this.isBlockedEdge(edge));
 
-    const nodeById = new Map(nodes.map((node) => [node.id, node]));
-    const edgeById = new Map(activeEdges.map((edge) => [edge.id, edge]));
+    const nodeById = new Map(nodes.map(node => [node.id, node]));
+    const edgeById = new Map(activeEdges.map(edge => [edge.id, edge]));
 
-    console.log("[routes] build graph loaded", {
+    console.log('[routes] build graph loaded', {
       fromNodeId: fromNode.id,
       toNodeId: toNode?.id ?? null,
-      floorId: query.floorId ?? "all",
+      floorId: query.floorId ?? 'all',
       nodesCount: nodes.length,
       edgesCount: edges.length,
       fromNodeInGraph: nodeById.has(fromNode.id),
@@ -220,15 +212,15 @@ export class RoutesService {
     });
 
     if (!nodeById.has(fromNode.id)) {
-      throw new NotFoundException("Route not found for selected floor");
+      throw new NotFoundException('Route not found for selected floor');
     }
 
     const verticalEdges = this.buildVerticalEdges(nodes);
     const allEdges = activeEdges.concat(verticalEdges);
 
-    console.log("[routes] build vertical edges", {
+    console.log('[routes] build vertical edges', {
       count: verticalEdges.length,
-      items: verticalEdges.map((e) => ({
+      items: verticalEdges.map(e => ({
         id: e.id,
         from: e.fromNodeId,
         to: e.toNodeId,
@@ -236,35 +228,27 @@ export class RoutesService {
       })),
     });
 
-// Effective target: in emergency mode we route to the nearest active exit node.
-let effectiveToNode: RouteNodeWithFloor;
-let emergencyExitUsed: string | null = null;
+    // Effective target: in emergency mode we route to the nearest active exit node.
+    let effectiveToNode: RouteNodeWithFloor;
+    let emergencyExitUsed: string | null = null;
 
-if (mode === "emergency") {
-  const exitNode = this.findNearestExitNode(
-    fromNode,
-    nodes,
-    allEdges,
-  );
-  if (!exitNode) {
-    throw new NotFoundException(
-      "No active emergency exit node found for evacuation routing",
-    );
-  }
-  effectiveToNode = exitNode;
-  emergencyExitUsed = exitNode.id;
-} else {
-  effectiveToNode = toNode!;
-}
+    if (mode === 'emergency') {
+      const exitNode = this.findNearestExitNode(fromNode, nodes, allEdges);
+      if (!exitNode) {
+        throw new NotFoundException('No active emergency exit node found for evacuation routing');
+      }
+      effectiveToNode = exitNode;
+      emergencyExitUsed = exitNode.id;
+    } else {
+      effectiveToNode = toNode!;
+    }
 
     if (!nodeById.has(effectiveToNode.id)) {
-      throw new NotFoundException("Route not found for selected floor");
+      throw new NotFoundException('Route not found for selected floor');
     }
 
     // Adaptive routing: compute per-edge load and effective weights.
-    const usageMap = await this.analyticsService.getEdgeUsageMap(
-      query.floorId,
-    );
+    const usageMap = await this.analyticsService.getEdgeUsageMap(query.floorId);
     const routingConfig = await this.loadRoutingConfig();
     const { effectiveEdges, routingReport } = this.applyAdaptiveWeights(
       allEdges,
@@ -279,7 +263,7 @@ if (mode === "emergency") {
       toNodeId: effectiveToNode.id,
     });
 
-    console.log("[routes] build shortestPath result", {
+    console.log('[routes] build shortestPath result', {
       fromNodeId: fromNode.id,
       toNodeId: effectiveToNode.id,
       mode,
@@ -290,20 +274,20 @@ if (mode === "emergency") {
     });
 
     if (!path) {
-      console.log("[routes] build graph debug", {
-        nodes: nodes.map((n) => ({
+      console.log('[routes] build graph debug', {
+        nodes: nodes.map(n => ({
           id: n.id,
           floorId: n.floorId,
           type: n.type,
           code: n.code,
         })),
-        edges: activeEdges.map((e) => ({
+        edges: activeEdges.map(e => ({
           id: e.id,
           from: e.fromNodeId,
           to: e.toNodeId,
           floorId: e.floorId,
         })),
-        verticalEdges: verticalEdges.map((e) => ({
+        verticalEdges: verticalEdges.map(e => ({
           id: e.id,
           from: e.fromNodeId,
           to: e.toNodeId,
@@ -318,10 +302,10 @@ if (mode === "emergency") {
     }
 
     const routeNodes = path.nodeIds
-      .map((nodeId) => nodeById.get(nodeId))
+      .map(nodeId => nodeById.get(nodeId))
       .filter((n): n is RouteNodeWithFloor => Boolean(n));
     const routeEdges = path.edgeIds
-      .map((edgeId) => edgeById.get(edgeId))
+      .map(edgeId => edgeById.get(edgeId))
       .filter((e): e is RouteEdgeWithRelations => Boolean(e));
     const segments = this.splitIntoFloorSegments(routeNodes);
     const floorChanges = this.buildFloorChanges(routeNodes);
@@ -345,8 +329,8 @@ if (mode === "emergency") {
     return {
       fromNode: this.toRouteNodeResponse(fromNode),
       toNode: this.toRouteNodeResponse(effectiveToNode),
-      nodes: routeNodes.map((node) => this.toRouteNodeResponse(node)),
-      edges: routeEdges.map((edge) => this.toRouteEdgeResponse(edge)),
+      nodes: routeNodes.map(node => this.toRouteNodeResponse(node)),
+      edges: routeEdges.map(edge => this.toRouteEdgeResponse(edge)),
       totalDistance: path.totalDistance,
       totalWeight: path.totalWeight,
       routePath: this.toRoutePath(routeNodes),
@@ -356,13 +340,11 @@ if (mode === "emergency") {
       instructions: this.toRouteInstructions(routeNodes),
       meta: this.createRouteMeta({
         schemaVersion:
-          mode === "emergency"
-            ? "green-mall-route-emergency-v1"
-            : "green-mall-route-v2",
+          mode === 'emergency' ? 'green-mall-route-emergency-v1' : 'green-mall-route-v2',
         purpose:
-          mode === "emergency"
-            ? "Frontend-ready emergency evacuation route"
-            : "Frontend-ready route between navigation nodes",
+          mode === 'emergency'
+            ? 'Frontend-ready emergency evacuation route'
+            : 'Frontend-ready route between navigation nodes',
         mode,
         emergencyExitUsed,
         routingReport,
@@ -370,11 +352,9 @@ if (mode === "emergency") {
     };
   }
 
-  async buildToStore(
-    query: BuildRouteToStoreQueryDto,
-  ): Promise<BuildRouteToStoreResponseDto> {
-    const trimmedSlug = (query.storeSlug ?? "").trim();
-    console.log("[routes] buildToStore start", {
+  async buildToStore(query: BuildRouteToStoreQueryDto): Promise<BuildRouteToStoreResponseDto> {
+    const trimmedSlug = (query.storeSlug ?? '').trim();
+    console.log('[routes] buildToStore start', {
       fromNodeId: query.fromNodeId,
       storeSlug: trimmedSlug,
       storeId: query.storeId,
@@ -388,7 +368,7 @@ if (mode === "emergency") {
       include: routeTargetStoreInclude,
     });
 
-    console.log("[routes] buildToStore store lookup", {
+    console.log('[routes] buildToStore store lookup', {
       found: Boolean(store),
       storeId: store?.id,
       floorId: store?.floorId,
@@ -401,12 +381,9 @@ if (mode === "emergency") {
       );
     }
 
-    const targetNode = await this.findStoreRouteNode(
-      store.id,
-      store.floorId ?? undefined,
-    );
+    const targetNode = await this.findStoreRouteNode(store.id, store.floorId ?? undefined);
 
-    console.log("[routes] buildToStore targetNode", {
+    console.log('[routes] buildToStore targetNode', {
       storeId: store.id,
       floorId: store.floorId,
       targetNodeId: targetNode?.id,
@@ -419,7 +396,7 @@ if (mode === "emergency") {
         select: { id: true, floorId: true },
       });
       throw new NotFoundException(
-        `Store route node not found for store ${store.id} on floor ${store.floorId ?? "any"}. Store mapObjects: ${JSON.stringify(storeMapObjects)}`,
+        `Store route node not found for store ${store.id} on floor ${store.floorId ?? 'any'}. Store mapObjects: ${JSON.stringify(storeMapObjects)}`,
       );
     }
 
@@ -428,7 +405,7 @@ if (mode === "emergency") {
       toNodeId: targetNode.id,
     });
 
-    console.log("[routes] buildToStore success", {
+    console.log('[routes] buildToStore success', {
       fromNodeId: query.fromNodeId,
       toNodeId: targetNode.id,
       totalDistance: route.totalDistance,
@@ -445,12 +422,12 @@ if (mode === "emergency") {
       routePath: route.routePath,
       routeSegments: route.routeSegments,
       segments: route.segments,
-       floorChanges: route.floorChanges,
+      floorChanges: route.floorChanges,
       instructions: route.instructions,
       meta: {
-        schemaVersion: "green-mall-route-to-store-v3",
+        schemaVersion: 'green-mall-route-to-store-v3',
         generatedAt: new Date().toISOString(),
-        purpose: "Frontend-ready route from navigation node to selected store",
+        purpose: 'Frontend-ready route from navigation node to selected store',
         rendering: routeRenderingMeta,
         mode: route.meta.mode,
         emergencyExitUsed: route.meta.emergencyExitUsed,
@@ -477,9 +454,9 @@ if (mode === "emergency") {
       }),
     ]);
 
-    const nodeById = new Map(nodes.map((node) => [node.id, node]));
-    const activeEdges = edges.filter((edge) => !this.isBlockedEdge(edge));
-    const edgeById = new Map(activeEdges.map((edge) => [edge.id, edge]));
+    const nodeById = new Map(nodes.map(node => [node.id, node]));
+    const activeEdges = edges.filter(edge => !this.isBlockedEdge(edge));
+    const edgeById = new Map(activeEdges.map(edge => [edge.id, edge]));
 
     const evacuationStairs = nodes.filter(isEvacuationStairNode);
 
@@ -488,7 +465,7 @@ if (mode === "emergency") {
     }
 
     if (!nodeById.has(fromNode.id)) {
-      const fallback = nodes.find((n) => n.type === RouteNodeType.STORE_ANCHOR);
+      const fallback = nodes.find(n => n.type === RouteNodeType.STORE_ANCHOR);
       if (!fallback) return null;
       fromNode = fallback;
     }
@@ -522,10 +499,10 @@ if (mode === "emergency") {
     }
 
     const routeNodes = bestPath.nodeIds
-      .map((nodeId) => nodeById.get(nodeId))
+      .map(nodeId => nodeById.get(nodeId))
       .filter((n): n is RouteNodeWithFloor => Boolean(n));
     const routeEdges = bestPath.edgeIds
-      .map((edgeId) => edgeById.get(edgeId))
+      .map(edgeId => edgeById.get(edgeId))
       .filter((e): e is RouteEdgeWithRelations => Boolean(e));
 
     return {
@@ -541,13 +518,9 @@ if (mode === "emergency") {
     };
   }
 
-  private buildStoreIdentifierWhere(
-    query: BuildRouteToStoreQueryDto,
-  ): Prisma.StoreWhereInput {
+  private buildStoreIdentifierWhere(query: BuildRouteToStoreQueryDto): Prisma.StoreWhereInput {
     if (!query.storeId && !query.storeSlug && !query.storeCode) {
-      throw new BadRequestException(
-        "Provide one of storeId, storeSlug or storeCode",
-      );
+      throw new BadRequestException('Provide one of storeId, storeSlug or storeCode');
     }
 
     const where: Prisma.StoreWhereInput = {
@@ -601,13 +574,11 @@ if (mode === "emergency") {
         },
       },
       include: routeNodeInclude,
-      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
     });
 
     const exactPrimary =
-      exact.find((node) =>
-        isPrimaryStoreRelation(node.metadata, "routeNode", storeId),
-      ) ?? exact[0];
+      exact.find(node => isPrimaryStoreRelation(node.metadata, 'routeNode', storeId)) ?? exact[0];
 
     if (exactPrimary) {
       return exactPrimary;
@@ -625,7 +596,7 @@ if (mode === "emergency") {
         floorId: fallbackFloorId,
       },
       include: routeNodeInclude,
-      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
     });
 
     return floorFallback ?? null;
@@ -639,17 +610,15 @@ if (mode === "emergency") {
     return store?.floorId ?? undefined;
   }
 
-  private buildVerticalEdges(
-    nodes: RouteNodeWithFloor[],
-  ): RouteEdgeWithRelations[] {
-    const NORMAL_VERTICAL_TYPES = new Set(["ELEVATOR", "ESCALATOR"]);
+  private buildVerticalEdges(nodes: RouteNodeWithFloor[]): RouteEdgeWithRelations[] {
+    const NORMAL_VERTICAL_TYPES = new Set(['ELEVATOR', 'ESCALATOR']);
     const VERTICAL_BASE_COST = 500;
     const vertical: RouteEdgeWithRelations[] = [];
     const seenPairs = new Set<string>();
 
     const addPair = (a: RouteNodeWithFloor, b: RouteNodeWithFloor) => {
       if (a.floorId === b.floorId) return;
-      const key = [a.id, b.id].sort().join("|");
+      const key = [a.id, b.id].sort().join('|');
       if (seenPairs.has(key)) return;
       seenPairs.add(key);
       vertical.push(this.makeVerticalEdge(a, b, VERTICAL_BASE_COST));
@@ -664,9 +633,7 @@ if (mode === "emergency") {
       byCode.set(node.code, list);
     }
     for (const group of byCode.values()) {
-      const isVerticalCode = group.every(
-        (n) => NORMAL_VERTICAL_TYPES.has(n.type),
-      );
+      const isVerticalCode = group.every(n => NORMAL_VERTICAL_TYPES.has(n.type));
       if (!isVerticalCode) continue;
       for (let i = 0; i < group.length; i++) {
         for (let j = i + 1; j < group.length; j++) {
@@ -719,11 +686,7 @@ if (mode === "emergency") {
       const floorId = node.floorId;
       const last = segments[segments.length - 1];
       const point = this.toRoutePath([node])[0];
-      if (
-        last &&
-        last.floorNumber === floorNumber &&
-        last.floorId === floorId
-      ) {
+      if (last && last.floorNumber === floorNumber && last.floorId === floorId) {
         last.points.push(point);
       } else {
         segments.push({ floorNumber, floorId, points: [point] });
@@ -757,8 +720,8 @@ if (mode === "emergency") {
           toFloor: cur.floor?.number ?? 0,
           fromFloorId: prev.floorId,
           toFloorId: cur.floorId,
-          nodeCode: prev.code ?? cur.code ?? "",
-          type: prev.type ?? cur.type ?? "ELEVATOR",
+          nodeCode: prev.code ?? cur.code ?? '',
+          type: prev.type ?? cur.type ?? 'ELEVATOR',
         });
       }
     }
@@ -779,7 +742,7 @@ if (mode === "emergency") {
       };
     }
 
-    const activeNodeIds = new Set(params.nodes.map((node) => node.id));
+    const activeNodeIds = new Set(params.nodes.map(node => node.id));
     const adjacency = new Map<string, GraphConnection[]>();
 
     for (const nodeId of activeNodeIds) {
@@ -787,10 +750,7 @@ if (mode === "emergency") {
     }
 
     for (const edge of params.edges) {
-      if (
-        !activeNodeIds.has(edge.fromNodeId) ||
-        !activeNodeIds.has(edge.toNodeId)
-      ) {
+      if (!activeNodeIds.has(edge.fromNodeId) || !activeNodeIds.has(edge.toNodeId)) {
         continue;
       }
 
@@ -843,13 +803,9 @@ if (mode === "emergency") {
         }
 
         const nextDistance =
-          (distances.get(currentNodeId) ?? Number.POSITIVE_INFINITY) +
-          connection.cost;
+          (distances.get(currentNodeId) ?? Number.POSITIVE_INFINITY) + connection.cost;
 
-        if (
-          nextDistance <
-          (distances.get(connection.toNodeId) ?? Number.POSITIVE_INFINITY)
-        ) {
+        if (nextDistance < (distances.get(connection.toNodeId) ?? Number.POSITIVE_INFINITY)) {
           distances.set(connection.toNodeId, nextDistance);
           previous.set(connection.toNodeId, {
             nodeId: currentNodeId,
@@ -861,10 +817,7 @@ if (mode === "emergency") {
       }
     }
 
-    if (
-      (distances.get(params.toNodeId) ?? Number.POSITIVE_INFINITY) ===
-      Number.POSITIVE_INFINITY
-    ) {
+    if ((distances.get(params.toNodeId) ?? Number.POSITIVE_INFINITY) === Number.POSITIVE_INFINITY) {
       return null;
     }
 
@@ -947,9 +900,7 @@ if (mode === "emergency") {
     };
   }
 
-  private toRouteEdgeResponse(
-    edge: RouteEdgeWithRelations,
-  ): RouteEdgeResponseDto {
+  private toRouteEdgeResponse(edge: RouteEdgeWithRelations): RouteEdgeResponseDto {
     return {
       id: edge.id,
       type: edge.type,
@@ -970,7 +921,7 @@ if (mode === "emergency") {
   }
 
   private toRoutePath(nodes: RouteNodeWithFloor[]): RoutePathPointDto[] {
-    return nodes.map((node) => ({
+    return nodes.map(node => ({
       nodeId: node.id,
       type: node.type,
       name: this.getNodeLabel(node),
@@ -1025,9 +976,7 @@ if (mode === "emergency") {
     return segments;
   }
 
-  private toRouteInstructions(
-    nodes: RouteNodeWithFloor[],
-  ): RouteInstructionDto[] {
+  private toRouteInstructions(nodes: RouteNodeWithFloor[]): RouteInstructionDto[] {
     return nodes.map((node, index) => {
       const label = this.getNodeLabel(node);
       const isFirst = index === 0;
@@ -1036,9 +985,9 @@ if (mode === "emergency") {
       if (isFirst) {
         return {
           order: index + 1,
-          type: "START",
+          type: 'START',
           title: `Начните маршрут от: ${label}`,
-          description: "Стартовая точка маршрута.",
+          description: 'Стартовая точка маршрута.',
           nodeId: node.id,
           x: node.x,
           y: node.y,
@@ -1049,9 +998,9 @@ if (mode === "emergency") {
       if (isLast) {
         return {
           order: index + 1,
-          type: "ARRIVE",
+          type: 'ARRIVE',
           title: `Вы прибыли: ${label}`,
-          description: "Конечная точка маршрута.",
+          description: 'Конечная точка маршрута.',
           nodeId: node.id,
           x: node.x,
           y: node.y,
@@ -1061,9 +1010,9 @@ if (mode === "emergency") {
 
       return {
         order: index + 1,
-        type: "MOVE",
+        type: 'MOVE',
         title: `Двигайтесь к: ${label}`,
-        description: "Продолжайте движение к следующей точке маршрута.",
+        description: 'Продолжайте движение к следующей точке маршрута.',
         nodeId: node.id,
         x: node.x,
         y: node.y,
@@ -1075,7 +1024,7 @@ if (mode === "emergency") {
   private createRouteMeta(params: {
     schemaVersion: string;
     purpose: string;
-    mode?: "normal" | "emergency";
+    mode?: 'normal' | 'emergency';
     emergencyExitUsed?: string | null;
     routingReport?: Record<string, unknown> | null;
   }): RouteMetaDto {
@@ -1084,7 +1033,7 @@ if (mode === "emergency") {
       generatedAt: new Date().toISOString(),
       purpose: params.purpose,
       rendering: routeRenderingMeta,
-      mode: params.mode ?? "normal",
+      mode: params.mode ?? 'normal',
       emergencyExitUsed: params.emergencyExitUsed ?? null,
       routingReport: params.routingReport ?? null,
     };
@@ -1092,7 +1041,7 @@ if (mode === "emergency") {
 
   private async loadRoutingConfig(): Promise<RoutingConfig> {
     const value = await this.prisma.systemSetting.findUnique({
-      where: { key: "routing.adaptive" },
+      where: { key: 'routing.adaptive' },
       select: { value: true },
     });
 
@@ -1103,22 +1052,20 @@ if (mode === "emergency") {
       enabled: true,
     };
 
-    if (!value?.value || typeof value.value !== "object") {
+    if (!value?.value || typeof value.value !== 'object') {
       return defaults;
     }
 
     const raw = value.value as Record<string, unknown>;
     return {
       overloadThreshold:
-        typeof raw.overloadThreshold === "number"
+        typeof raw.overloadThreshold === 'number'
           ? raw.overloadThreshold
           : defaults.overloadThreshold,
       overloadPenalty:
-        typeof raw.overloadPenalty === "number"
-          ? raw.overloadPenalty
-          : defaults.overloadPenalty,
+        typeof raw.overloadPenalty === 'number' ? raw.overloadPenalty : defaults.overloadPenalty,
       penaltyMultiplier:
-        typeof raw.penaltyMultiplier === "number"
+        typeof raw.penaltyMultiplier === 'number'
           ? raw.penaltyMultiplier
           : defaults.penaltyMultiplier,
       enabled: raw.enabled !== false,
@@ -1138,9 +1085,9 @@ if (mode === "emergency") {
     }
 
     const report: Record<string, unknown> = {};
-    const effectiveEdges = edges.map((edge) => {
+    const effectiveEdges = edges.map(edge => {
       // Virtual vertical edges are generated in-memory and have no usage counter.
-      if (edge.id.startsWith("vertical:")) {
+      if (edge.id.startsWith('vertical:')) {
         return edge;
       }
 
@@ -1173,9 +1120,7 @@ if (mode === "emergency") {
     nodes: RouteNodeWithFloor[],
     edges: RouteEdgeWithRelations[],
   ): RouteNodeWithFloor | null {
-    const exitNodes = nodes.filter(
-      (node) => node.isActive && node.type === RouteNodeType.EXIT,
-    );
+    const exitNodes = nodes.filter(node => node.isActive && node.type === RouteNodeType.EXIT);
 
     if (exitNodes.length === 0) {
       return null;
@@ -1212,10 +1157,10 @@ if (mode === "emergency") {
   private getRouteEdgeLabel(edge: RouteEdgeWithRelations): string | null {
     if (
       edge.metadata &&
-      typeof edge.metadata === "object" &&
+      typeof edge.metadata === 'object' &&
       !Array.isArray(edge.metadata) &&
-      "label" in edge.metadata &&
-      typeof edge.metadata.label === "string"
+      'label' in edge.metadata &&
+      typeof edge.metadata.label === 'string'
     ) {
       return edge.metadata.label;
     }
@@ -1227,16 +1172,14 @@ if (mode === "emergency") {
     store: RouteTargetStore,
     primaryRouteNodeId: string,
   ): RouteToStoreTargetStoreDto {
-    const mapObjectIds = store.mapObjects.map((object) => object.id);
-    const routeNodeIds = store.mapObjects.flatMap((object) =>
-      object.routeNodes.map((node) => node.id),
-    );
-    const primaryRouteMapObject = store.mapObjects.find((object) =>
-      object.routeNodes.some((node) => node.id === primaryRouteNodeId),
+    const mapObjectIds = store.mapObjects.map(object => object.id);
+    const routeNodeIds = store.mapObjects.flatMap(object => object.routeNodes.map(node => node.id));
+    const primaryRouteMapObject = store.mapObjects.find(object =>
+      object.routeNodes.some(node => node.id === primaryRouteNodeId),
     );
     const primaryMapObject =
-      store.mapObjects.find((object) =>
-        isPrimaryStoreRelation(object.metadata, "mapObject", store.id),
+      store.mapObjects.find(object =>
+        isPrimaryStoreRelation(object.metadata, 'mapObject', store.id),
       ) ??
       primaryRouteMapObject ??
       store.mapObjects[0] ??
@@ -1260,7 +1203,7 @@ if (mode === "emergency") {
 
   private isBlockedEdge(edge: RouteEdgeWithRelations): boolean {
     const metadata = edge.metadata;
-    if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
+    if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) {
       return false;
     }
     return (metadata as Record<string, unknown>).blocked === true;

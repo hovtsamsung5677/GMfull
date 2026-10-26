@@ -1,5 +1,5 @@
-import { ApiProperty } from "@nestjs/swagger";
-import { PanelStatus, RouteNodeType } from "@prisma/client";
+import { ApiProperty } from '@nestjs/swagger';
+import { PanelStatus, RouteNodeType } from '@prisma/client';
 
 export class PanelAdminFloorResponseDto {
   @ApiProperty()
@@ -22,7 +22,7 @@ export class PanelAdminRouteNodeResponseDto {
   @ApiProperty()
   floorId!: string;
 
-  @ApiProperty({ enum: RouteNodeType, enumName: "RouteNodeType" })
+  @ApiProperty({ enum: RouteNodeType, enumName: 'RouteNodeType' })
   type!: RouteNodeType;
 
   @ApiProperty({ type: String, nullable: true })
@@ -57,7 +57,7 @@ export class PanelAdminResponseDto {
   @ApiProperty({ type: String, nullable: true })
   description!: string | null;
 
-  @ApiProperty({ enum: PanelStatus, enumName: "PanelStatus" })
+  @ApiProperty({ enum: PanelStatus, enumName: 'PanelStatus' })
   status!: PanelStatus;
 
   @ApiProperty({ type: String, nullable: true })
@@ -72,26 +72,24 @@ export class PanelAdminResponseDto {
   @ApiProperty({
     type: String,
     nullable: true,
-    description:
-      "Runtime-reported application version. Read-only in this admin configuration API.",
+    description: 'Runtime-reported application version. Read-only in this admin configuration API.',
   })
   appVersion!: string | null;
 
   @ApiProperty({
     type: String,
-    format: "date-time",
+    format: 'date-time',
     nullable: true,
-    description:
-      "Runtime heartbeat timestamp. Read-only in this admin configuration API.",
+    description: 'Runtime heartbeat timestamp. Read-only in this admin configuration API.',
   })
   lastSeenAt!: Date | null;
 
   @ApiProperty({
     type: String,
-    format: "date-time",
+    format: 'date-time',
     nullable: true,
     description:
-      "Runtime timestamp of the last time the panel was actively used to start a route. Read-only in this admin configuration API.",
+      'Runtime timestamp of the last time the panel was actively used to start a route. Read-only in this admin configuration API.',
   })
   usedAt!: Date | null;
 
@@ -110,10 +108,10 @@ export class PanelAdminResponseDto {
   })
   routeNode!: PanelAdminRouteNodeResponseDto | null;
 
-  @ApiProperty({ type: String, format: "date-time" })
+  @ApiProperty({ type: String, format: 'date-time' })
   createdAt!: Date;
 
-  @ApiProperty({ type: String, format: "date-time" })
+  @ApiProperty({ type: String, format: 'date-time' })
   updatedAt!: Date;
 }
 

@@ -1,5 +1,5 @@
-import { FileAssetKind, Prisma } from "@prisma/client";
-import { PublicPromotionResponseDto } from "./dto/public-promotion-response.dto";
+import { FileAssetKind, Prisma } from '@prisma/client';
+import { PublicPromotionResponseDto } from './dto/public-promotion-response.dto';
 
 export const publicPromotionSelect = {
   id: true,
@@ -43,9 +43,7 @@ export type PublicPromotionRecord = Prisma.PromotionGetPayload<{
   select: typeof publicPromotionSelect;
 }>;
 
-export function hasConsistentPublicPromotionTenant(
-  promotion: PublicPromotionRecord,
-): boolean {
+export function hasConsistentPublicPromotionTenant(promotion: PublicPromotionRecord): boolean {
   return (
     promotion.tenantId !== null &&
     promotion.store !== null &&
@@ -57,8 +55,7 @@ export function toPublicPromotionResponse(
   promotion: PublicPromotionRecord,
 ): PublicPromotionResponseDto {
   const imageAsset =
-    promotion.imageAsset?.isActive &&
-    promotion.imageAsset.kind === FileAssetKind.IMAGE
+    promotion.imageAsset?.isActive && promotion.imageAsset.kind === FileAssetKind.IMAGE
       ? {
           id: promotion.imageAsset.id,
           filename: promotion.imageAsset.filename,

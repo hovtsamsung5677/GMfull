@@ -1,6 +1,6 @@
-import { ApiPropertyOptional } from "@nestjs/swagger";
-import { AdPlacement } from "@prisma/client";
-import { Transform } from "class-transformer";
+import { ApiPropertyOptional } from '@nestjs/swagger';
+import { AdPlacement } from '@prisma/client';
+import { Transform } from 'class-transformer';
 import {
   IsBoolean,
   IsEnum,
@@ -10,15 +10,15 @@ import {
   Max,
   MaxLength,
   Min,
-} from "class-validator";
+} from 'class-validator';
 import {
   toOptionalBoolean,
   toOptionalNumber,
-} from "../../../common/transformers/query.transformers";
+} from '../../../common/transformers/query.transformers';
 
 export class AdSlotQueryDto {
   @ApiPropertyOptional({
-    description: "Case-insensitive search by code, name or description.",
+    description: 'Case-insensitive search by code, name or description.',
     maxLength: 500,
   })
   @IsOptional()
@@ -26,14 +26,14 @@ export class AdSlotQueryDto {
   @MaxLength(500)
   search?: string;
 
-  @ApiPropertyOptional({ enum: AdPlacement, enumName: "AdPlacement" })
+  @ApiPropertyOptional({ enum: AdPlacement, enumName: 'AdPlacement' })
   @IsOptional()
   @IsEnum(AdPlacement)
   placement?: AdPlacement;
 
   @ApiPropertyOptional({
     type: String,
-    description: "Return slots bound to this specific Panel id.",
+    description: 'Return slots bound to this specific Panel id.',
   })
   @IsOptional()
   @IsString()

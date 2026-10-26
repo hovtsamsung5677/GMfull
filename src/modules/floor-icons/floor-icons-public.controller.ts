@@ -1,13 +1,5 @@
-import {
-  Get,
-  Query,
-  Controller,
-} from '@nestjs/common';
-import {
-  ApiOkResponse,
-  ApiOperation,
-  ApiTags,
-} from '@nestjs/swagger';
+import { Get, Query, Controller } from '@nestjs/common';
+import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { FloorIconsService } from './floor-icons.service';
 import { FloorIconResponseDto } from './dto/floor-icon-response.dto';
 

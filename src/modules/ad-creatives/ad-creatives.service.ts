@@ -3,20 +3,17 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
-} from "@nestjs/common";
-import { FileAssetKind, Prisma } from "@prisma/client";
-import { PrismaService } from "../../database/prisma.service";
-import {
-  adCreativeAdminInclude,
-  toAdCreativeAdminResponse,
-} from "./ad-creative-admin.projection";
+} from '@nestjs/common';
+import { FileAssetKind, Prisma } from '@prisma/client';
+import { PrismaService } from '../../database/prisma.service';
+import { adCreativeAdminInclude, toAdCreativeAdminResponse } from './ad-creative-admin.projection';
 import {
   AdCreativeAdminListResponseDto,
   AdCreativeAdminResponseDto,
-} from "./dto/ad-creative-admin-response.dto";
-import { AdCreativeQueryDto } from "./dto/ad-creative-query.dto";
-import { CreateAdCreativeDto } from "./dto/create-ad-creative.dto";
-import { UpdateAdCreativeDto } from "./dto/update-ad-creative.dto";
+} from './dto/ad-creative-admin-response.dto';
+import { AdCreativeQueryDto } from './dto/ad-creative-query.dto';
+import { CreateAdCreativeDto } from './dto/create-ad-creative.dto';
+import { UpdateAdCreativeDto } from './dto/update-ad-creative.dto';
 
 interface AdCreativeValidationState {
   assetId: string | null;
@@ -42,7 +39,7 @@ export class AdCreativesService {
       this.prisma.adCreative.findMany({
         where,
         include: adCreativeAdminInclude,
-        orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }, { id: "asc" }],
+        orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }, { id: 'asc' }],
         skip: (page - 1) * limit,
         take: limit,
       }),
@@ -75,7 +72,7 @@ export class AdCreativesService {
     });
 
     if (!creative) {
-      throw new NotFoundException("Ad creative not found");
+      throw new NotFoundException('Ad creative not found');
     }
 
     return toAdCreativeAdminResponse(creative);
@@ -160,10 +157,7 @@ export class AdCreativesService {
     }
   }
 
-  async remove(
-    id: string,
-    userId: string,
-  ): Promise<AdCreativeAdminResponseDto> {
+  async remove(id: string, userId: string): Promise<AdCreativeAdminResponseDto> {
     const result = await this.prisma.adCreative.updateMany({
       where: {
         id,
@@ -182,7 +176,7 @@ export class AdCreativesService {
     });
 
     if (result.count === 0) {
-      throw new NotFoundException("Ad creative not found");
+      throw new NotFoundException('Ad creative not found');
     }
 
     const creative = await this.prisma.adCreative.findUnique({
@@ -191,16 +185,13 @@ export class AdCreativesService {
     });
 
     if (!creative) {
-      throw new NotFoundException("Ad creative not found");
+      throw new NotFoundException('Ad creative not found');
     }
 
     return toAdCreativeAdminResponse(creative);
   }
 
-  private buildWhere(
-    campaignId: string,
-    query: AdCreativeQueryDto,
-  ): Prisma.AdCreativeWhereInput {
+  private buildWhere(campaignId: string, query: AdCreativeQueryDto): Prisma.AdCreativeWhereInput {
     const search = query.search?.trim();
 
     return {
@@ -211,15 +202,15 @@ export class AdCreativesService {
       ...(search
         ? {
             OR: [
-              { title: { contains: search, mode: "insensitive" as const } },
+              { title: { contains: search, mode: 'insensitive' as const } },
               {
                 description: {
                   contains: search,
-                  mode: "insensitive" as const,
+                  mode: 'insensitive' as const,
                 },
               },
-              { altText: { contains: search, mode: "insensitive" as const } },
-              { ctaText: { contains: search, mode: "insensitive" as const } },
+              { altText: { contains: search, mode: 'insensitive' as const } },
+              { ctaText: { contains: search, mode: 'insensitive' as const } },
             ],
           }
         : {}),
@@ -236,7 +227,7 @@ export class AdCreativesService {
     });
 
     if (!campaign) {
-      throw new NotFoundException("Ad campaign not found");
+      throw new NotFoundException('Ad campaign not found');
     }
   }
 
@@ -254,28 +245,20 @@ export class AdCreativesService {
     });
 
     if (!creative) {
-      throw new NotFoundException("Ad creative not found");
+      throw new NotFoundException('Ad creative not found');
     }
 
     return creative;
   }
 
   private async validateState(state: AdCreativeValidationState): Promise<void> {
-    if (
-      !Number.isInteger(state.sortOrder) ||
-      state.sortOrder < 0 ||
-      state.sortOrder > 1_000_000
-    ) {
-      throw new BadRequestException(
-        "sortOrder must be an integer between 0 and 1000000",
-      );
+    if (!Number.isInteger(state.sortOrder) || state.sortOrder < 0 || state.sortOrder > 1_000_000) {
+      throw new BadRequestException('sortOrder must be an integer between 0 and 1000000');
     }
 
     if (state.assetId === null) {
       if (state.isActive) {
-        throw new BadRequestException(
-          "Active ad creative requires a file asset",
-        );
+        throw new BadRequestException('Active ad creative requires a file asset');
       }
 
       return;
@@ -291,25 +274,19 @@ export class AdCreativesService {
     });
 
     if (!asset) {
-      throw new NotFoundException("File asset not found");
+      throw new NotFoundException('File asset not found');
     }
 
     if (asset.kind !== FileAssetKind.IMAGE) {
-      throw new BadRequestException(
-        "Ad creative file asset must have kind IMAGE",
-      );
+      throw new BadRequestException('Ad creative file asset must have kind IMAGE');
     }
 
     if (state.isActive && !asset.isActive) {
-      throw new ConflictException(
-        "Active ad creative requires an active file asset",
-      );
+      throw new ConflictException('Active ad creative requires an active file asset');
     }
   }
 
-  private normalizeNullableText(
-    value: string | null | undefined,
-  ): string | null | undefined {
+  private normalizeNullableText(value: string | null | undefined): string | null | undefined {
     if (value === undefined || value === null) {
       return value;
     }
@@ -333,14 +310,12 @@ export class AdCreativesService {
 
   private handlePrismaError(error: unknown): never {
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
-      if (error.code === "P2003") {
-        throw new NotFoundException(
-          "Referenced ad campaign or file asset not found",
-        );
+      if (error.code === 'P2003') {
+        throw new NotFoundException('Referenced ad campaign or file asset not found');
       }
 
-      if (error.code === "P2025") {
-        throw new NotFoundException("Ad creative not found");
+      if (error.code === 'P2025') {
+        throw new NotFoundException('Ad creative not found');
       }
     }
 

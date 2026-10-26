@@ -1,6 +1,6 @@
-import { Injectable } from "@nestjs/common";
-import { AnalyticsEventType, AnalyticsSource, Prisma } from "@prisma/client";
-import { PrismaService } from "../../database/prisma.service";
+import { Injectable } from '@nestjs/common';
+import { AnalyticsEventType, AnalyticsSource, Prisma } from '@prisma/client';
+import { PrismaService } from '../../database/prisma.service';
 
 type RouteBuiltPayload = {
   fromNodeId?: string;
@@ -9,7 +9,7 @@ type RouteBuiltPayload = {
   totalDistance?: number;
   totalWeight?: number;
   edgeIds?: string[];
-  mode?: "normal" | "emergency";
+  mode?: 'normal' | 'emergency';
 };
 
 type RollupRow = {
@@ -45,9 +45,7 @@ export class AnalyticsService {
 
   async recordEdgeUsage(edgeId: string): Promise<void> {
     const now = new Date();
-    const windowStart = new Date(
-      now.getTime() - ROUTE_USAGE_WINDOW_MS,
-    );
+    const windowStart = new Date(now.getTime() - ROUTE_USAGE_WINDOW_MS);
 
     await this.prisma.routeEdgeUsage.upsert({
       where: { edgeId },
@@ -71,9 +69,7 @@ export class AnalyticsService {
     }
 
     // Only count persisted edges (skip virtual vertical edges).
-    const realEdgeIds = edgeIds.filter(
-      (id) => !id.startsWith("vertical:"),
-    );
+    const realEdgeIds = edgeIds.filter(id => !id.startsWith('vertical:'));
 
     if (realEdgeIds.length === 0) {
       return;
@@ -83,7 +79,7 @@ export class AnalyticsService {
     const windowStart = new Date(now.getTime() - ROUTE_USAGE_WINDOW_MS);
 
     await this.prisma.$transaction(
-      realEdgeIds.map((edgeId) =>
+      realEdgeIds.map(edgeId =>
         this.prisma.routeEdgeUsage.upsert({
           where: { edgeId },
           update: {
@@ -118,21 +114,19 @@ export class AnalyticsService {
         count: true,
       },
       orderBy: {
-        count: "desc",
+        count: 'desc',
       },
     });
 
-    return rows.map((row) => ({
+    return rows.map(row => ({
       edgeId: row.edgeId,
       count: row.count,
     }));
   }
 
-  async getEdgeUsageMap(
-    floorId?: string,
-  ): Promise<Map<string, number>> {
+  async getEdgeUsageMap(floorId?: string): Promise<Map<string, number>> {
     const rows = await this.getEdgeUsage(floorId);
-    return new Map(rows.map((row) => [row.edgeId, row.count]));
+    return new Map(rows.map(row => [row.edgeId, row.count]));
   }
 }
 

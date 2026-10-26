@@ -1,15 +1,11 @@
-import {
-  ConflictException,
-  Injectable,
-  NotFoundException,
-} from "@nestjs/common";
-import { Prisma } from "@prisma/client";
-import { PrismaService } from "../../database/prisma.service";
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
+import { PrismaService } from '../../database/prisma.service';
 import {
   SystemSettingQueryDto,
   SystemSettingResponseDto,
   UpsertSystemSettingDto,
-} from "./dto/system-setting.dto";
+} from './dto/system-setting.dto';
 
 type SystemSettingRecord = Prisma.SystemSettingGetPayload<Record<string, never>>;
 
@@ -30,20 +26,18 @@ export class SystemSettingsService {
 
     const settings = await this.prisma.systemSetting.findMany({
       where,
-      orderBy: [{ key: "asc" }],
+      orderBy: [{ key: 'asc' }],
       ...this.getPagination(query),
     });
 
-    return settings.map((setting) => this.toResponse(setting));
+    return settings.map(setting => this.toResponse(setting));
   }
 
   async findPublic(): Promise<SystemSettingResponseDto[]> {
     return this.find({ isPublic: true });
   }
 
-  async upsert(
-    dto: UpsertSystemSettingDto,
-  ): Promise<SystemSettingResponseDto> {
+  async upsert(dto: UpsertSystemSettingDto): Promise<SystemSettingResponseDto> {
     const record = await this.prisma.systemSetting.upsert({
       where: { key: dto.key },
       update: {
@@ -108,9 +102,7 @@ export class SystemSettingsService {
     };
   }
 
-  private toResponse(
-    record: SystemSettingRecord,
-  ): SystemSettingResponseDto {
+  private toResponse(record: SystemSettingRecord): SystemSettingResponseDto {
     return {
       id: record.id,
       key: record.key,

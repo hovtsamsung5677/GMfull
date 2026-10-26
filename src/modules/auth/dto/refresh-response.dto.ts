@@ -1,10 +1,10 @@
-import { ApiProperty } from "@nestjs/swagger";
+import { ApiProperty } from '@nestjs/swagger';
 
 export class RefreshTokenResponseDto {
-  @ApiProperty({ description: "New short-lived access token." })
+  @ApiProperty({ description: 'New short-lived access token.' })
   accessToken!: string;
 
-  @ApiProperty({ description: "New refresh token (previous one is revoked)." })
+  @ApiProperty({ description: 'New refresh token (previous one is revoked).' })
   refreshToken!: string;
 }
 
@@ -14,6 +14,6 @@ export class LogoutResponseDto {
 }
 
 export class LogoutAllResponseDto {
-  @ApiProperty({ example: 3, description: "Number of revoked refresh tokens." })
+  @ApiProperty({ example: 3, description: 'Number of revoked refresh tokens.' })
   revokedCount!: number;
 }

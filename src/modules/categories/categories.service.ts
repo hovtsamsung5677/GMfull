@@ -1,15 +1,11 @@
-import {
-  ConflictException,
-  Injectable,
-  NotFoundException,
-} from "@nestjs/common";
-import { Prisma } from "@prisma/client";
-import { slugify } from "../../common/utils/slugify.util";
-import { PrismaService } from "../../database/prisma.service";
-import { CategoryQueryDto } from "./dto/category-query.dto";
-import { CategoryResponseDto } from "./dto/category-response.dto";
-import { CreateCategoryDto } from "./dto/create-category.dto";
-import { UpdateCategoryDto } from "./dto/update-category.dto";
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
+import { slugify } from '../../common/utils/slugify.util';
+import { PrismaService } from '../../database/prisma.service';
+import { CategoryQueryDto } from './dto/category-query.dto';
+import { CategoryResponseDto } from './dto/category-response.dto';
+import { CreateCategoryDto } from './dto/create-category.dto';
+import { UpdateCategoryDto } from './dto/update-category.dto';
 
 @Injectable()
 export class CategoriesService {
@@ -18,7 +14,7 @@ export class CategoriesService {
   async findPublic(query: CategoryQueryDto): Promise<CategoryResponseDto[]> {
     const categories = await this.prisma.category.findMany({
       where: this.buildWhere(query, true),
-      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+      orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
       ...this.getPagination(query),
     });
 
@@ -28,7 +24,7 @@ export class CategoriesService {
   async findAdmin(query: CategoryQueryDto): Promise<CategoryResponseDto[]> {
     const categories = await this.prisma.category.findMany({
       where: this.buildWhere(query),
-      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+      orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
       ...this.getPagination(query),
     });
 
@@ -62,14 +58,9 @@ export class CategoriesService {
     }
   }
 
-  async update(
-    id: string,
-    dto: UpdateCategoryDto,
-  ): Promise<CategoryResponseDto> {
+  async update(id: string, dto: UpdateCategoryDto): Promise<CategoryResponseDto> {
     await this.ensureExists(id);
-    const slug = dto.slug
-      ? await this.resolveSlug(dto.slug, dto.slug, id, true)
-      : undefined;
+    const slug = dto.slug ? await this.resolveSlug(dto.slug, dto.slug, id, true) : undefined;
 
     try {
       return await this.prisma.category.update({
@@ -97,10 +88,7 @@ export class CategoriesService {
     });
   }
 
-  private buildWhere(
-    query: CategoryQueryDto,
-    publicOnly = false,
-  ): Prisma.CategoryWhereInput {
+  private buildWhere(query: CategoryQueryDto, publicOnly = false): Prisma.CategoryWhereInput {
     const where: Prisma.CategoryWhereInput = {};
 
     if (publicOnly) {
@@ -123,9 +111,9 @@ export class CategoriesService {
 
     if (query.search) {
       const searchWhere: Prisma.CategoryWhereInput[] = [
-        { name: { contains: query.search, mode: "insensitive" } },
-        { slug: { contains: query.search, mode: "insensitive" } },
-        { description: { contains: query.search, mode: "insensitive" } },
+        { name: { contains: query.search, mode: 'insensitive' } },
+        { slug: { contains: query.search, mode: 'insensitive' } },
+        { description: { contains: query.search, mode: 'insensitive' } },
       ];
 
       where.AND = [{ OR: searchWhere }];
@@ -134,10 +122,7 @@ export class CategoriesService {
     return where;
   }
 
-  private async findOneOrThrow(
-    id: string,
-    publicOnly = false,
-  ): Promise<CategoryResponseDto> {
+  private async findOneOrThrow(id: string, publicOnly = false): Promise<CategoryResponseDto> {
     const category = await this.prisma.category.findFirst({
       where: {
         id,
@@ -146,7 +131,7 @@ export class CategoriesService {
     });
 
     if (!category) {
-      throw new NotFoundException("Category not found");
+      throw new NotFoundException('Category not found');
     }
 
     return category;
@@ -159,7 +144,7 @@ export class CategoriesService {
     });
 
     if (!category) {
-      throw new NotFoundException("Category not found");
+      throw new NotFoundException('Category not found');
     }
   }
 
@@ -181,7 +166,7 @@ export class CategoriesService {
       });
 
       if (conflict) {
-        throw new ConflictException("Category slug already exists");
+        throw new ConflictException('Category slug already exists');
       }
 
       return baseSlug;
@@ -218,11 +203,8 @@ export class CategoriesService {
   }
 
   private handlePrismaError(error: unknown): never {
-    if (
-      error instanceof Prisma.PrismaClientKnownRequestError &&
-      error.code === "P2002"
-    ) {
-      throw new ConflictException("Category slug already exists");
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      throw new ConflictException('Category slug already exists');
     }
 
     throw error;

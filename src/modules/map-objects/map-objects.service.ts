@@ -1,36 +1,30 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from "@nestjs/common";
-import { Prisma, RouteNodeType } from "@prisma/client";
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma, RouteNodeType } from '@prisma/client';
 import {
   isPrimaryStoreRelation,
   preserveStorePrimaryRelationMetadata,
-} from "../../common/utils/store-primary.util";
-import { PrismaService } from "../../database/prisma.service";
+} from '../../common/utils/store-primary.util';
+import { PrismaService } from '../../database/prisma.service';
 import {
   publicFileAssetSelect,
   toActivePublicFileAssetResponse,
-  toPublicFileAssetResponse,
-} from "../file-assets/public-file-asset.projection";
-import { FloorPublicResponseDto } from "../floors/dto/floor-public-response.dto";
-import { FloorResponseDto } from "../floors/dto/floor-response.dto";
-import { CreateMapObjectDto } from "./dto/create-map-object.dto";
-import { MapObjectQueryDto } from "./dto/map-object-query.dto";
-import { MapObjectResponseDto } from "./dto/map-object-response.dto";
+} from '../file-assets/public-file-asset.projection';
+import { FloorPublicResponseDto } from '../floors/dto/floor-public-response.dto';
+import { FloorResponseDto } from '../floors/dto/floor-response.dto';
+import { CreateMapObjectDto } from './dto/create-map-object.dto';
+import { MapObjectQueryDto } from './dto/map-object-query.dto';
+import { MapObjectResponseDto } from './dto/map-object-response.dto';
 import {
-  PublicMapSceneCategoryDto,
   PublicMapSceneFloorDto,
   PublicMapSceneObjectDto,
   PublicMapSceneResponseDto,
   PublicMapSceneRouteEdgeDto,
   PublicMapSceneRouteNodeDto,
   PublicMapSceneStoreDto,
-} from "./dto/public-map-scene-response.dto";
-import { FloorTexturesService } from "../floor-textures/floor-textures.service";
-import { PublicMapResponseDto } from "./dto/public-map-response.dto";
-import { UpdateMapObjectDto } from "./dto/update-map-object.dto";
+} from './dto/public-map-scene-response.dto';
+import { FloorTexturesService } from '../floor-textures/floor-textures.service';
+import { PublicMapResponseDto } from './dto/public-map-response.dto';
+import { UpdateMapObjectDto } from './dto/update-map-object.dto';
 
 const mapObjectInclude = {
   floor: {
@@ -105,22 +99,22 @@ export class MapObjectsService {
     const objects = await this.prisma.mapObject.findMany({
       where: this.buildWhere(query, true),
       include: mapObjectInclude,
-      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+      orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
       ...this.getPagination(query),
     });
 
-    return objects.map((object) => this.toResponse(object));
+    return objects.map(object => this.toResponse(object));
   }
 
   async findAdmin(query: MapObjectQueryDto): Promise<MapObjectResponseDto[]> {
     const objects = await this.prisma.mapObject.findMany({
       where: this.buildWhere(query),
       include: mapObjectInclude,
-      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+      orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
       ...this.getPagination(query),
     });
 
-    return objects.map((object) => this.toResponse(object));
+    return objects.map(object => this.toResponse(object));
   }
 
   async findPublicOne(id: string): Promise<MapObjectResponseDto> {
@@ -144,18 +138,18 @@ export class MapObjectsService {
     const [floors, objects] = await this.prisma.$transaction([
       this.prisma.floor.findMany({
         where: { isActive: true },
-        orderBy: [{ sortOrder: "asc" }, { number: "asc" }],
+        orderBy: [{ sortOrder: 'asc' }, { number: 'asc' }],
       }),
       this.prisma.mapObject.findMany({
         where: { isActive: true },
         include: mapObjectInclude,
-        orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+        orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
       }),
     ]);
 
     return {
-      floors: floors.map((floor) => this.toPublicFloor(floor)),
-      objects: objects.map((object) => this.toResponse(object)),
+      floors: floors.map(floor => this.toPublicFloor(floor)),
+      objects: objects.map(object => this.toResponse(object)),
     };
   }
 
@@ -168,112 +162,111 @@ export class MapObjectsService {
       : await this.prisma.floor.findFirst({
           where: { isActive: true },
           include: sceneFloorInclude,
-          orderBy: [{ sortOrder: "asc" }, { number: "asc" }],
+          orderBy: [{ sortOrder: 'asc' }, { number: 'asc' }],
         });
 
     if (!floor) {
-      throw new NotFoundException("Floor not found");
+      throw new NotFoundException('Floor not found');
     }
 
-    const [objects, routeNodes, routeEdges, categories, stores] =
-      await this.prisma.$transaction([
-        this.prisma.mapObject.findMany({
-          where: {
-            floorId: floor.id,
-            isActive: true,
-          },
-          orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
-        }),
-        this.prisma.routeNode.findMany({
-          where: {
-            floorId: floor.id,
-            isActive: true,
-          },
-          orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-        }),
-        this.prisma.routeEdge.findMany({
-          where: {
-            floorId: floor.id,
-            isActive: true,
-            fromNode: { isActive: true },
-            toNode: { isActive: true },
-          },
-          orderBy: [{ createdAt: "asc" }],
-        }),
-        this.prisma.category.findMany({
-          where: {
-            isActive: true,
-            OR: [
-              {
-                mapObjects: {
-                  some: {
-                    floorId: floor.id,
-                    isActive: true,
-                  },
+    const [objects, routeNodes, routeEdges, categories, stores] = await this.prisma.$transaction([
+      this.prisma.mapObject.findMany({
+        where: {
+          floorId: floor.id,
+          isActive: true,
+        },
+        orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+      }),
+      this.prisma.routeNode.findMany({
+        where: {
+          floorId: floor.id,
+          isActive: true,
+        },
+        orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+      }),
+      this.prisma.routeEdge.findMany({
+        where: {
+          floorId: floor.id,
+          isActive: true,
+          fromNode: { isActive: true },
+          toNode: { isActive: true },
+        },
+        orderBy: [{ createdAt: 'asc' }],
+      }),
+      this.prisma.category.findMany({
+        where: {
+          isActive: true,
+          OR: [
+            {
+              mapObjects: {
+                some: {
+                  floorId: floor.id,
+                  isActive: true,
                 },
-              },
-              {
-                stores: {
-                  some: {
-                    isActive: true,
-                    isVisible: true,
-                    tenant: {
-                      is: {
-                        isActive: true,
-                      },
-                    },
-                    OR: [
-                      { floorId: floor.id },
-                      {
-                        mapObjects: {
-                          some: {
-                            floorId: floor.id,
-                            isActive: true,
-                          },
-                        },
-                      },
-                    ],
-                  },
-                },
-              },
-            ],
-          },
-          orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
-        }),
-        this.prisma.store.findMany({
-          where: {
-            isActive: true,
-            isVisible: true,
-            tenant: {
-              is: {
-                isActive: true,
               },
             },
-            OR: [
-              { floorId: floor.id },
-              {
-                mapObjects: {
-                  some: {
-                    floorId: floor.id,
-                    isActive: true,
+            {
+              stores: {
+                some: {
+                  isActive: true,
+                  isVisible: true,
+                  tenant: {
+                    is: {
+                      isActive: true,
+                    },
                   },
+                  OR: [
+                    { floorId: floor.id },
+                    {
+                      mapObjects: {
+                        some: {
+                          floorId: floor.id,
+                          isActive: true,
+                        },
+                      },
+                    },
+                  ],
                 },
               },
-            ],
+            },
+          ],
+        },
+        orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+      }),
+      this.prisma.store.findMany({
+        where: {
+          isActive: true,
+          isVisible: true,
+          tenant: {
+            is: {
+              isActive: true,
+            },
           },
-          select: sceneStoreSelect,
-          orderBy: [{ name: "asc" }],
-        }),
-      ]);
+          OR: [
+            { floorId: floor.id },
+            {
+              mapObjects: {
+                some: {
+                  floorId: floor.id,
+                  isActive: true,
+                },
+              },
+            },
+          ],
+        },
+        select: sceneStoreSelect,
+        orderBy: [{ name: 'asc' }],
+      }),
+    ]);
 
     const floorTextures = await this.floorTexturesService.findByFloor(floor.id);
 
     return {
       floor: this.toSceneFloor(floor),
-      objects: objects.map((object) => this.toSceneObject(object)),
-      routeNodes: routeNodes.map((node) => this.toSceneRouteNode(node)),
-      routeEdges: routeEdges.map((edge) => this.toSceneRouteEdge(edge)),
-      categories: categories.map((category) => ({
+      objects: objects.map(object => this.toSceneObject(object)),
+      routeNodes: routeNodes.map(node => this.toSceneRouteNode(node)),
+      routeEdges: routeEdges.map(edge => this.toSceneRouteEdge(edge)),
+      categories: categories.map(category => ({
         id: category.id,
         name: category.name,
         slug: category.slug,
@@ -281,22 +274,17 @@ export class MapObjectsService {
         icon: category.icon,
         sortOrder: category.sortOrder,
       })),
-      stores: stores.map((store) =>
-        this.toSceneStore(store, objects, routeNodes),
-      ),
+      stores: stores.map(store => this.toSceneStore(store, objects, routeNodes)),
       textures: floorTextures,
       meta: {
-        schemaVersion: "green-mall-map-scene/v1",
+        schemaVersion: 'green-mall-map-scene/v1',
         generatedAt: new Date().toISOString(),
-        purpose:
-          "Frontend-ready 2D/3D mall map scene payload with navigation graph.",
+        purpose: 'Frontend-ready 2D/3D mall map scene payload with navigation graph.',
       },
     };
   }
 
-  async findPublicSceneByFloor(
-    floorId: string,
-  ): Promise<PublicMapSceneResponseDto> {
+  async findPublicSceneByFloor(floorId: string): Promise<PublicMapSceneResponseDto> {
     return this.findPublicScene(floorId);
   }
 
@@ -341,17 +329,13 @@ export class MapObjectsService {
     return this.toResponse(object);
   }
 
-  async update(
-    id: string,
-    dto: UpdateMapObjectDto,
-  ): Promise<MapObjectResponseDto> {
+  async update(id: string, dto: UpdateMapObjectDto): Promise<MapObjectResponseDto> {
     const existing = await this.ensureExists(id);
     await this.ensureReferencesExist(
       {
         floorId: dto.floorId ?? existing.floorId,
         storeId: dto.storeId === undefined ? existing.storeId : dto.storeId,
-        categoryId:
-          dto.categoryId === undefined ? existing.categoryId : dto.categoryId,
+        categoryId: dto.categoryId === undefined ? existing.categoryId : dto.categoryId,
       },
       id,
     );
@@ -383,10 +367,7 @@ export class MapObjectsService {
             ? Prisma.DbNull
             : dto.metadata === undefined
               ? undefined
-              : preserveStorePrimaryRelationMetadata(
-                  existing.metadata,
-                  dto.metadata,
-                ),
+              : preserveStorePrimaryRelationMetadata(existing.metadata, dto.metadata),
         sortOrder: dto.sortOrder,
         isActive: dto.isActive,
       },
@@ -408,10 +389,7 @@ export class MapObjectsService {
     return this.toResponse(object);
   }
 
-  private buildWhere(
-    query: MapObjectQueryDto,
-    publicOnly = false,
-  ): Prisma.MapObjectWhereInput {
+  private buildWhere(query: MapObjectQueryDto, publicOnly = false): Prisma.MapObjectWhereInput {
     const where: Prisma.MapObjectWhereInput = {};
 
     if (publicOnly) {
@@ -438,18 +416,15 @@ export class MapObjectsService {
 
     if (query.search) {
       where.OR = [
-        { name: { contains: query.search, mode: "insensitive" } },
-        { description: { contains: query.search, mode: "insensitive" } },
+        { name: { contains: query.search, mode: 'insensitive' } },
+        { description: { contains: query.search, mode: 'insensitive' } },
       ];
     }
 
     return where;
   }
 
-  private async findOneOrThrow(
-    id: string,
-    publicOnly = false,
-  ): Promise<MapObjectResponseDto> {
+  private async findOneOrThrow(id: string, publicOnly = false): Promise<MapObjectResponseDto> {
     const object = await this.prisma.mapObject.findFirst({
       where: {
         id,
@@ -459,7 +434,7 @@ export class MapObjectsService {
     });
 
     if (!object) {
-      throw new NotFoundException("Map object not found");
+      throw new NotFoundException('Map object not found');
     }
 
     return this.toResponse(object);
@@ -478,16 +453,13 @@ export class MapObjectsService {
     });
 
     if (!object) {
-      throw new NotFoundException("Map object not found");
+      throw new NotFoundException('Map object not found');
     }
 
     return object;
   }
 
-  private async ensureReferencesExist(
-    refs: MapObjectReferenceIds,
-    mapObjectId?: string,
-  ) {
+  private async ensureReferencesExist(refs: MapObjectReferenceIds, mapObjectId?: string) {
     let resolvedFloorId: string | null = null;
 
     if (refs.floorId !== undefined && refs.floorId !== null) {
@@ -496,7 +468,7 @@ export class MapObjectsService {
       });
 
       if (!floor) {
-        throw new NotFoundException("Floor not found");
+        throw new NotFoundException('Floor not found');
       }
 
       resolvedFloorId = refs.floorId;
@@ -509,17 +481,11 @@ export class MapObjectsService {
       });
 
       if (!store) {
-        throw new NotFoundException("Store not found");
+        throw new NotFoundException('Store not found');
       }
 
-      if (
-        resolvedFloorId !== null &&
-        store.floorId !== null &&
-        store.floorId !== resolvedFloorId
-      ) {
-        throw new BadRequestException(
-          "Store and map object must belong to the same floor",
-        );
+      if (resolvedFloorId !== null && store.floorId !== null && store.floorId !== resolvedFloorId) {
+        throw new BadRequestException('Store and map object must belong to the same floor');
       }
     }
 
@@ -529,7 +495,7 @@ export class MapObjectsService {
       });
 
       if (!category) {
-        throw new NotFoundException("Category not found");
+        throw new NotFoundException('Category not found');
       }
     }
 
@@ -544,23 +510,20 @@ export class MapObjectsService {
 
       if (routeNodeOnAnotherFloor) {
         throw new BadRequestException(
-          "Map object and linked route nodes must belong to the same floor",
+          'Map object and linked route nodes must belong to the same floor',
         );
       }
     }
   }
 
   private getGeometryInput(
-    dto: Pick<Partial<CreateMapObjectDto>, "polygonData" | "geometry">,
+    dto: Pick<Partial<CreateMapObjectDto>, 'polygonData' | 'geometry'>,
   ): Prisma.InputJsonValue | undefined {
     if (dto.polygonData !== undefined && dto.geometry !== undefined) {
-      throw new BadRequestException(
-        "Provide either polygonData or geometry, not both",
-      );
+      throw new BadRequestException('Provide either polygonData or geometry, not both');
     }
 
-    const geometry =
-      dto.polygonData !== undefined ? dto.polygonData : dto.geometry;
+    const geometry = dto.polygonData !== undefined ? dto.polygonData : dto.geometry;
 
     return geometry as Prisma.InputJsonValue | undefined;
   }
@@ -571,7 +534,7 @@ export class MapObjectsService {
     });
 
     if (!floor) {
-      throw new NotFoundException("Floor not found");
+      throw new NotFoundException('Floor not found');
     }
   }
 
@@ -641,8 +604,9 @@ export class MapObjectsService {
   }
 
   private toPublicFloor(floor: FloorResponseDto): FloorPublicResponseDto {
-    const { isActive: _isActive, ...publicFloor } =
-      floor as FloorResponseDto & { isActive: boolean };
+    const { isActive: _isActive, ...publicFloor } = floor as FloorResponseDto & {
+      isActive: boolean;
+    };
 
     return publicFloor as FloorPublicResponseDto;
   }
@@ -720,31 +684,20 @@ export class MapObjectsService {
     objects: Prisma.MapObjectGetPayload<Record<string, never>>[],
     routeNodes: Prisma.RouteNodeGetPayload<Record<string, never>>[],
   ): PublicMapSceneStoreDto {
-    const storeObjects = objects.filter(
-      (object) => object.storeId === store.id,
-    );
-    const mapObjectIds = storeObjects.map((object) => object.id);
+    const storeObjects = objects.filter(object => object.storeId === store.id);
+    const mapObjectIds = storeObjects.map(object => object.id);
     const storeRouteNodes = routeNodes.filter(
-      (node) =>
-        node.mapObjectId !== null && mapObjectIds.includes(node.mapObjectId),
+      node => node.mapObjectId !== null && mapObjectIds.includes(node.mapObjectId),
     );
-    const routeNodeIds = storeRouteNodes.map((node) => node.id);
+    const routeNodeIds = storeRouteNodes.map(node => node.id);
     const primaryRouteNode =
-      storeRouteNodes.find((node) =>
-        isPrimaryStoreRelation(node.metadata, "routeNode", store.id),
-      ) ??
-      storeRouteNodes.find(
-        (node) => node.type === RouteNodeType.STORE_ANCHOR,
-      ) ??
+      storeRouteNodes.find(node => isPrimaryStoreRelation(node.metadata, 'routeNode', store.id)) ??
+      storeRouteNodes.find(node => node.type === RouteNodeType.STORE_ANCHOR) ??
       storeRouteNodes[0] ??
       null;
     const primaryMapObject =
-      storeObjects.find((object) =>
-        isPrimaryStoreRelation(object.metadata, "mapObject", store.id),
-      ) ??
-      storeObjects.find(
-        (object) => object.id === primaryRouteNode?.mapObjectId,
-      ) ??
+      storeObjects.find(object => isPrimaryStoreRelation(object.metadata, 'mapObject', store.id)) ??
+      storeObjects.find(object => object.id === primaryRouteNode?.mapObjectId) ??
       storeObjects[0] ??
       null;
 

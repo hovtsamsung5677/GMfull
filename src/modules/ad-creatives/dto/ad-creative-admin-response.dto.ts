@@ -1,5 +1,5 @@
-import { ApiProperty } from "@nestjs/swagger";
-import { AdPlacement, AdTargetType, FileAssetKind } from "@prisma/client";
+import { ApiProperty } from '@nestjs/swagger';
+import { AdPlacement, AdTargetType, FileAssetKind } from '@prisma/client';
 
 export class AdCreativeAdminCampaignResponseDto {
   @ApiProperty()
@@ -8,19 +8,19 @@ export class AdCreativeAdminCampaignResponseDto {
   @ApiProperty()
   name!: string;
 
-  @ApiProperty({ enum: AdPlacement, enumName: "AdPlacement" })
+  @ApiProperty({ enum: AdPlacement, enumName: 'AdPlacement' })
   placement!: AdPlacement;
 
-  @ApiProperty({ enum: AdTargetType, enumName: "AdTargetType" })
+  @ApiProperty({ enum: AdTargetType, enumName: 'AdTargetType' })
   targetType!: AdTargetType;
 
   @ApiProperty()
   isActive!: boolean;
 
-  @ApiProperty({ type: String, format: "date-time", nullable: true })
+  @ApiProperty({ type: String, format: 'date-time', nullable: true })
   startsAt!: Date | null;
 
-  @ApiProperty({ type: String, format: "date-time", nullable: true })
+  @ApiProperty({ type: String, format: 'date-time', nullable: true })
   endsAt!: Date | null;
 }
 
@@ -40,7 +40,7 @@ export class AdCreativeAdminAssetResponseDto {
   @ApiProperty({ type: String, nullable: true })
   mimeType!: string | null;
 
-  @ApiProperty({ enum: FileAssetKind, enumName: "FileAssetKind" })
+  @ApiProperty({ enum: FileAssetKind, enumName: 'FileAssetKind' })
   kind!: FileAssetKind;
 
   @ApiProperty()
@@ -89,7 +89,7 @@ export class AdCreativeAdminResponseDto {
   @ApiProperty({ type: Object, nullable: true })
   metadata!: unknown | null;
 
-  @ApiProperty({ type: String, format: "date-time", nullable: true })
+  @ApiProperty({ type: String, format: 'date-time', nullable: true })
   deletedAt!: Date | null;
 
   @ApiProperty({ type: String, nullable: true })
@@ -119,10 +119,10 @@ export class AdCreativeAdminResponseDto {
   })
   updatedBy!: AdCreativeAdminUserResponseDto | null;
 
-  @ApiProperty({ type: String, format: "date-time" })
+  @ApiProperty({ type: String, format: 'date-time' })
   createdAt!: Date;
 
-  @ApiProperty({ type: String, format: "date-time" })
+  @ApiProperty({ type: String, format: 'date-time' })
   updatedAt!: Date;
 }
 

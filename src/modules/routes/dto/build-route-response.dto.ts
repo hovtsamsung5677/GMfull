@@ -1,6 +1,6 @@
-import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
-import { RouteEdgeResponseDto } from "../../route-edges/dto/route-edge-response.dto";
-import { RouteNodeResponseDto } from "../../route-nodes/dto/route-node-response.dto";
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { RouteEdgeResponseDto } from '../../route-edges/dto/route-edge-response.dto';
+import { RouteNodeResponseDto } from '../../route-nodes/dto/route-node-response.dto';
 
 export class RoutePathPointDto {
   @ApiProperty()
@@ -115,8 +115,8 @@ export class RouteInstructionDto {
   @ApiProperty()
   order!: number;
 
-  @ApiProperty({ enum: ["START", "MOVE", "ARRIVE"] })
-  type!: "START" | "MOVE" | "ARRIVE";
+  @ApiProperty({ enum: ['START', 'MOVE', 'ARRIVE'] })
+  type!: 'START' | 'MOVE' | 'ARRIVE';
 
   @ApiProperty()
   title!: string;
@@ -144,7 +144,7 @@ export class RouteRenderingMetaDto {
   @ApiProperty({ example: true })
   supports3D!: boolean;
 
-  @ApiProperty({ example: "mall-local" })
+  @ApiProperty({ example: 'mall-local' })
   coordinateSystem!: string;
 
   @ApiProperty({ example: true })
@@ -152,37 +152,35 @@ export class RouteRenderingMetaDto {
 }
 
 export class RouteMetaDto {
-  @ApiProperty({ example: "green-mall-route-v2" })
+  @ApiProperty({ example: 'green-mall-route-v2' })
   schemaVersion!: string;
 
   @ApiProperty()
   generatedAt!: string;
 
-  @ApiProperty({ example: "Frontend-ready route between navigation nodes" })
+  @ApiProperty({ example: 'Frontend-ready route between navigation nodes' })
   purpose!: string;
 
   @ApiProperty({ type: RouteRenderingMetaDto })
   rendering!: RouteRenderingMetaDto;
 
   @ApiProperty({
-    enum: ["normal", "emergency"],
-    example: "normal",
-    description: "Routing mode used for this build.",
+    enum: ['normal', 'emergency'],
+    example: 'normal',
+    description: 'Routing mode used for this build.',
   })
-  mode!: "normal" | "emergency";
+  mode!: 'normal' | 'emergency';
 
   @ApiPropertyOptional({
     nullable: true,
-    description:
-      "Active exit node id used as the target when mode=emergency.",
+    description: 'Active exit node id used as the target when mode=emergency.',
   })
   emergencyExitUsed!: string | null;
 
   @ApiPropertyOptional({
     nullable: true,
-    description:
-      "Per-edge adaptive routing report: base vs effective weight and load count.",
-    type: "object",
+    description: 'Per-edge adaptive routing report: base vs effective weight and load count.',
+    type: 'object',
     additionalProperties: true,
   })
   routingReport!: Record<string, unknown> | null;

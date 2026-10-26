@@ -1,5 +1,5 @@
-import { Prisma } from "@prisma/client";
-import { PublicAdEventResponseDto } from "./dto/public-ad-event-response.dto";
+import { Prisma } from '@prisma/client';
+import { PublicAdEventResponseDto } from './dto/public-ad-event-response.dto';
 
 export const publicAdEventIdentitySelect = {
   id: true,

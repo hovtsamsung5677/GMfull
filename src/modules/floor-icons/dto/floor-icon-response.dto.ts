@@ -8,7 +8,11 @@ export class FloorIconResponseDto {
   @ApiProperty({ example: 'shop-icon.png' })
   name!: string;
 
-  @ApiPropertyOptional({ enum: FloorIconType, example: FloorIconType.IMAGE, default: FloorIconType.IMAGE })
+  @ApiPropertyOptional({
+    enum: FloorIconType,
+    example: FloorIconType.IMAGE,
+    default: FloorIconType.IMAGE,
+  })
   type!: FloorIconType;
 
   @ApiProperty({ example: 'floor_abc123' })
@@ -17,7 +21,11 @@ export class FloorIconResponseDto {
   @ApiPropertyOptional({ example: 'store_xyz789', nullable: true })
   storeId?: string | null;
 
-  @ApiPropertyOptional({ example: 'asset_456', nullable: true, description: 'Null for TEXT type labels.' })
+  @ApiPropertyOptional({
+    example: 'asset_456',
+    nullable: true,
+    description: 'Null for TEXT type labels.',
+  })
   assetId?: string | null;
 
   @ApiProperty()

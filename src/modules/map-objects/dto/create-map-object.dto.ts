@@ -1,6 +1,6 @@
-import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
-import { MapObjectType } from "@prisma/client";
-import { Transform } from "class-transformer";
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { MapObjectType } from '@prisma/client';
+import { Transform } from 'class-transformer';
 import {
   IsBoolean,
   IsEnum,
@@ -9,24 +9,23 @@ import {
   IsObject,
   IsOptional,
   IsPositive,
-  IsUUID,
   IsString,
   MaxLength,
   Min,
-} from "class-validator";
-import { IsIdentifier } from "../../../common/decorators/identifier.decorator";
-import { Nullable } from "../../../common/decorators/nullable.decorator";
+} from 'class-validator';
+import { IsIdentifier } from '../../../common/decorators/identifier.decorator';
+import { Nullable } from '../../../common/decorators/nullable.decorator';
 import {
   toOptionalBoolean,
   toOptionalNumber,
-} from "../../../common/transformers/query.transformers";
+} from '../../../common/transformers/query.transformers';
 
 export class CreateMapObjectDto {
   @ApiProperty({ enum: MapObjectType, example: MapObjectType.STORE })
   @IsEnum(MapObjectType)
   type!: MapObjectType;
 
-  @ApiProperty({ example: "Store 1-101" })
+  @ApiProperty({ example: 'Store 1-101' })
   @IsString()
   @MaxLength(160)
   name!: string;
@@ -55,7 +54,7 @@ export class CreateMapObjectDto {
 
   @ApiProperty({
     example: 120,
-    description: "X coordinate in the floor-local 2D/3D coordinate system.",
+    description: 'X coordinate in the floor-local 2D/3D coordinate system.',
   })
   @Transform(toOptionalNumber)
   @IsNumber()
@@ -63,7 +62,7 @@ export class CreateMapObjectDto {
 
   @ApiProperty({
     example: 240,
-    description: "Y coordinate in the floor-local 2D/3D coordinate system.",
+    description: 'Y coordinate in the floor-local 2D/3D coordinate system.',
   })
   @Transform(toOptionalNumber)
   @IsNumber()
@@ -71,7 +70,7 @@ export class CreateMapObjectDto {
 
   @ApiPropertyOptional({
     example: 0,
-    description: "Optional Z coordinate for the future 3D scene.",
+    description: 'Optional Z coordinate for the future 3D scene.',
   })
   @Transform(toOptionalNumber)
   @IsOptional()
@@ -80,7 +79,7 @@ export class CreateMapObjectDto {
 
   @ApiPropertyOptional({
     example: 80,
-    description: "Object width in the floor unit.",
+    description: 'Object width in the floor unit.',
   })
   @Transform(toOptionalNumber)
   @IsOptional()
@@ -90,7 +89,7 @@ export class CreateMapObjectDto {
 
   @ApiPropertyOptional({
     example: 60,
-    description: "Object height in the floor unit.",
+    description: 'Object height in the floor unit.',
   })
   @Transform(toOptionalNumber)
   @IsOptional()
@@ -100,7 +99,7 @@ export class CreateMapObjectDto {
 
   @ApiPropertyOptional({
     example: 0,
-    description: "Rotation around the X axis for a future 3D renderer.",
+    description: 'Rotation around the X axis for a future 3D renderer.',
   })
   @Transform(toOptionalNumber)
   @IsOptional()
@@ -109,7 +108,7 @@ export class CreateMapObjectDto {
 
   @ApiPropertyOptional({
     example: 0,
-    description: "Rotation around the Y axis for a future 3D renderer.",
+    description: 'Rotation around the Y axis for a future 3D renderer.',
   })
   @Transform(toOptionalNumber)
   @IsOptional()
@@ -118,7 +117,7 @@ export class CreateMapObjectDto {
 
   @ApiPropertyOptional({
     example: 0,
-    description: "Rotation around the Z axis for 2D/3D rendering.",
+    description: 'Rotation around the Z axis for 2D/3D rendering.',
   })
   @Transform(toOptionalNumber)
   @IsOptional()
@@ -127,7 +126,7 @@ export class CreateMapObjectDto {
 
   @ApiPropertyOptional({
     example: 1,
-    description: "Optional scale multiplier on the X axis.",
+    description: 'Optional scale multiplier on the X axis.',
   })
   @Transform(toOptionalNumber)
   @IsOptional()
@@ -136,7 +135,7 @@ export class CreateMapObjectDto {
 
   @ApiPropertyOptional({
     example: 1,
-    description: "Optional scale multiplier on the Y axis.",
+    description: 'Optional scale multiplier on the Y axis.',
   })
   @Transform(toOptionalNumber)
   @IsOptional()
@@ -145,7 +144,7 @@ export class CreateMapObjectDto {
 
   @ApiPropertyOptional({
     example: 1,
-    description: "Optional scale multiplier on the Z axis.",
+    description: 'Optional scale multiplier on the Z axis.',
   })
   @Transform(toOptionalNumber)
   @IsOptional()
@@ -153,10 +152,10 @@ export class CreateMapObjectDto {
   scaleZ?: number;
 
   @ApiPropertyOptional({
-    example: "scene-floor-1-store-101",
+    example: 'scene-floor-1-store-101',
     nullable: true,
     description:
-      "Stable id used to match this backend object with a mesh/node in a future GLB, GLTF or FBX scene.",
+      'Stable id used to match this backend object with a mesh/node in a future GLB, GLTF or FBX scene.',
   })
   @Nullable()
   @IsOptional()
@@ -166,8 +165,7 @@ export class CreateMapObjectDto {
 
   @ApiPropertyOptional({
     type: Object,
-    description:
-      "Canonical API field for 2D polygon data. Stored in Prisma as geometry.",
+    description: 'Canonical API field for 2D polygon data. Stored in Prisma as geometry.',
   })
   @IsOptional()
   @IsObject()
@@ -175,8 +173,7 @@ export class CreateMapObjectDto {
 
   @ApiPropertyOptional({
     type: Object,
-    description:
-      "Input alias for polygonData. Send either geometry or polygonData, not both.",
+    description: 'Input alias for polygonData. Send either geometry or polygonData, not both.',
   })
   @IsOptional()
   @IsObject()
@@ -184,7 +181,7 @@ export class CreateMapObjectDto {
 
   @ApiPropertyOptional({
     type: Object,
-    description: "Additional frontend and future 3D rendering settings.",
+    description: 'Additional frontend and future 3D rendering settings.',
   })
   @IsOptional()
   @IsObject()

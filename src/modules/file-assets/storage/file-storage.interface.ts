@@ -1,6 +1,6 @@
 export enum FileStorageProvider {
-  LOCAL = "LOCAL",
-  S3 = "S3",
+  LOCAL = 'LOCAL',
+  S3 = 'S3',
 }
 
 export interface StoreFileInput {
@@ -24,4 +24,4 @@ export interface FileStorageProviderInstance {
   delete(stored: StoredFile): Promise<void>;
 }
 
-export const FILE_STORAGE_PROVIDER = Symbol("FILE_STORAGE_PROVIDER");
+export const FILE_STORAGE_PROVIDER = Symbol('FILE_STORAGE_PROVIDER');

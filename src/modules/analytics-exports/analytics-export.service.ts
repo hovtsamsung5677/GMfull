@@ -1,8 +1,5 @@
-import ExcelJS from "exceljs";
-import {
-  AnalyticsExportFormat,
-  ExportFormat,
-} from "./dto/analytics-export-query.dto";
+import ExcelJS from 'exceljs';
+import { AnalyticsExportFormat, ExportFormat } from './dto/analytics-export-query.dto';
 
 export interface ExportColumn {
   key: string;
@@ -16,9 +13,9 @@ export class AnalyticsExportService {
     format: ExportFormat,
   ): Promise<Buffer> {
     const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet("Report");
+    const worksheet = workbook.addWorksheet('Report');
 
-    worksheet.columns = columns.map((column) => ({
+    worksheet.columns = columns.map(column => ({
       header: column.header,
       key: column.key,
     }));

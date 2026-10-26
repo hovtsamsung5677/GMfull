@@ -1,18 +1,18 @@
-import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class EdgeUsageRollupDto {
-  @ApiProperty({ description: "RouteEdge id." })
+  @ApiProperty({ description: 'RouteEdge id.' })
   edgeId!: string;
 
-  @ApiProperty({ description: "Request count within the rolling window." })
+  @ApiProperty({ description: 'Request count within the rolling window.' })
   count!: number;
 }
 
 export class EdgeUsageResponseDto {
-  @ApiProperty({ description: "Rolling window duration in milliseconds." })
+  @ApiProperty({ description: 'Rolling window duration in milliseconds.' })
   windowMs!: number;
 
-  @ApiProperty({ description: "Generated at server time." })
+  @ApiProperty({ description: 'Generated at server time.' })
   generatedAt!: string;
 
   @ApiProperty({ type: [EdgeUsageRollupDto] })
@@ -20,6 +20,6 @@ export class EdgeUsageResponseDto {
 }
 
 export class AnalyticsRouteBuiltQueryDto {
-  @ApiPropertyOptional({ description: "Filter by floor id." })
+  @ApiPropertyOptional({ description: 'Filter by floor id.' })
   limit?: number;
 }

@@ -1,5 +1,5 @@
-import { Prisma } from "@prisma/client";
-import { PublicAnalyticsEventResponseDto } from "./dto/public-analytics-event-response.dto";
+import { Prisma } from '@prisma/client';
+import { PublicAnalyticsEventResponseDto } from './dto/public-analytics-event-response.dto';
 
 export const publicAnalyticsEventIdentitySelect = {
   id: true,
@@ -17,10 +17,9 @@ export const publicAnalyticsEventIdentitySelect = {
   createdAt: true,
 } satisfies Prisma.AnalyticsEventSelect;
 
-export type PublicAnalyticsEventIdentityRecord =
-  Prisma.AnalyticsEventGetPayload<{
-    select: typeof publicAnalyticsEventIdentitySelect;
-  }>;
+export type PublicAnalyticsEventIdentityRecord = Prisma.AnalyticsEventGetPayload<{
+  select: typeof publicAnalyticsEventIdentitySelect;
+}>;
 
 export function toPublicAnalyticsEventResponse(
   event: PublicAnalyticsEventIdentityRecord,

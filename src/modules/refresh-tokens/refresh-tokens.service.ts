@@ -1,6 +1,6 @@
-import { Injectable, UnauthorizedException } from "@nestjs/common";
-import * as crypto from "node:crypto";
-import { PrismaService } from "../../database/prisma.service";
+import { Injectable, UnauthorizedException } from '@nestjs/common';
+import * as crypto from 'node:crypto';
+import { PrismaService } from '../../database/prisma.service';
 
 const REFRESH_TTL_DAYS = 7;
 
@@ -17,7 +17,7 @@ export interface RefreshTokenRecord {
 }
 
 function generateToken(): string {
-  return crypto.randomBytes(32).toString("hex");
+  return crypto.randomBytes(32).toString('hex');
 }
 
 @Injectable()
@@ -50,15 +50,15 @@ export class RefreshTokensService {
     });
 
     if (!record) {
-      throw new UnauthorizedException("Invalid refresh token");
+      throw new UnauthorizedException('Invalid refresh token');
     }
 
     if (record.revokedAt) {
-      throw new UnauthorizedException("Refresh token was revoked");
+      throw new UnauthorizedException('Refresh token was revoked');
     }
 
     if (record.expiresAt.getTime() < Date.now()) {
-      throw new UnauthorizedException("Refresh token expired");
+      throw new UnauthorizedException('Refresh token expired');
     }
 
     return this.toRecord(record);
@@ -75,7 +75,7 @@ export class RefreshTokensService {
   ): Promise<RefreshTokenRecord> {
     const record = await this.validate(oldToken);
 
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async tx => {
       await tx.refreshToken.update({
         where: { id: record.id },
         data: { revokedAt: new Date() },

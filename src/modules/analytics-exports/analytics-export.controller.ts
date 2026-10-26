@@ -1,4 +1,4 @@
-import { Controller, Get, Query, Res, UseGuards } from "@nestjs/common";
+import { Controller, Get, Query, Res, UseGuards } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiForbiddenResponse,
@@ -6,40 +6,36 @@ import {
   ApiQuery,
   ApiTags,
   ApiUnauthorizedResponse,
-} from "@nestjs/swagger";
-import { Response } from "express";
-import { Roles } from "../../common/decorators/roles.decorator";
-import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
-import { RolesGuard } from "../../common/guards/roles.guard";
-import {
-  AdAnalyticsGroupBy,
-  AdAnalyticsQueryDto,
-} from "../analytics/dto/ad-analytics-query.dto";
+} from '@nestjs/swagger';
+import { Response } from 'express';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
 import {
   AdAnalyticsBreakdownItemResponseDto,
   AdAnalyticsBreakdownResponseDto,
-} from "../analytics/dto/ad-analytics-response.dto";
+} from '../analytics/dto/ad-analytics-response.dto';
 import {
   AnalyticsExportFormat,
   AnalyticsExportNavigationQueryDto,
   AnalyticsExportAdsBreakdownQueryDto,
   ExportFormat,
-} from "./dto/analytics-export-query.dto";
-import { AnalyticsExportService } from "./analytics-export.service";
-import { AdAnalyticsService } from "../analytics/ad-analytics.service";
-import { NavigationAnalyticsService } from "../analytics/navigation-analytics.service";
+} from './dto/analytics-export-query.dto';
+import { AnalyticsExportService } from './analytics-export.service';
+import { AdAnalyticsService } from '../analytics/ad-analytics.service';
+import { NavigationAnalyticsService } from '../analytics/navigation-analytics.service';
 
-const EXPORT_READ_ROLES = ["SUPER_ADMIN", "MALL_ADMIN", "ANALYTICS_VIEWER"];
+const EXPORT_READ_ROLES = ['SUPER_ADMIN', 'MALL_ADMIN', 'ANALYTICS_VIEWER'];
 
-@ApiTags("admin/analytics/export")
+@ApiTags('admin/analytics/export')
 @ApiBearerAuth()
 @ApiUnauthorizedResponse({
-  description: "JWT access token is missing or invalid.",
+  description: 'JWT access token is missing or invalid.',
 })
 @ApiForbiddenResponse({
-  description: "Allowed roles: SUPER_ADMIN, MALL_ADMIN and ANALYTICS_VIEWER.",
+  description: 'Allowed roles: SUPER_ADMIN, MALL_ADMIN and ANALYTICS_VIEWER.',
 })
-@Controller("admin/analytics/export")
+@Controller('admin/analytics/export')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(...EXPORT_READ_ROLES)
 export class AnalyticsExportController {
@@ -49,11 +45,11 @@ export class AnalyticsExportController {
     private readonly exportService: AnalyticsExportService,
   ) {}
 
-  @Get("navigation/daily")
+  @Get('navigation/daily')
   @ApiOperation({
-    summary: "Export daily navigation activity series",
+    summary: 'Export daily navigation activity series',
     description:
-      "Exports the daily navigation report to CSV or XLSX. Accepts the same filters as the JSON daily report.",
+      'Exports the daily navigation report to CSV or XLSX. Accepts the same filters as the JSON daily report.',
   })
   @ApiQuery({ type: AnalyticsExportNavigationQueryDto })
   async exportDaily(
@@ -61,7 +57,7 @@ export class AnalyticsExportController {
     @Res() res: Response,
   ): Promise<void> {
     const report = await this.navigationAnalytics.getDaily(query);
-    const rows = report.items.map((item) => ({
+    const rows = report.items.map(item => ({
       date: item.date,
       panelClicks: item.panelClicks,
       routesBuilt: item.routesBuilt,
@@ -73,22 +69,22 @@ export class AnalyticsExportController {
       res,
       rows,
       [
-        { key: "date", header: "Date" },
-        { key: "panelClicks", header: "Panel Clicks" },
-        { key: "routesBuilt", header: "Routes Built" },
-        { key: "qrScans", header: "QR Scans" },
-        { key: "sessions", header: "Sessions" },
+        { key: 'date', header: 'Date' },
+        { key: 'panelClicks', header: 'Panel Clicks' },
+        { key: 'routesBuilt', header: 'Routes Built' },
+        { key: 'qrScans', header: 'QR Scans' },
+        { key: 'sessions', header: 'Sessions' },
       ],
-      "navigation-daily",
+      'navigation-daily',
       query.format,
     );
   }
 
-  @Get("navigation/routes-by-store")
+  @Get('navigation/routes-by-store')
   @ApiOperation({
-    summary: "Export routes built grouped by destination store",
+    summary: 'Export routes built grouped by destination store',
     description:
-      "Exports the routes-by-store report to CSV or XLSX. Accepts the same filters as the JSON routes-by-store report.",
+      'Exports the routes-by-store report to CSV or XLSX. Accepts the same filters as the JSON routes-by-store report.',
   })
   @ApiQuery({ type: AnalyticsExportNavigationQueryDto })
   async exportRoutesByStore(
@@ -96,11 +92,11 @@ export class AnalyticsExportController {
     @Res() res: Response,
   ): Promise<void> {
     const report = await this.navigationAnalytics.getRoutesByStore(query);
-    const rows = report.items.map((item) => ({
+    const rows = report.items.map(item => ({
       storeId: item.storeId,
-      storeName: item.store?.name ?? "",
-      storeSlug: item.store?.slug ?? "",
-      floorNumber: item.store?.floorNumber ?? "",
+      storeName: item.store?.name ?? '',
+      storeSlug: item.store?.slug ?? '',
+      floorNumber: item.store?.floorNumber ?? '',
       routesBuilt: item.routesBuilt,
     }));
 
@@ -108,21 +104,21 @@ export class AnalyticsExportController {
       res,
       rows,
       [
-        { key: "storeId", header: "Store ID" },
-        { key: "storeName", header: "Store Name" },
-        { key: "storeSlug", header: "Store Slug" },
-        { key: "floorNumber", header: "Floor Number" },
-        { key: "routesBuilt", header: "Routes Built" },
+        { key: 'storeId', header: 'Store ID' },
+        { key: 'storeName', header: 'Store Name' },
+        { key: 'storeSlug', header: 'Store Slug' },
+        { key: 'floorNumber', header: 'Floor Number' },
+        { key: 'routesBuilt', header: 'Routes Built' },
       ],
-      "navigation-routes-by-store",
+      'navigation-routes-by-store',
       query.format,
     );
   }
 
-  @Get("navigation/popular-categories")
+  @Get('navigation/popular-categories')
   @ApiOperation({
-    summary: "Export popular categories by selection count",
-    description: "Exports the popular categories report to CSV or XLSX.",
+    summary: 'Export popular categories by selection count',
+    description: 'Exports the popular categories report to CSV or XLSX.',
   })
   @ApiQuery({ type: AnalyticsExportNavigationQueryDto })
   async exportPopularCategories(
@@ -130,11 +126,11 @@ export class AnalyticsExportController {
     @Res() res: Response,
   ): Promise<void> {
     const report = await this.navigationAnalytics.getPopularCategories(query);
-    const rows = report.items.map((item) => ({
+    const rows = report.items.map(item => ({
       categoryId: item.categoryId,
-      categoryName: item.categoryName ?? "",
-      categorySlug: item.categorySlug ?? "",
-      categoryIsActive: item.categoryIsActive ?? "",
+      categoryName: item.categoryName ?? '',
+      categorySlug: item.categorySlug ?? '',
+      categoryIsActive: item.categoryIsActive ?? '',
       selections: item.selections,
     }));
 
@@ -142,22 +138,22 @@ export class AnalyticsExportController {
       res,
       rows,
       [
-        { key: "categoryId", header: "Category ID" },
-        { key: "categoryName", header: "Category Name" },
-        { key: "categorySlug", header: "Category Slug" },
-        { key: "categoryIsActive", header: "Category Active" },
-        { key: "selections", header: "Selections" },
+        { key: 'categoryId', header: 'Category ID' },
+        { key: 'categoryName', header: 'Category Name' },
+        { key: 'categorySlug', header: 'Category Slug' },
+        { key: 'categoryIsActive', header: 'Category Active' },
+        { key: 'selections', header: 'Selections' },
       ],
-      "navigation-popular-categories",
+      'navigation-popular-categories',
       query.format,
     );
   }
 
-  @Get("navigation/search-queries")
+  @Get('navigation/search-queries')
   @ApiOperation({
-    summary: "Export search queries (optionally zero-result only)",
+    summary: 'Export search queries (optionally zero-result only)',
     description:
-      "Exports the search queries report to CSV or XLSX. Accepts noResults and limit filters.",
+      'Exports the search queries report to CSV or XLSX. Accepts noResults and limit filters.',
   })
   @ApiQuery({ type: AnalyticsExportNavigationQueryDto })
   async exportSearchQueries(
@@ -165,38 +161,36 @@ export class AnalyticsExportController {
     @Res() res: Response,
   ): Promise<void> {
     const report = await this.navigationAnalytics.getSearchQueries(query);
-    const rows = report.items.map((item) => ({
+    const rows = report.items.map(item => ({
       query: item.query,
       count: item.count,
-      noResults: item.noResults ? "true" : "false",
+      noResults: item.noResults ? 'true' : 'false',
     }));
 
     await this.send(
       res,
       rows,
       [
-        { key: "query", header: "Search Query" },
-        { key: "count", header: "Count" },
-        { key: "noResults", header: "No Results" },
+        { key: 'query', header: 'Search Query' },
+        { key: 'count', header: 'Count' },
+        { key: 'noResults', header: 'No Results' },
       ],
-      "navigation-search-queries",
+      'navigation-search-queries',
       query.format,
     );
   }
 
-  @Get("navigation/conversion/card-to-route")
+  @Get('navigation/conversion/card-to-route')
   @ApiOperation({
-    summary: "Export card-view to route conversion funnel",
-    description:
-      "Exports the card-to-route conversion funnel as a single-row report.",
+    summary: 'Export card-view to route conversion funnel',
+    description: 'Exports the card-to-route conversion funnel as a single-row report.',
   })
   @ApiQuery({ type: AnalyticsExportNavigationQueryDto })
   async exportCardToRouteConversion(
     @Query() query: AnalyticsExportNavigationQueryDto,
     @Res() res: Response,
   ): Promise<void> {
-    const report =
-      await this.navigationAnalytics.getCardToRouteConversion(query);
+    const report = await this.navigationAnalytics.getCardToRouteConversion(query);
     const rows = [
       {
         cardViews: report.cardViews,
@@ -209,60 +203,56 @@ export class AnalyticsExportController {
       res,
       rows,
       [
-        { key: "cardViews", header: "Card Views" },
-        { key: "routesFromCardSessions", header: "Routes From Card Sessions" },
+        { key: 'cardViews', header: 'Card Views' },
+        { key: 'routesFromCardSessions', header: 'Routes From Card Sessions' },
         {
-          key: "conversionRate",
-          header: "Conversion Rate",
+          key: 'conversionRate',
+          header: 'Conversion Rate',
         },
       ],
-      "navigation-conversion-card-to-route",
+      'navigation-conversion-card-to-route',
       query.format,
     );
   }
 
-  @Get("ads/breakdown")
+  @Get('ads/breakdown')
   @ApiOperation({
-    summary: "Export grouped advertising analytics",
-    description:
-      "Exports the ads breakdown report to CSV or XLSX. Requires a groupBy parameter.",
+    summary: 'Export grouped advertising analytics',
+    description: 'Exports the ads breakdown report to CSV or XLSX. Requires a groupBy parameter.',
   })
   @ApiQuery({ type: AnalyticsExportAdsBreakdownQueryDto })
   async exportAdsBreakdown(
     @Query() query: AnalyticsExportAdsBreakdownQueryDto,
     @Res() res: Response,
   ): Promise<void> {
-    const report: AdAnalyticsBreakdownResponseDto =
-      await this.adAnalytics.getBreakdown(query);
-    const rows = report.items.map((item) => this.toAdBreakdownRow(item));
+    const report: AdAnalyticsBreakdownResponseDto = await this.adAnalytics.getBreakdown(query);
+    const rows = report.items.map(item => this.toAdBreakdownRow(item));
 
     await this.send(
       res,
       rows,
       [
-        { key: "entityId", header: "Entity ID" },
-        { key: "entityName", header: "Entity Name" },
-        { key: "entityCode", header: "Entity Code" },
-        { key: "entityPlacement", header: "Entity Placement" },
-        { key: "entityCampaignId", header: "Entity Campaign ID" },
-        { key: "impressions", header: "Impressions" },
-        { key: "clicks", header: "Clicks" },
-        { key: "ctr", header: "CTR" },
+        { key: 'entityId', header: 'Entity ID' },
+        { key: 'entityName', header: 'Entity Name' },
+        { key: 'entityCode', header: 'Entity Code' },
+        { key: 'entityPlacement', header: 'Entity Placement' },
+        { key: 'entityCampaignId', header: 'Entity Campaign ID' },
+        { key: 'impressions', header: 'Impressions' },
+        { key: 'clicks', header: 'Clicks' },
+        { key: 'ctr', header: 'CTR' },
       ],
-      "ads-breakdown",
+      'ads-breakdown',
       query.format,
     );
   }
 
-  private toAdBreakdownRow(
-    item: AdAnalyticsBreakdownItemResponseDto,
-  ): Record<string, unknown> {
+  private toAdBreakdownRow(item: AdAnalyticsBreakdownItemResponseDto): Record<string, unknown> {
     return {
       entityId: item.entityId,
-      entityName: item.entity?.name ?? "",
-      entityCode: item.entity?.code ?? "",
-      entityPlacement: item.entity?.placement ?? "",
-      entityCampaignId: item.entity?.campaignId ?? "",
+      entityName: item.entity?.name ?? '',
+      entityCode: item.entity?.code ?? '',
+      entityPlacement: item.entity?.placement ?? '',
+      entityCampaignId: item.entity?.campaignId ?? '',
       impressions: item.impressions,
       clicks: item.clicks,
       ctr: item.ctr,
@@ -277,23 +267,18 @@ export class AnalyticsExportController {
     format: ExportFormat | undefined,
   ): Promise<void> {
     const resolvedFormat: ExportFormat = format ?? AnalyticsExportFormat.CSV;
-    const extension =
-      resolvedFormat === AnalyticsExportFormat.XLSX ? "xlsx" : "csv";
+    const extension = resolvedFormat === AnalyticsExportFormat.XLSX ? 'xlsx' : 'csv';
     const mimeType =
       resolvedFormat === AnalyticsExportFormat.XLSX
-        ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        : "text/csv; charset=utf-8";
+        ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        : 'text/csv; charset=utf-8';
 
-    const buffer = await this.exportService.exportToBuffer(
-      rows,
-      columns,
-      resolvedFormat,
-    );
+    const buffer = await this.exportService.exportToBuffer(rows, columns, resolvedFormat);
 
     res.set({
-      "Content-Type": mimeType,
-      "Content-Disposition": `attachment; filename="${baseName}.${extension}"`,
-      "Content-Length": String(buffer.length),
+      'Content-Type': mimeType,
+      'Content-Disposition': `attachment; filename="${baseName}.${extension}"`,
+      'Content-Length': String(buffer.length),
     });
     res.send(buffer);
   }

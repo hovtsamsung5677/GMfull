@@ -1,5 +1,5 @@
-import { Prisma } from "@prisma/client";
-import { AdCampaignAssignmentAdminResponseDto } from "./dto/ad-campaign-assignment-admin-response.dto";
+import { Prisma } from '@prisma/client';
+import { AdCampaignAssignmentAdminResponseDto } from './dto/ad-campaign-assignment-admin-response.dto';
 
 export const adCampaignAssignmentAdminInclude = {
   campaign: {
@@ -43,10 +43,9 @@ export const adCampaignAssignmentAdminInclude = {
   },
 } satisfies Prisma.AdCampaignAssignmentInclude;
 
-export type AdCampaignAssignmentAdminRecord =
-  Prisma.AdCampaignAssignmentGetPayload<{
-    include: typeof adCampaignAssignmentAdminInclude;
-  }>;
+export type AdCampaignAssignmentAdminRecord = Prisma.AdCampaignAssignmentGetPayload<{
+  include: typeof adCampaignAssignmentAdminInclude;
+}>;
 
 export function toAdCampaignAssignmentAdminResponse(
   assignment: AdCampaignAssignmentAdminRecord,

@@ -1,6 +1,6 @@
-import { ApiPropertyOptional } from "@nestjs/swagger";
-import { AdPlacement, AdTargetType } from "@prisma/client";
-import { Transform } from "class-transformer";
+import { ApiPropertyOptional } from '@nestjs/swagger';
+import { AdPlacement, AdTargetType } from '@prisma/client';
+import { Transform } from 'class-transformer';
 import {
   IsBoolean,
   IsDateString,
@@ -11,15 +11,15 @@ import {
   Max,
   MaxLength,
   Min,
-} from "class-validator";
+} from 'class-validator';
 import {
   toOptionalBoolean,
   toOptionalNumber,
-} from "../../../common/transformers/query.transformers";
+} from '../../../common/transformers/query.transformers';
 
 export class AdCampaignQueryDto {
   @ApiPropertyOptional({
-    description: "Case-insensitive search by campaign name.",
+    description: 'Case-insensitive search by campaign name.',
     maxLength: 200,
   })
   @IsOptional()
@@ -32,12 +32,12 @@ export class AdCampaignQueryDto {
   @IsString()
   tenantId?: string;
 
-  @ApiPropertyOptional({ enum: AdPlacement, enumName: "AdPlacement" })
+  @ApiPropertyOptional({ enum: AdPlacement, enumName: 'AdPlacement' })
   @IsOptional()
   @IsEnum(AdPlacement)
   placement?: AdPlacement;
 
-  @ApiPropertyOptional({ enum: AdTargetType, enumName: "AdTargetType" })
+  @ApiPropertyOptional({ enum: AdTargetType, enumName: 'AdTargetType' })
   @IsOptional()
   @IsEnum(AdTargetType)
   targetType?: AdTargetType;
@@ -50,9 +50,8 @@ export class AdCampaignQueryDto {
 
   @ApiPropertyOptional({
     type: String,
-    format: "date-time",
-    description:
-      "Return campaigns with startsAt greater than or equal to this ISO 8601 timestamp.",
+    format: 'date-time',
+    description: 'Return campaigns with startsAt greater than or equal to this ISO 8601 timestamp.',
   })
   @IsOptional()
   @IsDateString()
@@ -60,9 +59,8 @@ export class AdCampaignQueryDto {
 
   @ApiPropertyOptional({
     type: String,
-    format: "date-time",
-    description:
-      "Return campaigns with startsAt less than or equal to this ISO 8601 timestamp.",
+    format: 'date-time',
+    description: 'Return campaigns with startsAt less than or equal to this ISO 8601 timestamp.',
   })
   @IsOptional()
   @IsDateString()

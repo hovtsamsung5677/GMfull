@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client";
+import { Prisma } from '@prisma/client';
 
 interface PublicPromotionTenantConsistencyRecord {
   tenantId: string | null;
@@ -7,10 +7,7 @@ interface PublicPromotionTenantConsistencyRecord {
   } | null;
 }
 
-export function buildPublicPromotionWhere(
-  now: Date,
-  storeId?: string,
-): Prisma.PromotionWhereInput {
+export function buildPublicPromotionWhere(now: Date, storeId?: string): Prisma.PromotionWhereInput {
   return {
     isActive: true,
     deletedAt: null,

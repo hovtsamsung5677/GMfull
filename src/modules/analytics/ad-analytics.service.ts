@@ -1,22 +1,19 @@
-import { BadRequestException, Injectable } from "@nestjs/common";
-import { AdPlacement, AnalyticsEventType, Prisma } from "@prisma/client";
-import { PrismaService } from "../../database/prisma.service";
+import { BadRequestException, Injectable } from '@nestjs/common';
+import { AdPlacement, AnalyticsEventType, Prisma } from '@prisma/client';
+import { PrismaService } from '../../database/prisma.service';
 import {
   AdAnalyticsBreakdownQueryDto,
   AdAnalyticsGroupBy,
   AdAnalyticsQueryDto,
-} from "./dto/ad-analytics-query.dto";
+} from './dto/ad-analytics-query.dto';
 import {
   AdAnalyticsBreakdownResponseDto,
   AdAnalyticsEntityResponseDto,
   AdAnalyticsSummaryResponseDto,
   AdAnalyticsImpressionClickConversionResponseDto,
-} from "./dto/ad-analytics-response.dto";
+} from './dto/ad-analytics-response.dto';
 
-const AD_EVENT_TYPES = [
-  AnalyticsEventType.AD_IMPRESSION,
-  AnalyticsEventType.AD_CLICK,
-] as const;
+const AD_EVENT_TYPES = [AnalyticsEventType.AD_IMPRESSION, AnalyticsEventType.AD_CLICK] as const;
 
 interface AdAnalyticsAggregateRow {
   entityId: string;
@@ -33,17 +30,15 @@ interface MutableAdAnalyticsMetrics {
 export class AdAnalyticsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getSummary(
-    query: AdAnalyticsQueryDto,
-  ): Promise<AdAnalyticsSummaryResponseDto> {
+  async getSummary(query: AdAnalyticsQueryDto): Promise<AdAnalyticsSummaryResponseDto> {
     const rows = await this.prisma.analyticsEvent.groupBy({
-      by: ["type"],
+      by: ['type'],
       where: this.buildWhere(query),
       _count: { _all: true },
     });
 
     const metrics = this.toMetrics(
-      rows.map((row) => ({
+      rows.map(row => ({
         type: row.type,
         count: row._count._all,
       })),
@@ -58,14 +53,9 @@ export class AdAnalyticsService {
   async getBreakdown(
     query: AdAnalyticsBreakdownQueryDto,
   ): Promise<AdAnalyticsBreakdownResponseDto> {
-    const rows = await this.aggregateByEntity(
-      query.groupBy,
-      this.buildWhere(query),
-    );
+    const rows = await this.aggregateByEntity(query.groupBy, this.buildWhere(query));
     const metricsByEntity = this.groupMetrics(rows);
-    const entitiesById = await this.loadEntities(query.groupBy, [
-      ...metricsByEntity.keys(),
-    ]);
+    const entitiesById = await this.loadEntities(query.groupBy, [...metricsByEntity.keys()]);
 
     const items = [...metricsByEntity.entries()]
       .map(([entityId, metrics]) => ({
@@ -104,14 +94,12 @@ export class AdAnalyticsService {
     };
   }
 
-  private buildWhere(
-    query: AdAnalyticsQueryDto,
-  ): Prisma.AnalyticsEventWhereInput {
+  private buildWhere(query: AdAnalyticsQueryDto): Prisma.AnalyticsEventWhereInput {
     const from = query.from ? new Date(query.from) : null;
     const to = query.to ? new Date(query.to) : null;
 
     if (from !== null && to !== null && from.getTime() >= to.getTime()) {
-      throw new BadRequestException("from must be earlier than to");
+      throw new BadRequestException('from must be earlier than to');
     }
 
     return {
@@ -139,11 +127,11 @@ export class AdAnalyticsService {
     switch (groupBy) {
       case AdAnalyticsGroupBy.CAMPAIGN: {
         const rows = await this.prisma.analyticsEvent.groupBy({
-          by: ["campaignId", "type"],
+          by: ['campaignId', 'type'],
           where: { AND: [where, { campaignId: { not: null } }] },
           _count: { _all: true },
         });
-        return rows.map((row) => ({
+        return rows.map(row => ({
           entityId: row.campaignId!,
           type: row.type,
           count: row._count._all,
@@ -151,11 +139,11 @@ export class AdAnalyticsService {
       }
       case AdAnalyticsGroupBy.CREATIVE: {
         const rows = await this.prisma.analyticsEvent.groupBy({
-          by: ["creativeId", "type"],
+          by: ['creativeId', 'type'],
           where: { AND: [where, { creativeId: { not: null } }] },
           _count: { _all: true },
         });
-        return rows.map((row) => ({
+        return rows.map(row => ({
           entityId: row.creativeId!,
           type: row.type,
           count: row._count._all,
@@ -163,11 +151,11 @@ export class AdAnalyticsService {
       }
       case AdAnalyticsGroupBy.SLOT: {
         const rows = await this.prisma.analyticsEvent.groupBy({
-          by: ["adSlotId", "type"],
+          by: ['adSlotId', 'type'],
           where: { AND: [where, { adSlotId: { not: null } }] },
           _count: { _all: true },
         });
-        return rows.map((row) => ({
+        return rows.map(row => ({
           entityId: row.adSlotId!,
           type: row.type,
           count: row._count._all,
@@ -175,11 +163,11 @@ export class AdAnalyticsService {
       }
       case AdAnalyticsGroupBy.PANEL: {
         const rows = await this.prisma.analyticsEvent.groupBy({
-          by: ["panelId", "type"],
+          by: ['panelId', 'type'],
           where: { AND: [where, { panelId: { not: null } }] },
           _count: { _all: true },
         });
-        return rows.map((row) => ({
+        return rows.map(row => ({
           entityId: row.panelId!,
           type: row.type,
           count: row._count._all,
@@ -188,9 +176,7 @@ export class AdAnalyticsService {
     }
   }
 
-  private groupMetrics(
-    rows: AdAnalyticsAggregateRow[],
-  ): Map<string, MutableAdAnalyticsMetrics> {
+  private groupMetrics(rows: AdAnalyticsAggregateRow[]): Map<string, MutableAdAnalyticsMetrics> {
     const metricsByEntity = new Map<string, MutableAdAnalyticsMetrics>();
 
     for (const row of rows) {
@@ -255,7 +241,7 @@ export class AdAnalyticsService {
           select: { id: true, name: true, placement: true },
         });
         return this.toEntityMap(
-          campaigns.map((campaign) => ({
+          campaigns.map(campaign => ({
             id: campaign.id,
             name: campaign.name,
             code: null,
@@ -270,7 +256,7 @@ export class AdAnalyticsService {
           select: { id: true, title: true, campaignId: true },
         });
         return this.toEntityMap(
-          creatives.map((creative) => ({
+          creatives.map(creative => ({
             id: creative.id,
             name: creative.title,
             code: null,
@@ -285,7 +271,7 @@ export class AdAnalyticsService {
           select: { id: true, code: true, name: true, placement: true },
         });
         return this.toEntityMap(
-          slots.map((slot) => ({
+          slots.map(slot => ({
             id: slot.id,
             name: slot.name,
             code: slot.code,
@@ -300,7 +286,7 @@ export class AdAnalyticsService {
           select: { id: true, code: true, name: true },
         });
         return this.toEntityMap(
-          panels.map((panel) => ({
+          panels.map(panel => ({
             id: panel.id,
             name: panel.name,
             code: panel.code,
@@ -321,6 +307,6 @@ export class AdAnalyticsService {
       campaignId: string | null;
     }>,
   ): Map<string, AdAnalyticsEntityResponseDto> {
-    return new Map(entities.map((entity) => [entity.id, entity]));
+    return new Map(entities.map(entity => [entity.id, entity]));
   }
 }

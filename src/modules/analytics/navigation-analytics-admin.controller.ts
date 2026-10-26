@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseGuards } from "@nestjs/common";
+import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -7,61 +7,55 @@ import {
   ApiOperation,
   ApiTags,
   ApiUnauthorizedResponse,
-} from "@nestjs/swagger";
-import { Roles } from "../../common/decorators/roles.decorator";
-import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
-import { RolesGuard } from "../../common/guards/roles.guard";
+} from '@nestjs/swagger';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
 import {
   NavigationAnalyticsQueryDto,
   NavigationAnalyticsReportsQueryDto,
-} from "./dto/navigation-analytics-query.dto";
+} from './dto/navigation-analytics-query.dto';
 import {
-  NavigationAnalyticsDailyItemResponseDto,
   NavigationAnalyticsDailyResponseDto,
-  NavigationAnalyticsHourlyItemResponseDto,
   NavigationAnalyticsHourlyResponseDto,
   NavigationAnalyticsRoutesByStoreResponseDto,
   NavigationAnalyticsSummaryResponseDto,
   NavigationAnalyticsPopularCategoriesResponseDto,
   NavigationAnalyticsSearchQueriesResponseDto,
   NavigationAnalyticsCardToRouteConversionResponseDto,
-} from "./dto/navigation-analytics-response.dto";
-import { NavigationAnalyticsService } from "./navigation-analytics.service";
+} from './dto/navigation-analytics-response.dto';
+import { NavigationAnalyticsService } from './navigation-analytics.service';
 
 const NAVIGATION_ANALYTICS_READ_ROLES = [
-  "SUPER_ADMIN",
-  "MALL_ADMIN",
-  "ADS_MANAGER",
-  "ANALYTICS_VIEWER",
+  'SUPER_ADMIN',
+  'MALL_ADMIN',
+  'ADS_MANAGER',
+  'ANALYTICS_VIEWER',
 ];
 
-@ApiTags("admin/analytics/navigation")
+@ApiTags('admin/analytics/navigation')
 @ApiBearerAuth()
 @ApiUnauthorizedResponse({
-  description: "JWT access token is missing or invalid.",
+  description: 'JWT access token is missing or invalid.',
 })
 @ApiForbiddenResponse({
-  description:
-    "Allowed roles: SUPER_ADMIN, MALL_ADMIN, ADS_MANAGER and ANALYTICS_VIEWER.",
+  description: 'Allowed roles: SUPER_ADMIN, MALL_ADMIN, ADS_MANAGER and ANALYTICS_VIEWER.',
 })
-@Controller("admin/analytics/navigation")
+@Controller('admin/analytics/navigation')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(...NAVIGATION_ANALYTICS_READ_ROLES)
 export class NavigationAnalyticsAdminController {
-  constructor(
-    private readonly navigationAnalyticsService: NavigationAnalyticsService,
-  ) {}
+  constructor(private readonly navigationAnalyticsService: NavigationAnalyticsService) {}
 
-  @Get("summary")
+  @Get('summary')
   @ApiOperation({
-    summary: "Get navigation analytics summary",
+    summary: 'Get navigation analytics summary',
     description:
-      "Aggregates visitor/navigation AnalyticsEvent rows over the combined filters. Without a period, the complete available history is used. panelClicksToday counts PANEL_USED events since 00:00:00 UTC of the current day, and uniqueSessions counts distinct non-null sessionId values.",
+      'Aggregates visitor/navigation AnalyticsEvent rows over the combined filters. Without a period, the complete available history is used. panelClicksToday counts PANEL_USED events since 00:00:00 UTC of the current day, and uniqueSessions counts distinct non-null sessionId values.',
   })
   @ApiOkResponse({ type: NavigationAnalyticsSummaryResponseDto })
   @ApiBadRequestResponse({
-    description:
-      "Invalid ISO date-time, source, or a period where from is not earlier than to.",
+    description: 'Invalid ISO date-time, source, or a period where from is not earlier than to.',
   })
   getSummary(
     @Query() query: NavigationAnalyticsQueryDto,
@@ -69,16 +63,15 @@ export class NavigationAnalyticsAdminController {
     return this.navigationAnalyticsService.getSummary(query);
   }
 
-  @Get("daily")
+  @Get('daily')
   @ApiOperation({
-    summary: "Get daily navigation activity series",
+    summary: 'Get daily navigation activity series',
     description:
-      "Groups PANEL_USED, ROUTE_BUILT, QR_SCANNED and SESSION_STARTED AnalyticsEvent rows by UTC calendar day over the period. The period is half-open [from, to), defaults to the last 30 days, and every day of the range is returned, zero-filled when it has no events.",
+      'Groups PANEL_USED, ROUTE_BUILT, QR_SCANNED and SESSION_STARTED AnalyticsEvent rows by UTC calendar day over the period. The period is half-open [from, to), defaults to the last 30 days, and every day of the range is returned, zero-filled when it has no events.',
   })
   @ApiOkResponse({ type: NavigationAnalyticsDailyResponseDto })
   @ApiBadRequestResponse({
-    description:
-      "Invalid ISO date-time, source, or a period where from is not earlier than to.",
+    description: 'Invalid ISO date-time, source, or a period where from is not earlier than to.',
   })
   getDaily(
     @Query() query: NavigationAnalyticsQueryDto,
@@ -86,16 +79,15 @@ export class NavigationAnalyticsAdminController {
     return this.navigationAnalyticsService.getDaily(query);
   }
 
-  @Get("hourly")
+  @Get('hourly')
   @ApiOperation({
-    summary: "Get hourly navigation activity series",
+    summary: 'Get hourly navigation activity series',
     description:
-      "Groups visitor/navigation AnalyticsEvent rows by hour of the UTC day (0-23) over the period to show when the interactive stand is in highest demand. The period is half-open [from, to) and defaults to the last 30 days. All 24 buckets are always returned, zero-filled when they have no events.",
+      'Groups visitor/navigation AnalyticsEvent rows by hour of the UTC day (0-23) over the period to show when the interactive stand is in highest demand. The period is half-open [from, to) and defaults to the last 30 days. All 24 buckets are always returned, zero-filled when they have no events.',
   })
   @ApiOkResponse({ type: NavigationAnalyticsHourlyResponseDto })
   @ApiBadRequestResponse({
-    description:
-      "Invalid ISO date-time, source, or a period where from is not earlier than to.",
+    description: 'Invalid ISO date-time, source, or a period where from is not earlier than to.',
   })
   getHourly(
     @Query() query: NavigationAnalyticsQueryDto,
@@ -103,16 +95,15 @@ export class NavigationAnalyticsAdminController {
     return this.navigationAnalyticsService.getHourly(query);
   }
 
-  @Get("routes-by-store")
+  @Get('routes-by-store')
   @ApiOperation({
-    summary: "Get routes built grouped by destination store",
+    summary: 'Get routes built grouped by destination store',
     description:
-      "Groups ROUTE_BUILT AnalyticsEvent rows by Store over the combined filters. Items are sorted by routesBuilt DESC and storeId ASC, and use the safe short Store projection with floorNumber. Stores without route events are not listed.",
+      'Groups ROUTE_BUILT AnalyticsEvent rows by Store over the combined filters. Items are sorted by routesBuilt DESC and storeId ASC, and use the safe short Store projection with floorNumber. Stores without route events are not listed.',
   })
   @ApiOkResponse({ type: NavigationAnalyticsRoutesByStoreResponseDto })
   @ApiBadRequestResponse({
-    description:
-      "Invalid ISO date-time, source, or a period where from is not earlier than to.",
+    description: 'Invalid ISO date-time, source, or a period where from is not earlier than to.',
   })
   getRoutesByStore(
     @Query() query: NavigationAnalyticsQueryDto,
@@ -120,16 +111,15 @@ export class NavigationAnalyticsAdminController {
     return this.navigationAnalyticsService.getRoutesByStore(query);
   }
 
-  @Get("popular-categories")
+  @Get('popular-categories')
   @ApiOperation({
-    summary: "Popular categories by selection count",
+    summary: 'Popular categories by selection count',
     description:
-      "Groups CATEGORY_SELECTED AnalyticsEvent rows by Category over the combined filters. Items are sorted by selections DESC, categoryId ASC. Categories without selection events are not listed. The optional period uses [from, to).",
+      'Groups CATEGORY_SELECTED AnalyticsEvent rows by Category over the combined filters. Items are sorted by selections DESC, categoryId ASC. Categories without selection events are not listed. The optional period uses [from, to).',
   })
   @ApiOkResponse({ type: NavigationAnalyticsPopularCategoriesResponseDto })
   @ApiBadRequestResponse({
-    description:
-      "Invalid ISO date-time or a period where from is not earlier than to.",
+    description: 'Invalid ISO date-time or a period where from is not earlier than to.',
   })
   getPopularCategories(
     @Query() query: NavigationAnalyticsReportsQueryDto,
@@ -137,16 +127,15 @@ export class NavigationAnalyticsAdminController {
     return this.navigationAnalyticsService.getPopularCategories(query);
   }
 
-  @Get("search-queries")
+  @Get('search-queries')
   @ApiOperation({
-    summary:
-      "Popular search queries, optionally filtered to zero-result queries",
+    summary: 'Popular search queries, optionally filtered to zero-result queries',
     description:
-      "Groups SEARCH_QUERY AnalyticsEvent rows by the trimmed query text. Each item carries a noResults flag which is true when every recorded occurrence of that query had payload.resultCount === 0. Pass noResults=true to return only zero-result queries. The optional period uses [from, to).",
+      'Groups SEARCH_QUERY AnalyticsEvent rows by the trimmed query text. Each item carries a noResults flag which is true when every recorded occurrence of that query had payload.resultCount === 0. Pass noResults=true to return only zero-result queries. The optional period uses [from, to).',
   })
   @ApiOkResponse({ type: NavigationAnalyticsSearchQueriesResponseDto })
   @ApiBadRequestResponse({
-    description: "Invalid ISO date-time, noResults value or period range.",
+    description: 'Invalid ISO date-time, noResults value or period range.',
   })
   getSearchQueries(
     @Query() query: NavigationAnalyticsReportsQueryDto,
@@ -154,16 +143,15 @@ export class NavigationAnalyticsAdminController {
     return this.navigationAnalyticsService.getSearchQueries(query);
   }
 
-  @Get("conversion/card-to-route")
+  @Get('conversion/card-to-route')
   @ApiOperation({
-    summary: "Conversion funnel: store card view to route built",
+    summary: 'Conversion funnel: store card view to route built',
     description:
-      "Funnel measuring STORE_CARD_VIEWED (step 1) against ROUTE_BUILT events whose sessionId also contained a STORE_CARD_VIEWED event in the period (step 2). conversionRate is step2 / step1, 0 when step1 is 0. The optional period uses [from, to).",
+      'Funnel measuring STORE_CARD_VIEWED (step 1) against ROUTE_BUILT events whose sessionId also contained a STORE_CARD_VIEWED event in the period (step 2). conversionRate is step2 / step1, 0 when step1 is 0. The optional period uses [from, to).',
   })
   @ApiOkResponse({ type: NavigationAnalyticsCardToRouteConversionResponseDto })
   @ApiBadRequestResponse({
-    description:
-      "Invalid ISO date-time or a period where from is not earlier than to.",
+    description: 'Invalid ISO date-time or a period where from is not earlier than to.',
   })
   getCardToRouteConversion(
     @Query() query: NavigationAnalyticsReportsQueryDto,

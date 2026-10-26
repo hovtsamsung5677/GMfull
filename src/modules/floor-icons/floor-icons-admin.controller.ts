@@ -61,10 +61,7 @@ export class FloorIconsAdminController {
   @ApiOperation({ summary: 'Update a floor icon.' })
   @ApiOkResponse({ type: FloorIconResponseDto })
   @ApiNotFoundResponse({ description: 'Floor icon not found.' })
-  update(
-    @Param('id') id: string,
-    @Body() dto: UpdateFloorIconDto,
-  ): Promise<FloorIconResponseDto> {
+  update(@Param('id') id: string, @Body() dto: UpdateFloorIconDto): Promise<FloorIconResponseDto> {
     return this.service.update(id, dto);
   }
 

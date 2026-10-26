@@ -1,9 +1,6 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
+import { Prisma } from '@prisma/client';
 import { FloorIconQueryDto } from './dto/floor-icon-query.dto';
 import { CreateFloorIconDto } from './dto/create-floor-icon.dto';
 import { UpdateFloorIconDto } from './dto/update-floor-icon.dto';
@@ -16,6 +13,10 @@ const iconAssetSelect = {
   kind: true,
   isActive: true,
 } as const;
+
+type FloorIconWithAsset = Prisma.FloorIconGetPayload<{
+  include: { asset: { select: typeof iconAssetSelect } };
+}>;
 
 @Injectable()
 export class FloorIconsService {
@@ -147,7 +148,7 @@ export class FloorIconsService {
     }
   }
 
-  private toResponse(icon: any): FloorIconResponseDto {
+  private toResponse(icon: FloorIconWithAsset): FloorIconResponseDto {
     return {
       id: icon.id,
       name: icon.name,

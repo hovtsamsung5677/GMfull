@@ -3,25 +3,19 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
-} from "@nestjs/common";
-import { Panel, PanelStatus, Prisma, RouteNodeType } from "@prisma/client";
-import { PrismaService } from "../../database/prisma.service";
-import { runSerializableTransaction } from "../../database/serializable-transaction";
-import {
-  PanelAdminListResponseDto,
-  PanelAdminResponseDto,
-} from "./dto/panel-admin-response.dto";
-import { PanelPublicResponseDto } from "./dto/panel-public-response.dto";
-import { PanelQueryDto } from "./dto/panel-query.dto";
-import { CreatePanelDto } from "./dto/create-panel.dto";
-import { UpdatePanelDto } from "./dto/update-panel.dto";
-import { PanelHeartbeatDto } from "./dto/panel-heartbeat.dto";
-import { PanelStatusBroadcasterService } from "./panel-status-broadcaster.service";
-import {
-  panelAdminInclude,
-  toPanelAdminResponse,
-} from "./panel-admin.projection";
-import { normalizePanelCode, normalizePanelName } from "./panel-normalization";
+} from '@nestjs/common';
+import { Panel, Prisma, RouteNodeType } from '@prisma/client';
+import { PrismaService } from '../../database/prisma.service';
+import { runSerializableTransaction } from '../../database/serializable-transaction';
+import { PanelAdminListResponseDto, PanelAdminResponseDto } from './dto/panel-admin-response.dto';
+import { PanelPublicResponseDto } from './dto/panel-public-response.dto';
+import { PanelQueryDto } from './dto/panel-query.dto';
+import { CreatePanelDto } from './dto/create-panel.dto';
+import { UpdatePanelDto } from './dto/update-panel.dto';
+import { PanelHeartbeatDto } from './dto/panel-heartbeat.dto';
+import { PanelStatusBroadcasterService } from './panel-status-broadcaster.service';
+import { panelAdminInclude, toPanelAdminResponse } from './panel-admin.projection';
+import { normalizePanelCode, normalizePanelName } from './panel-normalization';
 
 interface PanelValidationState {
   code: string;
@@ -32,10 +26,7 @@ interface PanelValidationState {
   isActive: boolean;
 }
 
-type PanelWriteClient = Pick<
-  Prisma.TransactionClient,
-  "panel" | "floor" | "routeNode"
->;
+type PanelWriteClient = Pick<Prisma.TransactionClient, 'panel' | 'floor' | 'routeNode'>;
 
 @Injectable()
 export class PanelsService {
@@ -53,7 +44,7 @@ export class PanelsService {
       this.prisma.panel.findMany({
         where,
         include: panelAdminInclude,
-        orderBy: [{ name: "asc" }, { code: "asc" }, { id: "asc" }],
+        orderBy: [{ name: 'asc' }, { code: 'asc' }, { id: 'asc' }],
         skip: (page - 1) * limit,
         take: limit,
       }),
@@ -77,15 +68,13 @@ export class PanelsService {
       include: panelAdminInclude,
     });
     if (!panel) {
-      throw new NotFoundException("Panel not found");
+      throw new NotFoundException('Panel not found');
     }
 
     return toPanelAdminResponse(panel);
   }
 
-  async findPublicByRouteNodeId(
-    routeNodeId: string,
-  ): Promise<PanelPublicResponseDto> {
+  async findPublicByRouteNodeId(routeNodeId: string): Promise<PanelPublicResponseDto> {
     const panel = await this.prisma.panel.findUnique({
       where: { routeNodeId },
       select: {
@@ -97,7 +86,7 @@ export class PanelsService {
     });
 
     if (!panel) {
-      throw new NotFoundException("Panel not found for route node");
+      throw new NotFoundException('Panel not found for route node');
     }
 
     return panel;
@@ -114,7 +103,7 @@ export class PanelsService {
     };
 
     try {
-      return await runSerializableTransaction(this.prisma, async (tx) => {
+      return await runSerializableTransaction(this.prisma, async tx => {
         await this.validateState(state, tx);
         await this.ensureCodeAvailable(state.code, undefined, tx);
         await this.ensureRouteNodeAvailable(state.routeNodeId, undefined, tx);
@@ -134,33 +123,20 @@ export class PanelsService {
     }
   }
 
-  async update(
-    id: string,
-    dto: UpdatePanelDto,
-  ): Promise<PanelAdminResponseDto> {
+  async update(id: string, dto: UpdatePanelDto): Promise<PanelAdminResponseDto> {
     try {
-      return await runSerializableTransaction(this.prisma, async (tx) => {
+      return await runSerializableTransaction(this.prisma, async tx => {
         const existing = await this.findExisting(id, tx);
         const state: PanelValidationState = {
-          code:
-            dto.code === undefined
-              ? existing.code
-              : normalizePanelCode(dto.code),
-          name:
-            dto.name === undefined
-              ? existing.name
-              : normalizePanelName(dto.name),
+          code: dto.code === undefined ? existing.code : normalizePanelCode(dto.code),
+          name: dto.name === undefined ? existing.name : normalizePanelName(dto.name),
           description:
             dto.description === undefined
               ? existing.description
               : (this.normalizeNullableText(dto.description) ?? null),
           floorId: dto.floorId === undefined ? existing.floorId : dto.floorId,
-          routeNodeId:
-            dto.routeNodeId === undefined
-              ? existing.routeNodeId
-              : dto.routeNodeId,
-          isActive:
-            dto.isActive === undefined ? existing.isActive : dto.isActive,
+          routeNodeId: dto.routeNodeId === undefined ? existing.routeNodeId : dto.routeNodeId,
+          isActive: dto.isActive === undefined ? existing.isActive : dto.isActive,
         };
 
         await this.validateState(state, tx);
@@ -190,7 +166,7 @@ export class PanelsService {
     });
 
     if (!existing) {
-      throw new NotFoundException("Panel not found");
+      throw new NotFoundException('Panel not found');
     }
 
     if (!existing.isActive) {
@@ -214,7 +190,7 @@ export class PanelsService {
     id: string,
     dto: PanelHeartbeatDto,
   ): Promise<{
-    panel: Pick<Panel, "id" | "code" | "status" | "lastSeenAt" | "usedAt"> & {
+    panel: Pick<Panel, 'id' | 'code' | 'status' | 'lastSeenAt' | 'usedAt'> & {
       isActive: boolean;
     };
     processedAt: Date;
@@ -225,11 +201,11 @@ export class PanelsService {
     });
 
     if (!existing) {
-      throw new NotFoundException("Panel not found");
+      throw new NotFoundException('Panel not found');
     }
 
     if (!existing.isActive) {
-      throw new NotFoundException("Panel is not active");
+      throw new NotFoundException('Panel is not active');
     }
 
     const processedAt = new Date();
@@ -292,22 +268,19 @@ export class PanelsService {
       ...(search
         ? {
             OR: [
-              { code: { contains: search, mode: "insensitive" as const } },
-              { name: { contains: search, mode: "insensitive" as const } },
+              { code: { contains: search, mode: 'insensitive' as const } },
+              { name: { contains: search, mode: 'insensitive' as const } },
             ],
           }
         : {}),
     };
   }
 
-  private async findExisting(
-    id: string,
-    db: PanelWriteClient = this.prisma,
-  ): Promise<Panel> {
+  private async findExisting(id: string, db: PanelWriteClient = this.prisma): Promise<Panel> {
     const panel = await db.panel.findUnique({ where: { id } });
 
     if (!panel) {
-      throw new NotFoundException("Panel not found");
+      throw new NotFoundException('Panel not found');
     }
 
     return panel;
@@ -323,30 +296,22 @@ export class PanelsService {
       !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(state.code)
     ) {
       throw new BadRequestException(
-        "code must be lowercase kebab-case using letters, digits and hyphens",
+        'code must be lowercase kebab-case using letters, digits and hyphens',
       );
     }
 
-    if (
-      state.name.length === 0 ||
-      state.name.length > 200 ||
-      !/\S/.test(state.name)
-    ) {
+    if (state.name.length === 0 || state.name.length > 200 || !/\S/.test(state.name)) {
       throw new BadRequestException(
-        "name must contain between 1 and 200 non-whitespace characters",
+        'name must contain between 1 and 200 non-whitespace characters',
       );
     }
 
     if (state.description !== null && state.description.length > 5000) {
-      throw new BadRequestException(
-        "description must not exceed 5000 characters",
-      );
+      throw new BadRequestException('description must not exceed 5000 characters');
     }
 
     if (state.isActive && (!state.floorId || !state.routeNodeId)) {
-      throw new BadRequestException(
-        "Active panel requires floorId and routeNodeId",
-      );
+      throw new BadRequestException('Active panel requires floorId and routeNodeId');
     }
 
     const [floor, routeNode] = await Promise.all([
@@ -365,25 +330,19 @@ export class PanelsService {
     ]);
 
     if (state.floorId !== null && !floor) {
-      throw new NotFoundException("Floor not found");
+      throw new NotFoundException('Floor not found');
     }
 
     if (state.routeNodeId !== null && !routeNode) {
-      throw new NotFoundException("Route node not found");
+      throw new NotFoundException('Route node not found');
     }
 
     if (routeNode && routeNode.type !== RouteNodeType.PANEL) {
-      throw new BadRequestException("Route node type must be PANEL");
+      throw new BadRequestException('Route node type must be PANEL');
     }
 
-    if (
-      state.floorId !== null &&
-      routeNode &&
-      routeNode.floorId !== state.floorId
-    ) {
-      throw new BadRequestException(
-        "Panel floorId must match route node floorId",
-      );
+    if (state.floorId !== null && routeNode && routeNode.floorId !== state.floorId) {
+      throw new BadRequestException('Panel floorId must match route node floorId');
     }
   }
 
@@ -398,7 +357,7 @@ export class PanelsService {
     });
 
     if (existing && existing.id !== currentId) {
-      throw new ConflictException("Panel code already exists");
+      throw new ConflictException('Panel code already exists');
     }
   }
 
@@ -417,13 +376,11 @@ export class PanelsService {
     });
 
     if (existing && existing.id !== currentId) {
-      throw new ConflictException("Route node is already assigned to a Panel");
+      throw new ConflictException('Route node is already assigned to a Panel');
     }
   }
 
-  private normalizeNullableText(
-    value: string | null | undefined,
-  ): string | null | undefined {
+  private normalizeNullableText(value: string | null | undefined): string | null | undefined {
     if (value === undefined || value === null) {
       return value;
     }
@@ -447,36 +404,34 @@ export class PanelsService {
 
   private handlePrismaError(error: unknown): never {
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
-      if (error.code === "P2002") {
+      if (error.code === 'P2002') {
         const target = Array.isArray(error.meta?.target)
           ? error.meta.target.map(String)
-          : [String(error.meta?.target ?? "")];
+          : [String(error.meta?.target ?? '')];
 
-        if (target.some((field) => field.includes("routeNodeId"))) {
-          throw new ConflictException(
-            "Route node is already assigned to a Panel",
-          );
+        if (target.some(field => field.includes('routeNodeId'))) {
+          throw new ConflictException('Route node is already assigned to a Panel');
         }
 
-        throw new ConflictException("Panel code already exists");
+        throw new ConflictException('Panel code already exists');
       }
 
-      if (error.code === "P2003") {
+      if (error.code === 'P2003') {
         const details = JSON.stringify(error.meta ?? {});
 
-        if (details.includes("routeNodeId")) {
-          throw new NotFoundException("Route node not found");
+        if (details.includes('routeNodeId')) {
+          throw new NotFoundException('Route node not found');
         }
 
-        if (details.includes("floorId")) {
-          throw new NotFoundException("Floor not found");
+        if (details.includes('floorId')) {
+          throw new NotFoundException('Floor not found');
         }
 
-        throw new NotFoundException("Referenced Floor or Route node not found");
+        throw new NotFoundException('Referenced Floor or Route node not found');
       }
 
-      if (error.code === "P2025") {
-        throw new NotFoundException("Panel not found");
+      if (error.code === 'P2025') {
+        throw new NotFoundException('Panel not found');
       }
     }
 

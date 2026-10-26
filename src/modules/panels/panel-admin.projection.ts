@@ -1,5 +1,5 @@
-import { Prisma } from "@prisma/client";
-import { PanelAdminResponseDto } from "./dto/panel-admin-response.dto";
+import { Prisma } from '@prisma/client';
+import { PanelAdminResponseDto } from './dto/panel-admin-response.dto';
 
 export const panelAdminInclude = {
   floor: {
@@ -29,9 +29,7 @@ export type PanelAdminRecord = Prisma.PanelGetPayload<{
   include: typeof panelAdminInclude;
 }>;
 
-export function toPanelAdminResponse(
-  panel: PanelAdminRecord,
-): PanelAdminResponseDto {
+export function toPanelAdminResponse(panel: PanelAdminRecord): PanelAdminResponseDto {
   return {
     id: panel.id,
     code: panel.code,

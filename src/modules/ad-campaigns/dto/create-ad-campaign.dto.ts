@@ -1,5 +1,5 @@
-import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
-import { AdPlacement, AdTargetType } from "@prisma/client";
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { AdPlacement, AdTargetType } from '@prisma/client';
 import {
   IsBoolean,
   IsDateString,
@@ -15,18 +15,18 @@ import {
   Min,
   MinLength,
   ValidateIf,
-} from "class-validator";
+} from 'class-validator';
 
 export class CreateAdCampaignDto {
   @ApiProperty({
-    example: "August home panel campaign",
+    example: 'August home panel campaign',
     minLength: 1,
     maxLength: 200,
   })
   @IsString()
   @MinLength(1)
   @MaxLength(200)
-  @Matches(/\S/, { message: "name must contain a non-whitespace character" })
+  @Matches(/\S/, { message: 'name must contain a non-whitespace character' })
   name!: string;
 
   @ApiPropertyOptional({ type: String, nullable: true, maxLength: 5000 })
@@ -38,8 +38,7 @@ export class CreateAdCampaignDto {
   @ApiPropertyOptional({
     type: String,
     nullable: true,
-    description:
-      "Tenant owner. Required for STORE campaigns and must match Store.tenantId.",
+    description: 'Tenant owner. Required for STORE campaigns and must match Store.tenantId.',
   })
   @IsOptional()
   @IsString()
@@ -48,7 +47,7 @@ export class CreateAdCampaignDto {
 
   @ApiProperty({
     enum: AdPlacement,
-    enumName: "AdPlacement",
+    enumName: 'AdPlacement',
     example: AdPlacement.HOME_PANEL_BANNER,
   })
   @IsEnum(AdPlacement)
@@ -56,10 +55,10 @@ export class CreateAdCampaignDto {
 
   @ApiPropertyOptional({
     enum: AdTargetType,
-    enumName: "AdTargetType",
+    enumName: 'AdTargetType',
     default: AdTargetType.NONE,
     description:
-      "STORE requires only targetStoreId; PROMOTION only targetPromotionId; URL only targetUrl; NONE requires no target fields.",
+      'STORE requires only targetStoreId; PROMOTION only targetPromotionId; URL only targetUrl; NONE requires no target fields.',
   })
   @ValidateIf((_object, value) => value !== undefined)
   @IsEnum(AdTargetType)
@@ -81,14 +80,14 @@ export class CreateAdCampaignDto {
     type: String,
     nullable: true,
     maxLength: 2048,
-    example: "https://greenmall.example/offers",
-    description: "Absolute HTTP or HTTPS URL. Other schemes are rejected.",
+    example: 'https://greenmall.example/offers',
+    description: 'Absolute HTTP or HTTPS URL. Other schemes are rejected.',
   })
   @IsOptional()
   @IsString()
   @MaxLength(2048)
   @IsUrl({
-    protocols: ["http", "https"],
+    protocols: ['http', 'https'],
     require_protocol: true,
   })
   targetUrl?: string | null;
@@ -96,8 +95,8 @@ export class CreateAdCampaignDto {
   @ApiPropertyOptional({
     nullable: true,
     type: String,
-    format: "date-time",
-    example: "2026-08-01T00:00:00.000Z",
+    format: 'date-time',
+    example: '2026-08-01T00:00:00.000Z',
   })
   @IsOptional()
   @IsDateString()
@@ -106,9 +105,9 @@ export class CreateAdCampaignDto {
   @ApiPropertyOptional({
     nullable: true,
     type: String,
-    format: "date-time",
-    example: "2026-09-01T00:00:00.000Z",
-    description: "Must be strictly later than startsAt when both are set.",
+    format: 'date-time',
+    example: '2026-09-01T00:00:00.000Z',
+    description: 'Must be strictly later than startsAt when both are set.',
   })
   @IsOptional()
   @IsDateString()

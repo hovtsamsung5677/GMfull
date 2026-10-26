@@ -1,5 +1,5 @@
-import { ApiProperty } from "@nestjs/swagger";
-import { AdPlacement } from "@prisma/client";
+import { ApiProperty } from '@nestjs/swagger';
+import { AdPlacement } from '@prisma/client';
 
 export class AdSlotAdminPanelResponseDto {
   @ApiProperty()
@@ -36,13 +36,13 @@ export class AdSlotAdminResponseDto {
   @ApiProperty({ type: String, nullable: true })
   description!: string | null;
 
-  @ApiProperty({ enum: AdPlacement, enumName: "AdPlacement" })
+  @ApiProperty({ enum: AdPlacement, enumName: 'AdPlacement' })
   placement!: AdPlacement;
 
   @ApiProperty({
     type: String,
     nullable: true,
-    description: "Null means this is a global slot.",
+    description: 'Null means this is a global slot.',
   })
   panelId!: string | null;
 
@@ -55,7 +55,7 @@ export class AdSlotAdminResponseDto {
   @ApiProperty({ type: Object, nullable: true })
   metadata!: unknown | null;
 
-  @ApiProperty({ type: String, format: "date-time", nullable: true })
+  @ApiProperty({ type: String, format: 'date-time', nullable: true })
   deletedAt!: Date | null;
 
   @ApiProperty({ type: String, nullable: true })
@@ -82,10 +82,10 @@ export class AdSlotAdminResponseDto {
   })
   updatedBy!: AdSlotAdminUserResponseDto | null;
 
-  @ApiProperty({ type: String, format: "date-time" })
+  @ApiProperty({ type: String, format: 'date-time' })
   createdAt!: Date;
 
-  @ApiProperty({ type: String, format: "date-time" })
+  @ApiProperty({ type: String, format: 'date-time' })
   updatedAt!: Date;
 }
 

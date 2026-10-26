@@ -3,21 +3,18 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
-} from "@nestjs/common";
-import { AdCampaign, AdPlacement, AdTargetType, Prisma } from "@prisma/client";
-import { PrismaService } from "../../database/prisma.service";
-import { runSerializableTransaction } from "../../database/serializable-transaction";
-import {
-  adCampaignAdminInclude,
-  toAdCampaignAdminResponse,
-} from "./ad-campaign-admin.projection";
+} from '@nestjs/common';
+import { AdCampaign, AdPlacement, AdTargetType, Prisma } from '@prisma/client';
+import { PrismaService } from '../../database/prisma.service';
+import { runSerializableTransaction } from '../../database/serializable-transaction';
+import { adCampaignAdminInclude, toAdCampaignAdminResponse } from './ad-campaign-admin.projection';
 import {
   AdCampaignAdminListResponseDto,
   AdCampaignAdminResponseDto,
-} from "./dto/ad-campaign-admin-response.dto";
-import { AdCampaignQueryDto } from "./dto/ad-campaign-query.dto";
-import { CreateAdCampaignDto } from "./dto/create-ad-campaign.dto";
-import { UpdateAdCampaignDto } from "./dto/update-ad-campaign.dto";
+} from './dto/ad-campaign-admin-response.dto';
+import { AdCampaignQueryDto } from './dto/ad-campaign-query.dto';
+import { CreateAdCampaignDto } from './dto/create-ad-campaign.dto';
+import { UpdateAdCampaignDto } from './dto/update-ad-campaign.dto';
 
 interface AdCampaignValidationState {
   tenantId: string | null;
@@ -34,16 +31,14 @@ interface AdCampaignValidationState {
 
 type AdCampaignWriteClient = Pick<
   Prisma.TransactionClient,
-  "adCampaign" | "adCampaignAssignment" | "tenant" | "store" | "promotion"
+  'adCampaign' | 'adCampaignAssignment' | 'tenant' | 'store' | 'promotion'
 >;
 
 @Injectable()
 export class AdCampaignsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll(
-    query: AdCampaignQueryDto,
-  ): Promise<AdCampaignAdminListResponseDto> {
+  async findAll(query: AdCampaignQueryDto): Promise<AdCampaignAdminListResponseDto> {
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
     const where = this.buildWhere(query);
@@ -52,7 +47,7 @@ export class AdCampaignsService {
       this.prisma.adCampaign.findMany({
         where,
         include: adCampaignAdminInclude,
-        orderBy: [{ priority: "desc" }, { createdAt: "desc" }, { id: "asc" }],
+        orderBy: [{ priority: 'desc' }, { createdAt: 'desc' }, { id: 'asc' }],
         skip: (page - 1) * limit,
         take: limit,
       }),
@@ -77,16 +72,13 @@ export class AdCampaignsService {
     });
 
     if (!campaign) {
-      throw new NotFoundException("Ad campaign not found");
+      throw new NotFoundException('Ad campaign not found');
     }
 
     return toAdCampaignAdminResponse(campaign);
   }
 
-  async create(
-    dto: CreateAdCampaignDto,
-    userId: string,
-  ): Promise<AdCampaignAdminResponseDto> {
+  async create(dto: CreateAdCampaignDto, userId: string): Promise<AdCampaignAdminResponseDto> {
     const state: AdCampaignValidationState = {
       tenantId: dto.tenantId ?? null,
       targetType: dto.targetType ?? AdTargetType.NONE,
@@ -137,31 +129,20 @@ export class AdCampaignsService {
     userId: string,
   ): Promise<AdCampaignAdminResponseDto> {
     const existing = await this.findExisting(id);
-    const placementChanges =
-      dto.placement !== undefined && dto.placement !== existing.placement;
+    const placementChanges = dto.placement !== undefined && dto.placement !== existing.placement;
 
     try {
       if (placementChanges) {
-        return await runSerializableTransaction(this.prisma, async (tx) => {
+        return await runSerializableTransaction(this.prisma, async tx => {
           const current = await this.findExisting(id, tx);
           const currentPlacementChanges =
             dto.placement !== undefined && dto.placement !== current.placement;
 
           if (currentPlacementChanges) {
-            await this.ensurePlacementCompatibleWithAssignments(
-              tx,
-              id,
-              dto.placement!,
-            );
+            await this.ensurePlacementCompatibleWithAssignments(tx, id, dto.placement!);
           }
 
-          return this.updateRecord(
-            tx,
-            current,
-            dto,
-            userId,
-            currentPlacementChanges,
-          );
+          return this.updateRecord(tx, current, dto, userId, currentPlacementChanges);
         });
       }
 
@@ -171,10 +152,7 @@ export class AdCampaignsService {
     }
   }
 
-  async remove(
-    id: string,
-    userId: string,
-  ): Promise<AdCampaignAdminResponseDto> {
+  async remove(id: string, userId: string): Promise<AdCampaignAdminResponseDto> {
     const result = await this.prisma.adCampaign.updateMany({
       where: { id, deletedAt: null },
       data: {
@@ -185,7 +163,7 @@ export class AdCampaignsService {
     });
 
     if (result.count === 0) {
-      throw new NotFoundException("Ad campaign not found");
+      throw new NotFoundException('Ad campaign not found');
     }
 
     const campaign = await this.prisma.adCampaign.findUnique({
@@ -194,7 +172,7 @@ export class AdCampaignsService {
     });
 
     if (!campaign) {
-      throw new NotFoundException("Ad campaign not found");
+      throw new NotFoundException('Ad campaign not found');
     }
 
     return toAdCampaignAdminResponse(campaign);
@@ -205,14 +183,8 @@ export class AdCampaignsService {
     const startsFrom = this.parseDate(query.startsFrom);
     const startsTo = this.parseDate(query.startsTo);
 
-    if (
-      startsFrom !== null &&
-      startsTo !== null &&
-      startsFrom.getTime() > startsTo.getTime()
-    ) {
-      throw new BadRequestException(
-        "startsFrom must be earlier than or equal to startsTo",
-      );
+    if (startsFrom !== null && startsTo !== null && startsFrom.getTime() > startsTo.getTime()) {
+      throw new BadRequestException('startsFrom must be earlier than or equal to startsTo');
     }
 
     return {
@@ -225,7 +197,7 @@ export class AdCampaignsService {
         ? {
             name: {
               contains: search,
-              mode: "insensitive" as const,
+              mode: 'insensitive' as const,
             },
           }
         : {}),
@@ -240,16 +212,13 @@ export class AdCampaignsService {
     };
   }
 
-  private async findExisting(
-    id: string,
-    db: AdCampaignWriteClient = this.prisma,
-  ) {
+  private async findExisting(id: string, db: AdCampaignWriteClient = this.prisma) {
     const campaign = await db.adCampaign.findFirst({
       where: { id, deletedAt: null },
     });
 
     if (!campaign) {
-      throw new NotFoundException("Ad campaign not found");
+      throw new NotFoundException('Ad campaign not found');
     }
 
     return campaign;
@@ -269,9 +238,7 @@ export class AdCampaignsService {
       select: { id: true },
     });
     if (conflict) {
-      throw new ConflictException(
-        "Ad campaign placement conflicts with an assigned ad slot",
-      );
+      throw new ConflictException('Ad campaign placement conflicts with an assigned ad slot');
     }
   }
 
@@ -285,29 +252,16 @@ export class AdCampaignsService {
     const state: AdCampaignValidationState = {
       tenantId: dto.tenantId === undefined ? existing.tenantId : dto.tenantId,
       targetType: dto.targetType ?? existing.targetType,
-      targetStoreId:
-        dto.targetStoreId === undefined
-          ? existing.targetStoreId
-          : dto.targetStoreId,
+      targetStoreId: dto.targetStoreId === undefined ? existing.targetStoreId : dto.targetStoreId,
       targetPromotionId:
-        dto.targetPromotionId === undefined
-          ? existing.targetPromotionId
-          : dto.targetPromotionId,
+        dto.targetPromotionId === undefined ? existing.targetPromotionId : dto.targetPromotionId,
       targetUrl:
-        dto.targetUrl === undefined
-          ? existing.targetUrl
-          : this.normalizeUrl(dto.targetUrl),
-      startsAt:
-        dto.startsAt === undefined
-          ? existing.startsAt
-          : this.parseDate(dto.startsAt),
-      endsAt:
-        dto.endsAt === undefined ? existing.endsAt : this.parseDate(dto.endsAt),
+        dto.targetUrl === undefined ? existing.targetUrl : this.normalizeUrl(dto.targetUrl),
+      startsAt: dto.startsAt === undefined ? existing.startsAt : this.parseDate(dto.startsAt),
+      endsAt: dto.endsAt === undefined ? existing.endsAt : this.parseDate(dto.endsAt),
       priority: dto.priority ?? existing.priority,
       impressionLimit:
-        dto.impressionLimit === undefined
-          ? existing.impressionLimit
-          : dto.impressionLimit,
+        dto.impressionLimit === undefined ? existing.impressionLimit : dto.impressionLimit,
       isActive: dto.isActive ?? existing.isActive,
     };
 
@@ -353,13 +307,11 @@ export class AdCampaignsService {
       });
 
       if (!tenant) {
-        throw new NotFoundException("Tenant not found");
+        throw new NotFoundException('Tenant not found');
       }
 
       if (state.isActive && !tenant.isActive) {
-        throw new ConflictException(
-          "Active ad campaign requires an active tenant",
-        );
+        throw new ConflictException('Active ad campaign requires an active tenant');
       }
     }
 
@@ -383,15 +335,11 @@ export class AdCampaignsService {
 
     if (state.targetType === AdTargetType.STORE) {
       if (!hasStore || hasPromotion || hasUrl) {
-        throw new BadRequestException(
-          "STORE target requires only targetStoreId",
-        );
+        throw new BadRequestException('STORE target requires only targetStoreId');
       }
 
       if (state.tenantId === null) {
-        throw new BadRequestException(
-          "STORE target requires campaign tenantId",
-        );
+        throw new BadRequestException('STORE target requires campaign tenantId');
       }
 
       return;
@@ -399,9 +347,7 @@ export class AdCampaignsService {
 
     if (state.targetType === AdTargetType.PROMOTION) {
       if (hasStore || !hasPromotion || hasUrl) {
-        throw new BadRequestException(
-          "PROMOTION target requires only targetPromotionId",
-        );
+        throw new BadRequestException('PROMOTION target requires only targetPromotionId');
       }
 
       return;
@@ -409,14 +355,14 @@ export class AdCampaignsService {
 
     if (state.targetType === AdTargetType.URL) {
       if (hasStore || hasPromotion || !hasUrl) {
-        throw new BadRequestException("URL target requires only targetUrl");
+        throw new BadRequestException('URL target requires only targetUrl');
       }
 
       return;
     }
 
     if (hasStore || hasPromotion || hasUrl) {
-      throw new BadRequestException("NONE target cannot contain target fields");
+      throw new BadRequestException('NONE target cannot contain target fields');
     }
   }
 
@@ -434,19 +380,15 @@ export class AdCampaignsService {
     });
 
     if (!store) {
-      throw new NotFoundException("Target store not found");
+      throw new NotFoundException('Target store not found');
     }
 
     if (store.tenantId !== state.tenantId) {
-      throw new ConflictException(
-        "Target store tenant does not match campaign tenant",
-      );
+      throw new ConflictException('Target store tenant does not match campaign tenant');
     }
 
     if (state.isActive && !store.isActive) {
-      throw new ConflictException(
-        "Active ad campaign requires an active target store",
-      );
+      throw new ConflictException('Active ad campaign requires an active target store');
     }
   }
 
@@ -482,13 +424,11 @@ export class AdCampaignsService {
     });
 
     if (!promotion) {
-      throw new NotFoundException("Target promotion not found");
+      throw new NotFoundException('Target promotion not found');
     }
 
     if (promotion.tenantId !== state.tenantId) {
-      throw new ConflictException(
-        "Target promotion tenant does not match campaign tenant",
-      );
+      throw new ConflictException('Target promotion tenant does not match campaign tenant');
     }
 
     if (!state.isActive) {
@@ -508,25 +448,20 @@ export class AdCampaignsService {
 
     if (!hasAvailablePromotionRelations) {
       throw new ConflictException(
-        "Active ad campaign requires an active promotion with an active tenant and an active visible store",
+        'Active ad campaign requires an active promotion with an active tenant and an active visible store',
       );
     }
   }
 
   private validateDateRange(startsAt: Date | null, endsAt: Date | null): void {
     if (startsAt !== null && endsAt !== null && startsAt >= endsAt) {
-      throw new BadRequestException("startsAt must be earlier than endsAt");
+      throw new BadRequestException('startsAt must be earlier than endsAt');
     }
   }
 
-  private validateLimits(
-    priority: number,
-    impressionLimit: number | null,
-  ): void {
+  private validateLimits(priority: number, impressionLimit: number | null): void {
     if (!Number.isInteger(priority) || priority < 0 || priority > 1_000_000) {
-      throw new BadRequestException(
-        "priority must be an integer between 0 and 1000000",
-      );
+      throw new BadRequestException('priority must be an integer between 0 and 1000000');
     }
 
     if (
@@ -535,9 +470,7 @@ export class AdCampaignsService {
         impressionLimit <= 0 ||
         impressionLimit > 2_147_483_647)
     ) {
-      throw new BadRequestException(
-        "impressionLimit must be a positive 32-bit integer",
-      );
+      throw new BadRequestException('impressionLimit must be a positive 32-bit integer');
     }
   }
 
@@ -545,13 +478,11 @@ export class AdCampaignsService {
     try {
       const url = new URL(value);
 
-      if (url.protocol !== "http:" && url.protocol !== "https:") {
-        throw new Error("Unsupported protocol");
+      if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+        throw new Error('Unsupported protocol');
       }
     } catch {
-      throw new BadRequestException(
-        "targetUrl must be an absolute HTTP or HTTPS URL",
-      );
+      throw new BadRequestException('targetUrl must be an absolute HTTP or HTTPS URL');
     }
   }
 
@@ -567,7 +498,7 @@ export class AdCampaignsService {
     const date = new Date(value);
 
     if (Number.isNaN(date.getTime())) {
-      throw new BadRequestException("Invalid ISO 8601 date");
+      throw new BadRequestException('Invalid ISO 8601 date');
     }
 
     return date;
@@ -589,34 +520,28 @@ export class AdCampaignsService {
 
   private handlePrismaError(error: unknown): never {
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
-      if (error.code === "P2003") {
-        throw new BadRequestException(
-          "A referenced ad campaign entity no longer exists",
-        );
+      if (error.code === 'P2003') {
+        throw new BadRequestException('A referenced ad campaign entity no longer exists');
       }
 
-      if (error.code === "P2025") {
-        throw new NotFoundException("Ad campaign not found");
+      if (error.code === 'P2025') {
+        throw new NotFoundException('Ad campaign not found');
       }
 
-      if (error.code === "P2004") {
-        throw new BadRequestException(
-          "Ad campaign violates a database constraint",
-        );
+      if (error.code === 'P2004') {
+        throw new BadRequestException('Ad campaign violates a database constraint');
       }
     }
 
     const message = error instanceof Error ? error.message : String(error);
 
     if (
-      message.includes("23514") ||
-      message.includes("AdCampaign_valid_date_range") ||
-      message.includes("AdCampaign_positive_impression_limit") ||
-      message.includes("AdCampaign_valid_target")
+      message.includes('23514') ||
+      message.includes('AdCampaign_valid_date_range') ||
+      message.includes('AdCampaign_positive_impression_limit') ||
+      message.includes('AdCampaign_valid_target')
     ) {
-      throw new BadRequestException(
-        "Ad campaign violates a database constraint",
-      );
+      throw new BadRequestException('Ad campaign violates a database constraint');
     }
 
     throw error;

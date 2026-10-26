@@ -1,5 +1,5 @@
-import { ApiProperty } from "@nestjs/swagger";
-import { AdPlacement, AdTargetType } from "@prisma/client";
+import { ApiProperty } from '@nestjs/swagger';
+import { AdPlacement, AdTargetType } from '@prisma/client';
 
 export class AdCampaignAdminTenantResponseDto {
   @ApiProperty()
@@ -51,7 +51,7 @@ export class AdCampaignAdminPromotionResponseDto {
   @ApiProperty()
   isActive!: boolean;
 
-  @ApiProperty({ type: String, format: "date-time", nullable: true })
+  @ApiProperty({ type: String, format: 'date-time', nullable: true })
   deletedAt!: Date | null;
 }
 
@@ -79,10 +79,10 @@ export class AdCampaignAdminResponseDto {
   @ApiProperty({ type: String, nullable: true })
   tenantId!: string | null;
 
-  @ApiProperty({ enum: AdPlacement, enumName: "AdPlacement" })
+  @ApiProperty({ enum: AdPlacement, enumName: 'AdPlacement' })
   placement!: AdPlacement;
 
-  @ApiProperty({ enum: AdTargetType, enumName: "AdTargetType" })
+  @ApiProperty({ enum: AdTargetType, enumName: 'AdTargetType' })
   targetType!: AdTargetType;
 
   @ApiProperty({ type: String, nullable: true })
@@ -94,10 +94,10 @@ export class AdCampaignAdminResponseDto {
   @ApiProperty({ type: String, nullable: true })
   targetUrl!: string | null;
 
-  @ApiProperty({ type: String, format: "date-time", nullable: true })
+  @ApiProperty({ type: String, format: 'date-time', nullable: true })
   startsAt!: Date | null;
 
-  @ApiProperty({ type: String, format: "date-time", nullable: true })
+  @ApiProperty({ type: String, format: 'date-time', nullable: true })
   endsAt!: Date | null;
 
   @ApiProperty()
@@ -117,7 +117,7 @@ export class AdCampaignAdminResponseDto {
   @ApiProperty({ type: Object, nullable: true })
   metadata!: unknown | null;
 
-  @ApiProperty({ type: String, format: "date-time", nullable: true })
+  @ApiProperty({ type: String, format: 'date-time', nullable: true })
   deletedAt!: Date | null;
 
   @ApiProperty({ type: String, nullable: true })
@@ -159,10 +159,10 @@ export class AdCampaignAdminResponseDto {
   @ApiProperty({ minimum: 0 })
   creativesCount!: number;
 
-  @ApiProperty({ type: String, format: "date-time" })
+  @ApiProperty({ type: String, format: 'date-time' })
   createdAt!: Date;
 
-  @ApiProperty({ type: String, format: "date-time" })
+  @ApiProperty({ type: String, format: 'date-time' })
   updatedAt!: Date;
 }
 

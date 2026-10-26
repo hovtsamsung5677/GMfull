@@ -1,6 +1,6 @@
-import { Module } from "@nestjs/common";
-import { DatabaseModule } from "../../database/database.module";
-import { RefreshTokensService } from "./refresh-tokens.service";
+import { Module } from '@nestjs/common';
+import { DatabaseModule } from '../../database/database.module';
+import { RefreshTokensService } from './refresh-tokens.service';
 
 @Module({
   imports: [DatabaseModule],

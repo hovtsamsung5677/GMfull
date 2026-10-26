@@ -3,21 +3,21 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
-} from "@nestjs/common";
-import { FileAssetKind, Prisma } from "@prisma/client";
-import { slugify } from "../../common/utils/slugify.util";
-import { PrismaService } from "../../database/prisma.service";
-import { CreatePromotionDto } from "./dto/create-promotion.dto";
-import { PromotionAdminResponseDto } from "./dto/promotion-admin-response.dto";
-import { PromotionQueryDto } from "./dto/promotion-query.dto";
-import { PublicPromotionQueryDto } from "./dto/public-promotion-query.dto";
-import { PublicPromotionResponseDto } from "./dto/public-promotion-response.dto";
-import { UpdatePromotionDto } from "./dto/update-promotion.dto";
+} from '@nestjs/common';
+import { FileAssetKind, Prisma } from '@prisma/client';
+import { slugify } from '../../common/utils/slugify.util';
+import { PrismaService } from '../../database/prisma.service';
+import { CreatePromotionDto } from './dto/create-promotion.dto';
+import { PromotionAdminResponseDto } from './dto/promotion-admin-response.dto';
+import { PromotionQueryDto } from './dto/promotion-query.dto';
+import { PublicPromotionQueryDto } from './dto/public-promotion-query.dto';
+import { PublicPromotionResponseDto } from './dto/public-promotion-response.dto';
+import { UpdatePromotionDto } from './dto/update-promotion.dto';
 import {
   hasConsistentPublicPromotionTenant,
   publicPromotionSelect,
   toPublicPromotionResponse,
-} from "./promotion-public.projection";
+} from './promotion-public.projection';
 
 const promotionAdminInclude = {
   tenant: {
@@ -77,25 +77,16 @@ interface PromotionReferenceInput {
 export class PromotionsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findPublic(
-    query: PublicPromotionQueryDto,
-  ): Promise<PublicPromotionResponseDto[]> {
+  async findPublic(query: PublicPromotionQueryDto): Promise<PublicPromotionResponseDto[]> {
     const now = new Date();
     const promotions = await this.prisma.promotion.findMany({
       where: this.buildPublicWhere(now, query.storeId),
       select: publicPromotionSelect,
-      orderBy: [
-        { sortOrder: "asc" },
-        { startsAt: "desc" },
-        { createdAt: "desc" },
-        { id: "asc" },
-      ],
+      orderBy: [{ sortOrder: 'asc' }, { startsAt: 'desc' }, { createdAt: 'desc' }, { id: 'asc' }],
       ...this.getPagination(query),
     });
 
-    return promotions
-      .filter(hasConsistentPublicPromotionTenant)
-      .map(toPublicPromotionResponse);
+    return promotions.filter(hasConsistentPublicPromotionTenant).map(toPublicPromotionResponse);
   }
 
   async findPublicOne(slug: string): Promise<PublicPromotionResponseDto> {
@@ -108,19 +99,17 @@ export class PromotionsService {
     });
 
     if (!promotion || !hasConsistentPublicPromotionTenant(promotion)) {
-      throw new NotFoundException("Promotion not found");
+      throw new NotFoundException('Promotion not found');
     }
 
     return toPublicPromotionResponse(promotion);
   }
 
-  async findAll(
-    query: PromotionQueryDto,
-  ): Promise<PromotionAdminResponseDto[]> {
+  async findAll(query: PromotionQueryDto): Promise<PromotionAdminResponseDto[]> {
     return this.prisma.promotion.findMany({
       where: this.buildWhere(query),
       include: promotionAdminInclude,
-      orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }, { id: "asc" }],
+      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }, { id: 'asc' }],
       ...this.getPagination(query),
     });
   }
@@ -132,7 +121,7 @@ export class PromotionsService {
     });
 
     if (!promotion) {
-      throw new NotFoundException("Promotion not found");
+      throw new NotFoundException('Promotion not found');
     }
 
     return promotion;
@@ -203,19 +192,13 @@ export class PromotionsService {
       await this.ensureSlugAvailable(slug, id);
     }
 
-    const startsAt =
-      dto.startsAt === undefined
-        ? existing.startsAt
-        : this.parseDate(dto.startsAt);
-    const endsAt =
-      dto.endsAt === undefined ? existing.endsAt : this.parseDate(dto.endsAt);
+    const startsAt = dto.startsAt === undefined ? existing.startsAt : this.parseDate(dto.startsAt);
+    const endsAt = dto.endsAt === undefined ? existing.endsAt : this.parseDate(dto.endsAt);
     this.ensureValidDateRange(startsAt, endsAt);
 
     const storeId = dto.storeId === undefined ? existing.storeId : dto.storeId;
-    const requestedTenantId =
-      dto.tenantId === undefined ? existing.tenantId : dto.tenantId;
-    const imageAssetId =
-      dto.imageAssetId === undefined ? existing.imageAssetId : dto.imageAssetId;
+    const requestedTenantId = dto.tenantId === undefined ? existing.tenantId : dto.tenantId;
+    const imageAssetId = dto.imageAssetId === undefined ? existing.imageAssetId : dto.imageAssetId;
     const isActive = dto.isActive ?? existing.isActive;
 
     const tenantId = await this.ensureReferencesValid({
@@ -225,9 +208,7 @@ export class PromotionsService {
       isActive,
       isSuperAdmin,
       deriveTenantFromStore:
-        dto.storeId !== undefined &&
-        dto.storeId !== null &&
-        dto.tenantId === undefined,
+        dto.storeId !== undefined && dto.storeId !== null && dto.tenantId === undefined,
     });
 
     try {
@@ -271,7 +252,7 @@ export class PromotionsService {
     });
 
     if (result.count === 0) {
-      throw new NotFoundException("Promotion not found");
+      throw new NotFoundException('Promotion not found');
     }
 
     const promotion = await this.prisma.promotion.findUnique({
@@ -280,7 +261,7 @@ export class PromotionsService {
     });
 
     if (!promotion) {
-      throw new NotFoundException("Promotion not found");
+      throw new NotFoundException('Promotion not found');
     }
 
     return promotion;
@@ -297,12 +278,12 @@ export class PromotionsService {
       ...(search
         ? {
             OR: [
-              { title: { contains: search, mode: "insensitive" as const } },
-              { slug: { contains: search, mode: "insensitive" as const } },
+              { title: { contains: search, mode: 'insensitive' as const } },
+              { slug: { contains: search, mode: 'insensitive' as const } },
               {
                 description: {
                   contains: search,
-                  mode: "insensitive" as const,
+                  mode: 'insensitive' as const,
                 },
               },
             ],
@@ -311,10 +292,7 @@ export class PromotionsService {
     };
   }
 
-  private buildPublicWhere(
-    now: Date,
-    storeId?: string,
-  ): Prisma.PromotionWhereInput {
+  private buildPublicWhere(now: Date, storeId?: string): Prisma.PromotionWhereInput {
     return {
       isActive: true,
       deletedAt: null,
@@ -358,16 +336,13 @@ export class PromotionsService {
     });
 
     if (!promotion) {
-      throw new NotFoundException("Promotion not found");
+      throw new NotFoundException('Promotion not found');
     }
 
     return promotion;
   }
 
-  private async ensureSlugAvailable(
-    slug: string,
-    currentId?: string,
-  ): Promise<void> {
+  private async ensureSlugAvailable(slug: string, currentId?: string): Promise<void> {
     const conflict = await this.prisma.promotion.findFirst({
       where: {
         slug,
@@ -378,27 +353,25 @@ export class PromotionsService {
     });
 
     if (conflict) {
-      throw new ConflictException("Promotion slug already exists");
+      throw new ConflictException('Promotion slug already exists');
     }
   }
 
-  private async ensureReferencesValid(
-    input: PromotionReferenceInput,
-  ): Promise<string | null> {
+  private async ensureReferencesValid(input: PromotionReferenceInput): Promise<string | null> {
     let tenantId = input.tenantId;
 
     if (!input.isSuperAdmin && input.tenantId !== null) {
       throw new BadRequestException(
-        "Non-admin users cannot specify tenantId; it is derived from the store",
+        'Non-admin users cannot specify tenantId; it is derived from the store',
       );
     }
 
     if (input.isActive && input.storeId === null) {
-      throw new BadRequestException("Active promotion requires storeId");
+      throw new BadRequestException('Active promotion requires storeId');
     }
 
     if (input.isActive && input.tenantId === null) {
-      throw new BadRequestException("Active promotion requires tenantId");
+      throw new BadRequestException('Active promotion requires tenantId');
     }
 
     if (input.storeId !== null) {
@@ -413,21 +386,17 @@ export class PromotionsService {
       });
 
       if (!store) {
-        throw new NotFoundException("Store not found");
+        throw new NotFoundException('Store not found');
       }
 
       if (input.deriveTenantFromStore) {
         tenantId = store.tenantId;
       } else if (tenantId !== store.tenantId) {
-        throw new BadRequestException(
-          "tenantId must match the tenantId of the selected store",
-        );
+        throw new BadRequestException('tenantId must match the tenantId of the selected store');
       }
 
       if (input.isActive && (!store.isActive || !store.isVisible)) {
-        throw new BadRequestException(
-          "Active promotion requires an active and visible store",
-        );
+        throw new BadRequestException('Active promotion requires an active and visible store');
       }
     }
 
@@ -438,13 +407,11 @@ export class PromotionsService {
       });
 
       if (!tenant) {
-        throw new NotFoundException("Tenant not found");
+        throw new NotFoundException('Tenant not found');
       }
 
       if (input.isActive && !tenant.isActive) {
-        throw new BadRequestException(
-          "Active promotion requires an active tenant",
-        );
+        throw new BadRequestException('Active promotion requires an active tenant');
       }
     }
 
@@ -455,15 +422,15 @@ export class PromotionsService {
       });
 
       if (!asset) {
-        throw new NotFoundException("Image asset not found");
+        throw new NotFoundException('Image asset not found');
       }
 
       if (!asset.isActive) {
-        throw new BadRequestException("Image asset must be active");
+        throw new BadRequestException('Image asset must be active');
       }
 
       if (asset.kind !== FileAssetKind.IMAGE) {
-        throw new BadRequestException("Image asset must have kind IMAGE");
+        throw new BadRequestException('Image asset must have kind IMAGE');
       }
     }
 
@@ -483,7 +450,7 @@ export class PromotionsService {
 
     const date = new Date(normalized);
     if (Number.isNaN(date.getTime())) {
-      throw new BadRequestException("Invalid date value");
+      throw new BadRequestException('Invalid date value');
     }
 
     return date;
@@ -494,24 +461,22 @@ export class PromotionsService {
     endsAt: Date | null | undefined,
   ): void {
     if (startsAt && endsAt && startsAt.getTime() >= endsAt.getTime()) {
-      throw new BadRequestException("startsAt must be earlier than endsAt");
+      throw new BadRequestException('startsAt must be earlier than endsAt');
     }
   }
 
   private handlePrismaError(error: unknown): never {
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
-      if (error.code === "P2002") {
-        throw new ConflictException("Promotion slug already exists");
+      if (error.code === 'P2002') {
+        throw new ConflictException('Promotion slug already exists');
       }
 
-      if (error.code === "P2003") {
-        throw new BadRequestException(
-          "A referenced promotion entity no longer exists",
-        );
+      if (error.code === 'P2003') {
+        throw new BadRequestException('A referenced promotion entity no longer exists');
       }
 
-      if (error.code === "P2004") {
-        throw new BadRequestException("Invalid promotion date range");
+      if (error.code === 'P2004') {
+        throw new BadRequestException('Invalid promotion date range');
       }
     }
 

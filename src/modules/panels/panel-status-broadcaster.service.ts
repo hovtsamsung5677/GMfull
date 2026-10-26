@@ -1,6 +1,6 @@
-import { Injectable, Logger } from "@nestjs/common";
-import { Server } from "socket.io";
-import { PanelStatusPayload } from "./dto/panel-heartbeat.dto";
+import { Injectable, Logger } from '@nestjs/common';
+import { Server } from 'socket.io';
+import { PanelStatusPayload } from './dto/panel-heartbeat.dto';
 
 @Injectable()
 export class PanelStatusBroadcasterService {
@@ -9,20 +9,16 @@ export class PanelStatusBroadcasterService {
 
   setServer(server: Server): void {
     this.server = server;
-    this.logger.log("WebSocket server bound to panel status broadcaster");
+    this.logger.log('WebSocket server bound to panel status broadcaster');
   }
 
   publishPanelStatus(payload: PanelStatusPayload): void {
     if (this.server === null) {
-      this.logger.warn(
-        "Cannot publish panel status: WebSocket server is not initialized",
-      );
+      this.logger.warn('Cannot publish panel status: WebSocket server is not initialized');
       return;
     }
 
-    this.server.emit("panelStatusUpdated", payload);
-    this.logger.debug(
-      `Published panel status update for panel ${payload.id} (${payload.status})`,
-    );
+    this.server.emit('panelStatusUpdated', payload);
+    this.logger.debug(`Published panel status update for panel ${payload.id} (${payload.status})`);
   }
 }
