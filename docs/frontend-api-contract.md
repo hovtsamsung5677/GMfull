@@ -680,6 +680,91 @@ Frontend использует:
 | --- | --- | --- |
 | `routing.adaptive` | `{ "overloadThreshold": 30, "overloadPenalty": 50, "penaltyMultiplier": 1.5, "enabled": true }` | Параметры адаптивной маршрутизации. |
 
+## 9. Интерактивные панели и liveness
+
+### `GET /api/public/panels/by-node/:nodeId`
+
+Назначение: разрешить панель, установленную на указанном `RouteNode`, чтобы киосок мог атрибутировать свои аналитические событии. JWT не требуется. Ответ — безопасная короткая проекция панели.
+
+Параметры path:
+
+| Параметр | Тип | Обязательный | Описание |
+| --- | --- | --- | --- |
+| `nodeId` | `string` | да | ID route node типа `PANEL`. |
+
+Пример ответа `200 OK`:
+
+```json
+{
+  "id": "panel-1",
+  "code": "PANEL_LOBBY_1",
+  "name": "Панель лобби 1",
+  "floorId": "cmr4yowvx000kw35sedq47bfx"
+}
+```
+
+`404 Panel not found for route node` — если нет панели с указанным стартовым узлом.
+
+### `POST /api/public/panels/:id/heartbeat`
+
+Назначение: анонимный liveness-эндпоинт для полевых панелей/киосок. JWT не требуется. Панель должна быть активна (`isActive = true`). Обновляет `lastSeenAt` на серверное время и, при передаче, обновляет `status` и `appVersion`. `usedAt` обновляется отдельно бэкендом при записи события `PANEL_USED`, а не этим запросом.
+
+Параметры path:
+
+| Параметр | Тип | Обязательный | Описание |
+| --- | --- | --- | --- |
+| `id` | `string` | да | ID панели. |
+
+Тело запроса JSON (все поля опциональны):
+
+| Поле | Тип | Описание |
+| --- | --- | --- |
+| `status` | `"ONLINE" \| "OFFLINE" \| "MAINTENANCE"` | Текущий статус панели. При отсутствии статус не меняется, а `lastSeenAt` обновляется. |
+| `appVersion` | `string` | Версия клиентского приложения (max 120 символов, обрезается). |
+
+Пример запроса:
+
+```http
+POST /api/public/panels/panel-1/heartbeat
+Content-Type: application/json
+
+{ "status": "ONLINE", "appVersion": "1.4.2" }
+```
+
+Ответ `200 OK`:
+
+```json
+{
+  "id": "panel-1",
+  "code": "PANEL_LOBBY_1",
+  "status": "ONLINE",
+  "lastSeenAt": "2026-10-26T10:00:00.000Z",
+  "usedAt": null,
+  "processedAt": "2026-10-26T10:00:00.123Z"
+}
+```
+
+`404 Panel was not found` и `404 Panel is not active` — панель не найдена или неактивна.
+
+Frontend/киоc использует:
+
+- `by-node/:nodeId` — чтобы узнать, какая панель обслуживает текущий узел, и передавать её `id` в событиях аналитики.
+- `heartbeat` — для периодического оповещения о живости (рекомендуемо каждые 30–60 секунд) и передачи `appVersion` для диагностики. `processedAt` — серверное время, пригодится для синхронизации.
+
+### Обновления статуса панелей по WebSocket
+
+Статус панелей доступен в реальном времени через WebSocket (пространство имён `panels`). При обработке `heartbeat` и изменении статуса backend эмиттирует событие `panelStatusUpdated`:
+
+```js
+import { io } from "socket.io-client";
+const socket = io(`${BASE_URL}/panels`);
+socket.on("panelStatusUpdated", (payload) => {
+  // payload: { id, code, status, lastSeenAt, usedAt, isActive }
+});
+```
+
+`status` — одно из `PanelStatus` (`ONLINE`, `OFFLINE`, `MAINTENANCE`). `isActive` отражает конфигурационный флаг панели.
+
 ## Что готово для frontend MVP
 
 - Backend отдаёт карту ТЦ и параметры активного этажа.
@@ -691,5 +776,7 @@ Frontend использует:
 - Backend уже содержит базовые поля для будущей 2D/3D-интеграции.
 - Backend поддерживает режим эвакуации (`emergencyMode`) — маршрут до ближайшего активного exit-узла.
 - Backend поддерживает адаптивную маршрутизацию на основе частоты запросов по рёбрам (счётчики в `RouteEdgeUsage`, отчёт в `meta.routingReport`).
+- Backend предоставляет public API интерактивных панелей: `GET /api/public/panels/by-node/:nodeId` и `POST /api/public/panels/:id/heartbeat` для анонимного liveness и атрибуции событий киоском.
+- Backend в реальном времени транслирует статус панелей через WebSocket-пространство имён `panels` событием `panelStatusUpdated`.
 - Backend предоставляет admin API для управления блокировками путей (`/admin/route-maintenance`) и системными настройками (`/admin/system-settings`).
 

@@ -1,5 +1,6 @@
-import { Controller, Get, Param } from "@nestjs/common";
+import { Body, Controller, Get, HttpCode, Param, Post } from "@nestjs/common";
 import {
+  ApiBadRequestResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
@@ -7,6 +8,10 @@ import {
 } from "@nestjs/swagger";
 import { PanelsService } from "./panels.service";
 import { PanelPublicResponseDto } from "./dto/panel-public-response.dto";
+import {
+  PanelHeartbeatDto,
+  PanelHeartbeatResponseDto,
+} from "./dto/panel-heartbeat.dto";
 
 @ApiTags("public/panels")
 @Controller("public/panels")
@@ -30,5 +35,36 @@ export class PanelsPublicController {
     @Param("nodeId") nodeId: string,
   ): Promise<PanelPublicResponseDto> {
     return this.panelsService.findPublicByRouteNodeId(nodeId);
+  }
+
+   @Post(":id/heartbeat")
+  @HttpCode(200)
+  @ApiOperation({
+    summary: "Report panel liveness and optional runtime status",
+    description:
+      "Public, unauthenticated endpoint for a field panel to report its liveness. JWT is not required. The panel must be active. Refreshes lastSeenAt to the server time and, when supplied, updates appVersion and status. UsedAt is not modified by this endpoint (it is updated separately when a PANEL_USED event is recorded). Returns the resulting runtime state and the server processing timestamp. Panel status updates are also published to connected WebSocket clients in real time.",
+  })
+  @ApiOkResponse({
+    type: PanelHeartbeatResponseDto,
+    description: "Panel runtime state after the heartbeat.",
+  })
+  @ApiBadRequestResponse({
+    description: "Invalid heartbeat payload.",
+  })
+  @ApiNotFoundResponse({
+    description: "Panel was not found.",
+  })
+  heartbeat(
+    @Param("id") id: string,
+    @Body() dto: PanelHeartbeatDto,
+  ): Promise<PanelHeartbeatResponseDto> {
+    return this.panelsService.heartbeat(id, dto).then((result) => ({
+      id: result.panel.id,
+      code: result.panel.code,
+      status: result.panel.status,
+      lastSeenAt: result.panel.lastSeenAt,
+      usedAt: result.panel.usedAt,
+      processedAt: result.processedAt,
+    }));
   }
 }

@@ -40,7 +40,8 @@ export class NavigationAnalyticsHourlyItemResponseDto {
   hour!: number;
 
   @ApiProperty({
-    description: "Total visitor/navigation events recorded in that hour bucket.",
+    description:
+      "Total visitor/navigation events recorded in that hour bucket.",
     example: 240,
   })
   events!: number;
@@ -205,4 +206,154 @@ export class NavigationAnalyticsRoutesByStoreResponseDto {
       "Stores ordered by routesBuilt DESC, storeId ASC. Stores without routes are not listed.",
   })
   items!: NavigationAnalyticsRoutesByStoreItemResponseDto[];
+}
+
+export class NavigationAnalyticsPopularCategoryResponseDto {
+  @ApiProperty({ description: "Identifier of the selected Category." })
+  categoryId!: string;
+
+  @ApiProperty({
+    type: String,
+    nullable: true,
+    description: "Category name when the category still exists.",
+  })
+  categoryName!: string | null;
+
+  @ApiProperty({
+    type: String,
+    nullable: true,
+    description: "Category slug when the category still exists.",
+  })
+  categorySlug!: string | null;
+
+  @ApiProperty({
+    type: Boolean,
+    nullable: true,
+    description: "Category active flag when the category still exists.",
+  })
+  categoryIsActive!: boolean | null;
+
+  @ApiProperty({
+    description: "Number of CATEGORY_SELECTED events for this category.",
+    example: 312,
+  })
+  selections!: number;
+}
+
+export class NavigationAnalyticsPopularCategoriesResponseDto {
+  @ApiPropertyOptional({
+    type: String,
+    format: "date-time",
+    nullable: true,
+    description: "Resolved inclusive start of the aggregated period.",
+  })
+  from!: string | null;
+
+  @ApiPropertyOptional({
+    type: String,
+    format: "date-time",
+    nullable: true,
+    description: "Resolved exclusive end of the aggregated period.",
+  })
+  to!: string | null;
+
+  @ApiProperty({
+    type: [NavigationAnalyticsPopularCategoryResponseDto],
+    description:
+      "Categories ordered by selections DESC, categoryId ASC. Categories without events are not listed.",
+  })
+  items!: NavigationAnalyticsPopularCategoryResponseDto[];
+}
+
+export class NavigationAnalyticsSearchQueryItemResponseDto {
+  @ApiProperty({
+    description: "Distinct trimmed search query text.",
+    example: "coffee",
+  })
+  query!: string;
+
+  @ApiProperty({
+    description:
+      "Number of SEARCH_QUERY events recorded for this query text in the period.",
+    example: 57,
+  })
+  count!: number;
+
+  @ApiProperty({
+    description:
+      "True when every recorded occurrence of this query had payload.resultCount === 0.",
+    example: false,
+  })
+  noResults!: boolean;
+}
+
+export class NavigationAnalyticsSearchQueriesResponseDto {
+  @ApiPropertyOptional({
+    type: String,
+    format: "date-time",
+    nullable: true,
+    description: "Resolved inclusive start of the aggregated period.",
+  })
+  from!: string | null;
+
+  @ApiPropertyOptional({
+    type: String,
+    format: "date-time",
+    nullable: true,
+    description: "Resolved exclusive end of the aggregated period.",
+  })
+  to!: string | null;
+
+  @ApiProperty({
+    type: Boolean,
+    nullable: true,
+    description:
+      "Whether the response was filtered to zero-result queries only (noResults=true request).",
+  })
+  noResultsFilter!: boolean | null;
+
+  @ApiProperty({
+    type: [NavigationAnalyticsSearchQueryItemResponseDto],
+    description: "Distinct search queries ordered by count DESC, query ASC.",
+  })
+  items!: NavigationAnalyticsSearchQueryItemResponseDto[];
+}
+
+export class NavigationAnalyticsCardToRouteConversionResponseDto {
+  @ApiPropertyOptional({
+    type: String,
+    format: "date-time",
+    nullable: true,
+    description: "Resolved inclusive start of the aggregated period.",
+  })
+  from!: string | null;
+
+  @ApiPropertyOptional({
+    type: String,
+    format: "date-time",
+    nullable: true,
+    description: "Resolved exclusive end of the aggregated period.",
+  })
+  to!: string | null;
+
+  @ApiProperty({
+    description:
+      "Number of STORE_CARD_VIEWED events in the period (funnel step 1).",
+    example: 1400,
+  })
+  cardViews!: number;
+
+  @ApiProperty({
+    description:
+      "Number of ROUTE_BUILT events whose sessionId also had a STORE_CARD_VIEWED event in the period (funnel step 2).",
+    example: 312,
+  })
+  routesFromCardSessions!: number;
+
+  @ApiProperty({
+    description:
+      "Conversion rate: routesFromCardSessions / cardViews. 0 when cardViews is 0.",
+    example: 0.223,
+  })
+  conversionRate!: number;
 }

@@ -10,6 +10,7 @@ import {
   AdAnalyticsBreakdownResponseDto,
   AdAnalyticsEntityResponseDto,
   AdAnalyticsSummaryResponseDto,
+  AdAnalyticsImpressionClickConversionResponseDto,
 } from "./dto/ad-analytics-response.dto";
 
 const AD_EVENT_TYPES = [
@@ -82,6 +83,25 @@ export class AdAnalyticsService {
       );
 
     return { groupBy: query.groupBy, items };
+  }
+
+  async getImpressionClickConversion(
+    query: AdAnalyticsQueryDto,
+  ): Promise<AdAnalyticsImpressionClickConversionResponseDto> {
+    const where = this.buildWhere(query);
+
+    const [impressions, clicks] = await Promise.all([
+      this.countByType(AnalyticsEventType.AD_IMPRESSION, where),
+      this.countByType(AnalyticsEventType.AD_CLICK, where),
+    ]);
+
+    return {
+      from: query.from ? new Date(query.from).toISOString() : null,
+      to: query.to ? new Date(query.to).toISOString() : null,
+      impressions,
+      clicks,
+      conversionRate: impressions === 0 ? 0 : clicks / impressions,
+    };
   }
 
   private buildWhere(
@@ -209,6 +229,15 @@ export class AdAnalyticsService {
 
   private calculateCtr(impressions: number, clicks: number): number {
     return impressions === 0 ? 0 : clicks / impressions;
+  }
+
+  private async countByType(
+    type: AnalyticsEventType,
+    where: Prisma.AnalyticsEventWhereInput,
+  ): Promise<number> {
+    return this.prisma.analyticsEvent.count({
+      where: { AND: [where, { type }] },
+    });
   }
 
   private async loadEntities(

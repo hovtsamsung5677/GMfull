@@ -5,6 +5,7 @@ import { AdCampaignAssignmentsModule } from "./modules/ad-campaign-assignments/a
 import { AdCampaignsModule } from "./modules/ad-campaigns/ad-campaigns.module";
 import { AdCreativesModule } from "./modules/ad-creatives/ad-creatives.module";
 import { AdSlotsModule } from "./modules/ad-slots/ad-slots.module";
+import { AnalyticsExportsModule } from "./modules/analytics-exports/analytics-exports.module";
 import { AnalyticsModule } from "./modules/analytics/analytics.module";
 import { AuthModule } from "./modules/auth/auth.module";
 import { CategoriesModule } from "./modules/categories/categories.module";
@@ -61,6 +62,7 @@ import { UsersModule } from "./modules/users/users.module";
     RoutesModule,
     SharedRoutesModule,
     AnalyticsModule,
+    AnalyticsExportsModule,
     SystemSettingsModule,
     RouteMaintenanceModule,
   ],

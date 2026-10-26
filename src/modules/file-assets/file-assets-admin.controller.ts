@@ -8,6 +8,9 @@ import {
   Post,
   Query,
   UseGuards,
+  Inject,
+  UseInterceptors,
+  UploadedFile,
 } from "@nestjs/common";
 import {
   ApiBadRequestResponse,
@@ -28,15 +31,20 @@ import { FileAssetQueryDto } from "./dto/file-asset-query.dto";
 import { FileAssetResponseDto } from "./dto/file-asset-response.dto";
 import { UpdateFileAssetDto } from "./dto/update-file-asset.dto";
 import { FileAssetsService } from "./file-assets.service";
-import { UseInterceptors, UploadedFile } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { FileAssetKind } from "@prisma/client";
+import {
+  FILE_STORAGE_PROVIDER,
+  FileStorageProviderInstance,
+  StoreFileInput,
+} from "./storage/file-storage.interface";
 
 interface UploadedMulterFile {
   originalname: string;
   filename: string;
   mimetype: string;
   size: number;
+  buffer: Buffer;
 }
 
 @ApiTags("admin/file-assets")
@@ -45,7 +53,11 @@ interface UploadedMulterFile {
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles("SUPER_ADMIN", "MALL_ADMIN", "CONTENT_MANAGER", "ADS_MANAGER")
 export class FileAssetsAdminController {
-  constructor(private readonly fileAssetsService: FileAssetsService) {}
+  constructor(
+    private readonly fileAssetsService: FileAssetsService,
+    @Inject(FILE_STORAGE_PROVIDER)
+    private readonly storageProvider: FileStorageProviderInstance,
+  ) {}
 
   @Get()
   @ApiOperation({
@@ -85,7 +97,7 @@ export class FileAssetsAdminController {
   @ApiOperation({
     summary: "Upload a file from local PC",
     description:
-      "Accepts a multipart/form-data file upload, stores it in the public uploads directory, and creates a FileAsset record.",
+      "Accepts a multipart/form-data file upload, stores it through the configured storage provider (local disk or S3-compatible) and creates a FileAsset record.",
   })
   @ApiCreatedResponse({ type: FileAssetResponseDto })
   @ApiBadRequestResponse({ description: "No file uploaded or invalid file." })
@@ -99,24 +111,34 @@ export class FileAssetsAdminController {
       throw new Error("No file uploaded");
     }
 
-    const url = `/uploads/${file.filename}`;
+    const stored = this.storageProvider.store({
+      originalName: file.originalname,
+      buffer: file.buffer,
+      mimeType: file.mimetype,
+      size: file.size,
+    });
+
     const assetKind = Object.values(FileAssetKind).includes(
       kind as FileAssetKind,
     )
       ? (kind as FileAssetKind)
       : FileAssetKind.OTHER;
 
-    return this.fileAssetsService.create(
-      {
-        filename: file.originalname,
-        url,
-        originalName: file.originalname,
-        mimeType: file.mimetype,
-        size: file.size,
-        kind: assetKind,
-        metadata: {},
-      },
-      uploadedById ?? null,
+    return stored.then((storedFile) =>
+      this.fileAssetsService.create(
+        {
+          filename: file.originalname,
+          url: storedFile.url,
+          originalName: file.originalname,
+          mimeType: file.mimetype,
+          size: file.size,
+          path: storedFile.path,
+          provider: storedFile.provider,
+          kind: assetKind,
+          metadata: {},
+        } as CreateFileAssetDto,
+        uploadedById ?? null,
+      ),
     );
   }
 

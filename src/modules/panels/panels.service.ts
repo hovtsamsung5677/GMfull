@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
-import { Panel, Prisma, RouteNodeType } from "@prisma/client";
+import { Panel, PanelStatus, Prisma, RouteNodeType } from "@prisma/client";
 import { PrismaService } from "../../database/prisma.service";
 import { runSerializableTransaction } from "../../database/serializable-transaction";
 import {
@@ -15,6 +15,8 @@ import { PanelPublicResponseDto } from "./dto/panel-public-response.dto";
 import { PanelQueryDto } from "./dto/panel-query.dto";
 import { CreatePanelDto } from "./dto/create-panel.dto";
 import { UpdatePanelDto } from "./dto/update-panel.dto";
+import { PanelHeartbeatDto } from "./dto/panel-heartbeat.dto";
+import { PanelStatusBroadcasterService } from "./panel-status-broadcaster.service";
 import {
   panelAdminInclude,
   toPanelAdminResponse,
@@ -37,7 +39,10 @@ type PanelWriteClient = Pick<
 
 @Injectable()
 export class PanelsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly statusBroadcaster: PanelStatusBroadcasterService,
+  ) {}
 
   async findAll(query: PanelQueryDto): Promise<PanelAdminListResponseDto> {
     const page = query.page ?? 1;
@@ -203,6 +208,78 @@ export class PanelsService {
     } catch (error) {
       this.handlePrismaError(error);
     }
+  }
+
+  async heartbeat(
+    id: string,
+    dto: PanelHeartbeatDto,
+  ): Promise<{
+    panel: Pick<Panel, "id" | "code" | "status" | "lastSeenAt" | "usedAt"> & {
+      isActive: boolean;
+    };
+    processedAt: Date;
+  }> {
+    const existing = await this.prisma.panel.findUnique({
+      where: { id },
+      select: { id: true, isActive: true },
+    });
+
+    if (!existing) {
+      throw new NotFoundException("Panel not found");
+    }
+
+    if (!existing.isActive) {
+      throw new NotFoundException("Panel is not active");
+    }
+
+    const processedAt = new Date();
+    const now = processedAt;
+
+    const data: Prisma.PanelUpdateInput = {
+      lastSeenAt: now,
+    };
+
+    if (dto.status !== undefined) {
+      data.status = dto.status;
+    }
+
+    if (dto.appVersion !== undefined) {
+      data.appVersion = dto.appVersion;
+    }
+
+    const panel = await this.prisma.panel.update({
+      where: { id },
+      data,
+      select: {
+        id: true,
+        code: true,
+        status: true,
+        lastSeenAt: true,
+        usedAt: true,
+        isActive: true,
+      },
+    });
+
+    this.statusBroadcaster.publishPanelStatus({
+      id: panel.id,
+      code: panel.code,
+      status: panel.status,
+      lastSeenAt: panel.lastSeenAt,
+      usedAt: panel.usedAt,
+      isActive: panel.isActive,
+    });
+
+    return {
+      panel: {
+        id: panel.id,
+        code: panel.code,
+        status: panel.status,
+        lastSeenAt: panel.lastSeenAt,
+        usedAt: panel.usedAt,
+        isActive: panel.isActive,
+      },
+      processedAt,
+    };
   }
 
   private buildWhere(query: PanelQueryDto): Prisma.PanelWhereInput {

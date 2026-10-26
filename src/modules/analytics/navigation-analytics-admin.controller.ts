@@ -11,12 +11,20 @@ import {
 import { Roles } from "../../common/decorators/roles.decorator";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { RolesGuard } from "../../common/guards/roles.guard";
-import { NavigationAnalyticsQueryDto } from "./dto/navigation-analytics-query.dto";
 import {
+  NavigationAnalyticsQueryDto,
+  NavigationAnalyticsReportsQueryDto,
+} from "./dto/navigation-analytics-query.dto";
+import {
+  NavigationAnalyticsDailyItemResponseDto,
   NavigationAnalyticsDailyResponseDto,
+  NavigationAnalyticsHourlyItemResponseDto,
   NavigationAnalyticsHourlyResponseDto,
   NavigationAnalyticsRoutesByStoreResponseDto,
   NavigationAnalyticsSummaryResponseDto,
+  NavigationAnalyticsPopularCategoriesResponseDto,
+  NavigationAnalyticsSearchQueriesResponseDto,
+  NavigationAnalyticsCardToRouteConversionResponseDto,
 } from "./dto/navigation-analytics-response.dto";
 import { NavigationAnalyticsService } from "./navigation-analytics.service";
 
@@ -110,5 +118,56 @@ export class NavigationAnalyticsAdminController {
     @Query() query: NavigationAnalyticsQueryDto,
   ): Promise<NavigationAnalyticsRoutesByStoreResponseDto> {
     return this.navigationAnalyticsService.getRoutesByStore(query);
+  }
+
+  @Get("popular-categories")
+  @ApiOperation({
+    summary: "Popular categories by selection count",
+    description:
+      "Groups CATEGORY_SELECTED AnalyticsEvent rows by Category over the combined filters. Items are sorted by selections DESC, categoryId ASC. Categories without selection events are not listed. The optional period uses [from, to).",
+  })
+  @ApiOkResponse({ type: NavigationAnalyticsPopularCategoriesResponseDto })
+  @ApiBadRequestResponse({
+    description:
+      "Invalid ISO date-time or a period where from is not earlier than to.",
+  })
+  getPopularCategories(
+    @Query() query: NavigationAnalyticsReportsQueryDto,
+  ): Promise<NavigationAnalyticsPopularCategoriesResponseDto> {
+    return this.navigationAnalyticsService.getPopularCategories(query);
+  }
+
+  @Get("search-queries")
+  @ApiOperation({
+    summary:
+      "Popular search queries, optionally filtered to zero-result queries",
+    description:
+      "Groups SEARCH_QUERY AnalyticsEvent rows by the trimmed query text. Each item carries a noResults flag which is true when every recorded occurrence of that query had payload.resultCount === 0. Pass noResults=true to return only zero-result queries. The optional period uses [from, to).",
+  })
+  @ApiOkResponse({ type: NavigationAnalyticsSearchQueriesResponseDto })
+  @ApiBadRequestResponse({
+    description: "Invalid ISO date-time, noResults value or period range.",
+  })
+  getSearchQueries(
+    @Query() query: NavigationAnalyticsReportsQueryDto,
+  ): Promise<NavigationAnalyticsSearchQueriesResponseDto> {
+    return this.navigationAnalyticsService.getSearchQueries(query);
+  }
+
+  @Get("conversion/card-to-route")
+  @ApiOperation({
+    summary: "Conversion funnel: store card view to route built",
+    description:
+      "Funnel measuring STORE_CARD_VIEWED (step 1) against ROUTE_BUILT events whose sessionId also contained a STORE_CARD_VIEWED event in the period (step 2). conversionRate is step2 / step1, 0 when step1 is 0. The optional period uses [from, to).",
+  })
+  @ApiOkResponse({ type: NavigationAnalyticsCardToRouteConversionResponseDto })
+  @ApiBadRequestResponse({
+    description:
+      "Invalid ISO date-time or a period where from is not earlier than to.",
+  })
+  getCardToRouteConversion(
+    @Query() query: NavigationAnalyticsReportsQueryDto,
+  ): Promise<NavigationAnalyticsCardToRouteConversionResponseDto> {
+    return this.navigationAnalyticsService.getCardToRouteConversion(query);
   }
 }

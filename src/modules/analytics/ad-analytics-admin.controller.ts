@@ -19,6 +19,7 @@ import {
 import {
   AdAnalyticsBreakdownResponseDto,
   AdAnalyticsSummaryResponseDto,
+  AdAnalyticsImpressionClickConversionResponseDto,
 } from "./dto/ad-analytics-response.dto";
 
 const AD_ANALYTICS_READ_ROLES = [
@@ -75,5 +76,22 @@ export class AdAnalyticsAdminController {
     @Query() query: AdAnalyticsBreakdownQueryDto,
   ): Promise<AdAnalyticsBreakdownResponseDto> {
     return this.adAnalyticsService.getBreakdown(query);
+  }
+
+  @Get("conversion")
+  @ApiOperation({
+    summary: "Ad impression to interaction conversion funnel",
+    description:
+      "Measures the impression-to-click funnel: AD_IMPRESSION (impressions) and AD_CLICK (clicks) counts within the optional period, plus conversionRate (clicks / impressions, the impression-to-interaction ratio). 0 when impressions is 0. The optional period uses [from, to).",
+  })
+  @ApiOkResponse({ type: AdAnalyticsImpressionClickConversionResponseDto })
+  @ApiBadRequestResponse({
+    description:
+      "Invalid ISO date-time, source, or a period where from is not earlier than to.",
+  })
+  getImpressionClickConversion(
+    @Query() query: AdAnalyticsQueryDto,
+  ): Promise<AdAnalyticsImpressionClickConversionResponseDto> {
+    return this.adAnalyticsService.getImpressionClickConversion(query);
   }
 }

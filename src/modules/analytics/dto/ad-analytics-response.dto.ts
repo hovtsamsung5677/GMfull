@@ -1,4 +1,4 @@
-import { ApiProperty } from "@nestjs/swagger";
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { AdPlacement } from "@prisma/client";
 import { AdAnalyticsGroupBy } from "./ad-analytics-query.dto";
 
@@ -78,4 +78,41 @@ export class AdAnalyticsBreakdownResponseDto {
 
   @ApiProperty({ type: [AdAnalyticsBreakdownItemResponseDto] })
   items!: AdAnalyticsBreakdownItemResponseDto[];
+}
+
+export class AdAnalyticsImpressionClickConversionResponseDto {
+  @ApiPropertyOptional({
+    type: String,
+    format: "date-time",
+    nullable: true,
+    description: "Resolved inclusive start of the aggregated period.",
+  })
+  from!: string | null;
+
+  @ApiPropertyOptional({
+    type: String,
+    format: "date-time",
+    nullable: true,
+    description: "Resolved exclusive end of the aggregated period.",
+  })
+  to!: string | null;
+
+  @ApiProperty({
+    description: "AD_IMPRESSION events in the period.",
+    example: 9800,
+  })
+  impressions!: number;
+
+  @ApiProperty({
+    description: "AD_CLICK events in the period.",
+    example: 490,
+  })
+  clicks!: number;
+
+  @ApiProperty({
+    description:
+      "Conversion rate: clicks / impressions (impression to interaction). 0 when impressions is 0.",
+    example: 0.049,
+  })
+  conversionRate!: number;
 }

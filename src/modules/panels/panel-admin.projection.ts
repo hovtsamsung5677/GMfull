@@ -43,6 +43,7 @@ export function toPanelAdminResponse(
     location: panel.location,
     appVersion: panel.appVersion,
     lastSeenAt: panel.lastSeenAt,
+    usedAt: panel.usedAt,
     isActive: panel.isActive,
     floor: panel.floor,
     routeNode: panel.routeNode,

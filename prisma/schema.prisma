@@ -210,6 +210,7 @@ model Panel {
   location        Json?
   appVersion      String?
   lastSeenAt      DateTime?
+  usedAt          DateTime?
   isActive        Boolean          @default(true)
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
@@ -221,6 +222,7 @@ model Panel {
   @@index([status])
   @@index([floorId])
   @@index([lastSeenAt])
+  @@index([usedAt])
   @@index([isActive])
 }
 

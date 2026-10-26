@@ -1,5 +1,6 @@
 import { ValidationPipe } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
+import { IoAdapter } from "@nestjs/platform-socket.io";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import { ConfigService } from "@nestjs/config";
 import { AppModule } from "./app.module";
@@ -24,6 +25,7 @@ async function bootstrap() {
       transform: true,
     }),
   );
+  app.useWebSocketAdapter(new IoAdapter(app));
 
   app.use(express.static("public"));
 

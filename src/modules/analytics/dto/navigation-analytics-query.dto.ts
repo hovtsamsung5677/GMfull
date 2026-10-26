@@ -2,12 +2,15 @@ import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { AnalyticsSource } from "@prisma/client";
 import { Transform } from "class-transformer";
 import {
+  IsBoolean,
   IsDateString,
   IsIn,
   IsOptional,
   IsString,
   Matches,
+  Max,
   MaxLength,
+  Min,
   MinLength,
 } from "class-validator";
 
@@ -63,10 +66,46 @@ export class NavigationAnalyticsQueryDto {
 
   @ApiPropertyOptional({
     enum: NAVIGATION_ANALYTICS_SOURCES,
-    description:
-      "Optional event source. Only PANEL and MOBILE are accepted.",
+    description: "Optional event source. Only PANEL and MOBILE are accepted.",
   })
   @IsOptional()
   @IsIn(NAVIGATION_ANALYTICS_SOURCES)
   source?: AnalyticsSource;
+}
+
+export class NavigationAnalyticsReportsQueryDto extends NavigationAnalyticsQueryDto {
+  @ApiPropertyOptional({
+    type: Boolean,
+    description:
+      "When true, only search queries whose recorded occurrences all returned zero results are returned. When false or omitted, every distinct search query is returned with a noResults flag.",
+    example: true,
+  })
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === "string"
+      ? value === "true" || value === "1"
+        ? true
+        : value === "false" || value === "0"
+          ? false
+          : value
+      : value,
+  )
+  @IsOptional()
+  @IsBoolean({ message: "noResults must be a boolean" })
+  noResults?: boolean;
+
+  @ApiPropertyOptional({
+    description:
+      "Maximum number of search query rows to return. Defaults to 100.",
+    minimum: 1,
+    maximum: 1000,
+    example: 50,
+    default: 100,
+  })
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === "string" ? Number(value) : value,
+  )
+  @IsOptional()
+  @Min(1)
+  @Max(1000)
+  limit?: number;
 }

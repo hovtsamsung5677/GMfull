@@ -86,6 +86,15 @@ export class PanelAdminResponseDto {
   })
   lastSeenAt!: Date | null;
 
+  @ApiProperty({
+    type: String,
+    format: "date-time",
+    nullable: true,
+    description:
+      "Runtime timestamp of the last time the panel was actively used to start a route. Read-only in this admin configuration API.",
+  })
+  usedAt!: Date | null;
+
   @ApiProperty()
   isActive!: boolean;
 

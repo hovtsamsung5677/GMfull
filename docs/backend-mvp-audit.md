@@ -37,6 +37,10 @@ Backend содержит работоспособное навигационно
 | Авторизация | JWT Bearer, Passport JWT, ролевые guards |
 | База данных | PostgreSQL |
 | ORM | Prisma |
+| Тесты | Jest + ts-jest; unit-тесты (`npm test`) + e2e (`npm run test:e2e`), покрывающие аналитику, панели, хранилище ассетов и экспорт |
+| WebSocket | Socket.IO (`@nestjs/websockets` + `@nestjs/platform-socket.io`) на пространстве имён `panels` |
+| Экспорт | ExcelJS (CSV/XLSX) |
+| Object storage | `@aws-sdk/client-s3` + `@aws-sdk/lib-storage` (S3/minIO) |
 | CORS | Включён, источник задаётся через `CORS_ORIGIN` либо `*` |
 
 ## 4. Готовые backend-модули
@@ -326,14 +330,15 @@ Prisma-модель `FileAsset` уже существует и содержит:
 
 ### Ассеты и 3D
 
-- загрузка файлов;
-- FileAsset admin CRUD;
-- хранение файлов на локальном диске или в object storage;
-- импорт GLB/GLTF/FBX;
-- автоматический импорт данных из Autodesk 3ds Max;
-- обработка геометрии, материалов и текстур;
-- direct MapObject-to-model asset relation;
-- визуальный редактор 2D/3D-карты.
+- FileAsset admin CRUD реализован (`GET/POST/PATCH/DELETE /api/admin/file-assets`, `POST /api/admin/file-assets/upload`);
+- загрузка файлов через Multer (`memoryStorage`) и абстракция `FileStorageProvider` (LOCAL по умолчанию или S3/minIO через `FILE_STORAGE_PROVIDER`);
+- хранение файлов на локальном диске или в object storage (S3-совместимом);
+- импорт GLB/GLTF/FBX и автоматический импорт из Autodesk 3ds Max не реализованы;
+- обработка геометрии, материалов и текстур не реализована;
+- связь MapObject с 3D-ассетом пока через `externalObjectId` и `metadata`;
+- визуальный редактор 2D/3D-карты не реализован.
+
+`FileAsset.isActive` теперь существует; soft delete реализован (мягкое отключение с проверкой активных использований и текущих/запланированных акций).
 
 ### Frontend
 
@@ -348,21 +353,28 @@ Prisma-модель `FileAsset` уже существует и содержит:
 
 Не реализованы:
 
-- управление навигационными панелями;
-- акции и промо-контент;
-- рекламный кабинет и управление кампаниями;
-- сбор и агрегация аналитики посетителей;
-- аналитические отчёты и экспорт;
-- эксплуатационный мониторинг панелей.
+- импорт GLB/GLTF/FBX и автоматический импорт из Autodesk 3ds Max;
+- обработка геометрии, материалов и текстур;
+- визуальный редактор 2D/3D-карты.
+
+Реализованы (post-audit):
+
+- управление навигационными панелями: admin CRUD (`/api/admin/panels`), public lookup `GET /api/public/panels/by-node/:nodeId`, public heartbeat `POST /api/public/panels/:id/heartbeat` и `Panel.usedAt`;
+- эксплуатационный мониторинг панелей: WebSocket-шлюз `panels` с событием `panelStatusUpdated` (Socket.IO) для real-time статуса панелей;
+- сбор и агрегация `AnalyticsEvent` и аналитические отчёты (см. раздел 12);
+- аналитические отчёты и экспорт в CSV/XLSX (`/api/admin/analytics/export/*`, ExcelJS);
+- адаптивная маршрутизация и режим эвакуации (`emergencyMode`, `RouteEdgeUsage`);
+- admin API управления блокировками путей (`/api/admin/route-maintenance`) и системными настройками (`/api/admin/system-settings`);
+- загрузка и абстракция хранилища FileAsset (LOCAL/S3);
+- unit-тесты (`npm test`, покрывают аналитику, панели, хранилище, экспорт) и e2e-тесты (`npm run test:e2e`, требуют БД).
 
 ### Качество и эксплуатация
 
-- в `package.json` нет команд unit/e2e test;
-- автоматические unit, integration и e2e tests не обнаружены;
+- unit- и e2e tests добавлены: `npm test` (unit, без БД) и `npm run test:e2e` (интеграционные, требуют PostgreSQL);
 - нет CI pipeline;
 - нет versioning/rollback данных карты;
 - нет bulk import/export карты и графа;
-- нет audit log административных изменений;
+- нет audit log администраторских изменений;
 - нет rate limiting и документированной production security-конфигурации CORS.
 
 ### Ограничение маршрутизации
@@ -375,24 +387,54 @@ Prisma-модель `FileAsset` уже существует и содержит:
 
 | Область | Оценка | Обоснование |
 | --- | ---: | --- |
-| Навигационное MVP-ядро | **85%** | Карта, поиск, граф, Dijkstra, маршрут до магазина и frontend-ready route path готовы. Не хватает межэтажной маршрутизации и автоматических тестов. |
-| Admin API цифровой карты | **85%** | Основной CRUD и проверка связей готовы. Не хватает FileAsset API, bulk import/export, versioning, audit log и визуального редактора. |
-| Готовность к 2D/3D-ассетам | **60%** | Координаты, transform, externalObjectId и связи ассетов этажа готовы. Нет FileAsset API, загрузки, импорта моделей и прямой связи MapObject с моделью. |
-| Общий backend полного проекта | **60%** | Навигационное ядро сформировано, но панели, акции, реклама, аналитика, отчёты и production-инфраструктура ещё не реализованы. |
+| Навигационное MVP-ядро | **85%** | Карта, поиск, граф, Dijkstra, маршрут до магазина, эвакуация и frontend-ready route path готовы. Не хватает межэтажной маршрутизации. |
+| Admin API цифровой карты | **85%** | Основной CRUD и проверка связей готовы. Не хватает bulk import/export, versioning, audit log и визуального редактора. |
+| Готовность к 2D/3D-ассетам | **60%** | Координаты, transform, externalObjectId и связи ассетов этажа готовы. Нет импорта моделей (GLB/GLTF/FBX) и прямой связи MapObject с моделью. |
+| Управление панелями и liveness | **90%** | Admin CRUD, public lookup, heartbeat, `Panel.usedAt` и `Panel.status`. |
+| Аналитика и отчёты | **90%** | Навигационные и рекламные агрегаты, search-zапросы с zero-result, конверсия, экспорт CSV/XLSX. |
+| FileAsset upload и storage | **85%** | CRUD, upload через абстракцию LOCAL/S3, soft-delete с проверкой использования. |
+| Автоматизированное тестирование | **70%** | Unit-тесты покрывают аналитику, панели, хранилище и экспорт (без БД); e2e требуют PostgreSQL. |
 
 ## 10. Рекомендуемый порядок следующих backend-этапов
 
-1. Согласовать жизненный цикл FileAsset и добавить `isActive`, затем реализовать admin CRUD без upload.
-2. Добавить автоматические e2e tests для public маршрутов и negative tests admin-валидации.
-3. Спроектировать межэтажные связи и правила вертикальной маршрутизации.
-4. Зафиксировать контракт импорта GLB/GLTF: единицы, оси, origin, naming и externalObjectId.
-5. Реализовать Panels и эксплуатационный статус устройств.
-6. Реализовать Promotions и рекламные кампании.
-7. Реализовать ingestion и агрегацию AnalyticsEvent.
+1. Добавить unit-тесты для публичных контроллеров и negative tests admin-валидации (маркеры использования ассетов, коды панелей).
+2. Спроектировать межэтажные связи и правила вертикальной маршрутизации.
+3. Зафиксировать контракт импорта GLB/GLTF: единицы, оси, origin, naming и externalObjectId.
+4. Добавить CI pipeline (unit + e2e + tsc + prisma generate).
+5. Реализовать bulk import/export карты и графа, versioning/rollback и audit log администраторских изменений; добавить rate limiting и production CORS.
+
+## 12. Добавлено после аудита (post-audit)
+
+### Панели и эксплуатационный статус
+
+- `GET /api/public/panels/by-node/:nodeId` — разрешение панели по route node (атрибуция аналитики киоском);
+- `POST /api/public/panels/:id/heartbeat` — анонимный liveness; обновляет `lastSeenAt`, при желании `status`/`appVersion`; требует активную панель;
+- `PATCH`/`GET/DELETE` `/api/admin/panels*` — admin CRUD с валидацией code/name/floor/routeNode и `PanelStatus`;
+- `Panel.usedAt` (DateTime, индекс) — отметка последнего активного использования панели;
+- WebSocket-шлюз `panels` (Socket.IO, `@nestjs/websockets` + `@nestjs/platform-socket.io`), `IoAdapter` подключён в `main.ts`; событие `panelStatusUpdated` эмитит `{ id, code, status, lastSeenAt, usedAt, isActive }` при heartbeat'е.
+
+### Аналитика и экспорт
+
+- Навигационные отчёты (`admin/analytics/navigation`): `summary`, `daily`, `hourly`, `routes-by-store`, `popular-categories`, `search-queries` (фильтр `noResults` и `limit`), `conversion/card-to-route`;
+- Рекламные отчёты (`admin/analytics/ads`): `summary`, `breakdown` (campaign/creative/slot/panel), `conversion` (impression-to-click);
+- Экспорт (`admin/analytics/export`): 6 endpoint'ов CSV/XLSX через ExcelJS (`AnalyticsExportService`); параметр `format` (`csv` по умолчанию, `xlsx`).
+
+### FileAsset upload и storage
+
+- `FileStorageProvider` (символ `FILE_STORAGE_PROVIDER`) с реализациями `LocalFileStorageProvider` и `S3FileStorageProvider` (`@aws-sdk/client-s3` + `@aws-sdk/lib-storage`); выбор через env `FILE_STORAGE_PROVIDER=LOCAL|S3`;
+- `POST /api/admin/file-assets/upload` — multipart, Multer `memoryStorage`, делегирование выбранному провайдеру;
+- `FileAsset` теперь имеет `isActive`; soft-delete блокируется (`409`) при активных/запланированных использованиях.
+
+### Инфраструктура
+
+- `jest.config.js`, скрипты `npm test` / `npm run test:watch` (unit, без БД); `npm run test:e2e` (интеграционные, требуют PostgreSQL).
+  Покрытие: `analytics-export.service`, `navigation-analytics.service`, `ad-analytics.service`, `panels.service`, `panel-status-broadcaster.service`, `local-file-storage.provider`, `s3-file-storage.provider`, `file-storage.module`, DTO-валидация.
 
 ## 11. Итог
 
-Backend уже пригоден как основа frontend MVP цифровой карты одного этажа: он отдаёт сцену, магазины и навигационный граф, выполняет поиск и строит frontend-ready маршрут. Admin API позволяет управлять основной картографической моделью с проверкой ссылочной и этажной согласованности.
+Backend уже пригоден как основа frontend MVP цифровой карты одного этажа: он отдаёт сцену, магазины и навигационный граф, выполняет поиск и строит frontend-ready маршрут, включая режим эвакуации. Admin API позволяет управлять основной картографической моделью с проверкой ссылочной и этажной согласованности.
 
-До production-ready состояния и полного объёма проекта остаются инфраструктура ассетов, межэтажная навигация, автоматизированное тестирование, панели, рекламно-промоциональные и аналитические модули.
+После аудита реализованы панели и эксплуатационный статус (admin CRUD, public lookup, heartbeat, WebSocket), аналитика и экспорт (навигационные и рекламные отчёты, CSV/XLSX), загрузка и абстракция хранилища FileAsset (LOCAL/S3) и unit-тесты.
+
+До production-ready состояния остаются межэтажная навигация, импорт 3D-ассетов, bulk import/export карты и графа, versioning/rollback, audit log, rate limiting и production CORS.
 

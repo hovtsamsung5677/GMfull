@@ -11,6 +11,8 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
     "prisma:seed": "prisma db seed",
+    "test": "jest",
+    "test:watch": "jest --watch",
     "test:e2e": "jest --config ./test/jest-e2e.json --runInBand",
     "start": "nest start",
     "start:dev": "nest start --watch",
@@ -20,21 +22,27 @@
     "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1156.0",
+    "@aws-sdk/lib-storage": "^3.1156.0",
     "@nestjs/common": "^11.1.6",
     "@nestjs/config": "^4.0.4",
     "@nestjs/core": "^11.1.6",
     "@nestjs/jwt": "^11.0.2",
     "@nestjs/passport": "^11.0.5",
     "@nestjs/platform-express": "^11.1.6",
+    "@nestjs/platform-socket.io": "^11.2.8",
     "@nestjs/swagger": "^11.2.0",
+    "@nestjs/websockets": "^11.2.8",
     "@prisma/client": "^6.19.3",
     "bcrypt": "^6.0.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.2",
+    "exceljs": "^4.4.0",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.2"
+    "rxjs": "^7.8.2",
+    "socket.io": "^4.8.4"
   },
   "overrides": {
     "multer": "^2.2.0"

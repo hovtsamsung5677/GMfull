@@ -1,7 +1,10 @@
 import { BadRequestException, Injectable } from "@nestjs/common";
 import { AnalyticsEventType, Prisma } from "@prisma/client";
 import { PrismaService } from "../../database/prisma.service";
-import { NavigationAnalyticsQueryDto } from "./dto/navigation-analytics-query.dto";
+import {
+  NavigationAnalyticsQueryDto,
+  NavigationAnalyticsReportsQueryDto,
+} from "./dto/navigation-analytics-query.dto";
 import {
   NavigationAnalyticsDailyItemResponseDto,
   NavigationAnalyticsDailyResponseDto,
@@ -11,6 +14,11 @@ import {
   NavigationAnalyticsRoutesByStoreResponseDto,
   NavigationAnalyticsStoreResponseDto,
   NavigationAnalyticsSummaryResponseDto,
+  NavigationAnalyticsPopularCategoriesResponseDto,
+  NavigationAnalyticsPopularCategoryResponseDto,
+  NavigationAnalyticsSearchQueriesResponseDto,
+  NavigationAnalyticsSearchQueryItemResponseDto,
+  NavigationAnalyticsCardToRouteConversionResponseDto,
 } from "./dto/navigation-analytics-response.dto";
 
 const NAVIGATION_EVENT_TYPES = [
@@ -60,6 +68,23 @@ interface ResolvedPeriod {
 interface ResolvedSeriesPeriod {
   from: Date;
   to: Date;
+}
+
+interface CategorySummary {
+  id: string;
+  name: string;
+  slug: string;
+  isActive: boolean;
+}
+
+interface SearchQueryAggregateRow {
+  query: string;
+  count: number | string | null;
+  zeroCount: number | string | null;
+}
+
+interface CardSessionCountRow {
+  count: number | string | null;
 }
 
 function emptyDailyItem(date: string): NavigationAnalyticsDailyItemResponseDto {
@@ -141,7 +166,7 @@ export class NavigationAnalyticsService {
     `;
 
     const buckets = new Map<string, NavigationAnalyticsDailyItemResponseDto>();
-    for (let cursor = new Date(period.from); cursor < period.to; ) {
+    for (let cursor = new Date(period.from); cursor < period.to;) {
       const key = toUtcDateKey(cursor);
       buckets.set(key, emptyDailyItem(key));
       cursor = new Date(cursor.getTime() + DAY_MS);
@@ -255,6 +280,249 @@ export class NavigationAnalyticsService {
       to: period.to?.toISOString() ?? null,
       items,
     };
+  }
+
+  async getPopularCategories(
+    query: NavigationAnalyticsReportsQueryDto,
+  ): Promise<NavigationAnalyticsPopularCategoriesResponseDto> {
+    const period = this.resolvePeriod(query);
+    const where = this.buildEntityQuery(query, period);
+
+    const rows = await this.prisma.analyticsEvent.groupBy({
+      by: ["categoryId"],
+      where: {
+        AND: [{ type: AnalyticsEventType.CATEGORY_SELECTED }, where],
+      },
+      _count: { _all: true },
+    });
+
+    const categoryIdCounts = new Map<string, number>();
+    for (const row of rows) {
+      const id = row.categoryId;
+      if (id !== null) {
+        categoryIdCounts.set(id, row._count._all);
+      }
+    }
+
+    const categoriesById = await this.loadCategories([
+      ...categoryIdCounts.keys(),
+    ]);
+
+    const items: NavigationAnalyticsPopularCategoryResponseDto[] = [
+      ...categoryIdCounts.entries(),
+    ]
+      .map(([categoryId, selections]) => {
+        const cat = categoriesById.get(categoryId) ?? null;
+        return {
+          categoryId,
+          categoryName: cat?.name ?? null,
+          categorySlug: cat?.slug ?? null,
+          categoryIsActive: cat?.isActive ?? null,
+          selections,
+        };
+      })
+      .sort(
+        (left, right) =>
+          right.selections - left.selections ||
+          left.categoryId.localeCompare(right.categoryId),
+      );
+
+    return {
+      from: period.from?.toISOString() ?? null,
+      to: period.to?.toISOString() ?? null,
+      items,
+    };
+  }
+
+  async getSearchQueries(
+    query: NavigationAnalyticsReportsQueryDto,
+  ): Promise<NavigationAnalyticsSearchQueriesResponseDto> {
+    const period = this.resolvePeriod(query);
+    const periodFilter = this.sqlPeriodFilter(period.from, period.to);
+    const entityFilters = this.sqlEntityFilters(query);
+    const limit = query.limit ?? 100;
+
+    const rows = await this.prisma.$queryRaw<SearchQueryAggregateRow[]>`
+      SELECT "query" AS "query",
+             COUNT(*)::int AS "count",
+       COUNT(*) FILTER (
+                WHERE CASE WHEN (payload->>'resultCount') ~ '^[0-9]+$'
+                THEN (payload->>'resultCount')::int = 0
+                ELSE FALSE END
+              )::int AS "zeroCount"
+      FROM "AnalyticsEvent"
+      WHERE "type" = 'SEARCH_QUERY'
+        AND "query" IS NOT NULL
+        AND "source"::text IN ('PANEL', 'MOBILE')
+        ${entityFilters}
+        ${periodFilter}
+      GROUP BY "query"
+      ORDER BY "count" DESC, "query" ASC
+      LIMIT ${limit}
+    `;
+
+    const items: NavigationAnalyticsSearchQueryItemResponseDto[] = rows.map(
+      (row) => {
+        const count = Number(row.count);
+        const zeroCount = Number(row.zeroCount ?? 0);
+        const noResults = zeroCount > 0 && zeroCount === count;
+        return {
+          query: row.query,
+          count,
+          noResults,
+        };
+      },
+    );
+
+    const filtered = items.filter(
+      (item) =>
+        query.noResults === undefined || item.noResults === query.noResults,
+    );
+
+    return {
+      from: period.from?.toISOString() ?? null,
+      to: period.to?.toISOString() ?? null,
+      noResultsFilter: query.noResults ?? null,
+      items: filtered,
+    };
+  }
+
+  async getCardToRouteConversion(
+    query: NavigationAnalyticsReportsQueryDto,
+  ): Promise<NavigationAnalyticsCardToRouteConversionResponseDto> {
+    const period = this.resolvePeriod(query);
+    const baseWhere = this.buildEntityQuery(query, period);
+
+    const cardViews = await this.countByType(
+      AnalyticsEventType.STORE_CARD_VIEWED,
+      baseWhere,
+    );
+
+    if (cardViews === 0) {
+      return {
+        from: period.from?.toISOString() ?? null,
+        to: period.to?.toISOString() ?? null,
+        cardViews,
+        routesFromCardSessions: 0,
+        conversionRate: 0,
+      };
+    }
+
+    const routesFromCardSessions =
+      await this.countRoutesBuiltFromCardSessions(baseWhere);
+
+    return {
+      from: period.from?.toISOString() ?? null,
+      to: period.to?.toISOString() ?? null,
+      cardViews,
+      routesFromCardSessions,
+      conversionRate: cardViews === 0 ? 0 : routesFromCardSessions / cardViews,
+    };
+  }
+
+  private async loadCategories(
+    ids: string[],
+  ): Promise<Map<string, CategorySummary>> {
+    if (ids.length === 0) {
+      return new Map();
+    }
+
+    const categories = await this.prisma.category.findMany({
+      where: { id: { in: ids } },
+      select: { id: true, name: true, slug: true, isActive: true },
+    });
+
+    return new Map(
+      categories.map((category) => [
+        category.id,
+        {
+          id: category.id,
+          name: category.name,
+          slug: category.slug,
+          isActive: category.isActive,
+        },
+      ]),
+    );
+  }
+
+  private async countRoutesBuiltFromCardSessions(
+    baseWhere: Prisma.AnalyticsEventWhereInput,
+  ): Promise<number> {
+    const periodWhere = this.extractPeriodWhere(baseWhere);
+    const periodFilter = this.sqlPeriodFilter(periodWhere.gte, periodWhere.lt);
+
+    const rows = await this.prisma.$queryRaw<CardSessionCountRow[]>`
+      WITH card_sessions AS (
+        SELECT DISTINCT "sessionId"
+        FROM "AnalyticsEvent"
+        WHERE "type" = 'STORE_CARD_VIEWED'
+          AND "sessionId" IS NOT NULL
+          ${periodFilter}
+      )
+      SELECT COUNT(*)::int AS "count"
+      FROM "AnalyticsEvent"
+      WHERE "type" = 'ROUTE_BUILT'
+        AND "sessionId" IN (SELECT "sessionId" FROM card_sessions)
+        ${periodFilter}
+    `;
+
+    return Number(rows[0]?.count ?? 0);
+  }
+
+  private sqlPeriodFilter(gte: Date | null, lt: Date | null): Prisma.Sql {
+    const parts: Prisma.Sql[] = [];
+    if (gte !== null) {
+      parts.push(Prisma.sql`"createdAt" >= ${gte}`);
+    }
+
+    if (lt !== null) {
+      parts.push(Prisma.sql`"createdAt" < ${lt}`);
+    }
+
+    if (parts.length === 0) {
+      return Prisma.sql``;
+    }
+
+    return Prisma.sql`AND ${Prisma.join(parts, " AND ")}`;
+  }
+
+  private extractPeriodWhere(where: Prisma.AnalyticsEventWhereInput): {
+    gte: Date | null;
+    lt: Date | null;
+  } {
+    const createdAt = where.createdAt as { gte?: Date; lt?: Date } | undefined;
+    return {
+      gte: createdAt?.gte ?? null,
+      lt: createdAt?.lt ?? null,
+    };
+  }
+
+  private buildEntityQuery(
+    query: NavigationAnalyticsReportsQueryDto,
+    period: ResolvedPeriod,
+  ): Prisma.AnalyticsEventWhereInput {
+    const conditions: Prisma.AnalyticsEventWhereInput[] = [
+      { type: { in: [...NAVIGATION_EVENT_TYPES] } },
+    ];
+
+    if (period.from !== null || period.to !== null) {
+      conditions.push({
+        createdAt: {
+          ...(period.from !== null ? { gte: period.from } : {}),
+          ...(period.to !== null ? { lt: period.to } : {}),
+        },
+      });
+    }
+
+    if (query.panelId) {
+      conditions.push({ panelId: query.panelId });
+    }
+
+    if (query.source) {
+      conditions.push({ source: query.source });
+    }
+
+    return { AND: conditions };
   }
 
   private async countByType(

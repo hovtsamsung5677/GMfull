@@ -1,7 +1,9 @@
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 
 export class PanelPublicResponseDto {
-  @ApiProperty({ description: "Panel identifier used for analytics attribution." })
+  @ApiProperty({
+    description: "Panel identifier used for analytics attribution.",
+  })
   id!: string;
 
   @ApiProperty({ description: "Stable panel code." })
