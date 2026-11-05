@@ -635,10 +635,17 @@ export class RoutesService {
     for (const group of byCode.values()) {
       const isVerticalCode = group.every(n => NORMAL_VERTICAL_TYPES.has(n.type));
       if (!isVerticalCode) continue;
-      for (let i = 0; i < group.length; i++) {
-        for (let j = i + 1; j < group.length; j++) {
-          addPair(group[i], group[j]);
-        }
+
+      // A lift/escalator shaft must be traversed floor by floor. Connecting
+      // every pair in the group creates shortcuts such as floor 4 -> floor 1,
+      // so the client never receives segments for floors 3 and 2 and cannot
+      // animate them. Adjacent entries in the ordered list are the consecutive
+      // stops actually served by this vertical connection.
+      const orderedStops = [...group].sort(
+        (a, b) => (a.floor?.number ?? 0) - (b.floor?.number ?? 0),
+      );
+      for (let i = 0; i < orderedStops.length - 1; i++) {
+        addPair(orderedStops[i], orderedStops[i + 1]);
       }
     }
 
