@@ -25,62 +25,72 @@ const floorPlans: FloorPlan[] = [
   {
     floorNumber: 1,
     points: [
-      ...[80, 170, 260, 350, 440, 530, 620, 710, 800].map((x, index) => ({ code: `F1_MAIN_${String(index + 1).padStart(2, '0')}`, x, y: 410 })),
-      { code: 'F1_UP_01', x: 440, y: 320 },
-      { code: 'F1_UP_02', x: 440, y: 230 },
-      { code: 'F1_RIGHT_UP', x: 710, y: 350 },
-      ...[170, 260, 350, 440, 530, 620, 710, 800].map((x, index) => ({ code: `F1_LOW_${String(index + 1).padStart(2, '0')}`, x, y: 500 })),
+      ...[25, 150, 255, 360, 460, 570, 680, 750].map((x, index) => ({ code: `F1_MAIN_${index + 1}`, x, y: 410 })),
+      { code: 'F1_LEFT_TURN', x: 165, y: 450 },
+      { code: 'F1_LEFT_LOW', x: 200, y: 495 },
+      { code: 'F1_LEFT_EXIT', x: 200, y: 545 },
+      { code: 'F1_CENTER_TOP', x: 460, y: 180 },
+      { code: 'F1_CENTER_UPPER', x: 460, y: 300 },
+      { code: 'F1_CENTER_LOW', x: 460, y: 545 },
+      { code: 'F1_RIGHT_UP', x: 770, y: 380 },
+      { code: 'F1_RIGHT_LOW', x: 750, y: 545 },
     ],
     links: [
-      ...chain(['F1_MAIN_01', 'F1_MAIN_02', 'F1_MAIN_03', 'F1_MAIN_04', 'F1_MAIN_05', 'F1_MAIN_06', 'F1_MAIN_07', 'F1_MAIN_08', 'F1_MAIN_09']),
-      ['F1_MAIN_05', 'F1_UP_01'], ['F1_UP_01', 'F1_UP_02'],
-      ['F1_MAIN_08', 'F1_RIGHT_UP'],
-      ...chain(['F1_LOW_01', 'F1_LOW_02', 'F1_LOW_03', 'F1_LOW_04', 'F1_LOW_05', 'F1_LOW_06', 'F1_LOW_07', 'F1_LOW_08']),
-      ['F1_MAIN_02', 'F1_LOW_01'], ['F1_MAIN_05', 'F1_LOW_04'], ['F1_MAIN_08', 'F1_LOW_07'],
+      ...chain(['F1_MAIN_1', 'F1_MAIN_2', 'F1_MAIN_3', 'F1_MAIN_4', 'F1_MAIN_5', 'F1_MAIN_6', 'F1_MAIN_7', 'F1_MAIN_8']),
+      ...chain(['F1_MAIN_2', 'F1_LEFT_TURN', 'F1_LEFT_LOW', 'F1_LEFT_EXIT']),
+      ['F1_LEFT_LOW', 'F1_MAIN_3'],
+      ...chain(['F1_CENTER_TOP', 'F1_CENTER_UPPER', 'F1_MAIN_5', 'F1_CENTER_LOW']),
+      ['F1_MAIN_8', 'F1_RIGHT_UP'],
+      ['F1_MAIN_8', 'F1_RIGHT_LOW'],
     ],
   },
   {
     floorNumber: 2,
     points: [
-      ...[180, 270, 360, 450, 540].map((x, index) => ({ code: `F2_W_MAIN_${index + 1}`, x, y: 410, component: 'WEST' as const })),
-      { code: 'F2_W_UP_1', x: 450, y: 340, component: 'WEST' },
-      { code: 'F2_W_UP_2', x: 540, y: 340, component: 'WEST' },
-      ...[180, 270, 360, 450, 540].map((x, index) => ({ code: `F2_W_LOW_${index + 1}`, x, y: 480, component: 'WEST' as const })),
-      ...[620, 710, 800].map((x, index) => ({ code: `F2_E_TOP_${index + 1}`, x, y: 330, component: 'EAST' as const })),
-      { code: 'F2_E_MID_L', x: 620, y: 415, component: 'EAST' },
-      { code: 'F2_E_MID_R', x: 800, y: 415, component: 'EAST' },
-      ...[620, 710, 800].map((x, index) => ({ code: `F2_E_LOW_${index + 1}`, x, y: 500, component: 'EAST' as const })),
+      { code: 'F2_W_START', x: 178, y: 518, component: 'WEST' },
+      { code: 'F2_W_FORK', x: 230, y: 459, component: 'WEST' },
+      { code: 'F2_W_MAIN_1', x: 308, y: 437, component: 'WEST' },
+      { code: 'F2_W_MAIN_2', x: 381, y: 435, component: 'WEST' },
+      { code: 'F2_W_CURVE_1', x: 400, y: 415, component: 'WEST' },
+      { code: 'F2_W_CURVE_2', x: 405, y: 371, component: 'WEST' },
+      { code: 'F2_W_TOP_1', x: 410, y: 341, component: 'WEST' },
+      { code: 'F2_W_TOP_2', x: 478, y: 344, component: 'WEST' },
+      { code: 'F2_W_BRANCH_1', x: 266, y: 496, component: 'WEST' },
+      { code: 'F2_W_BRANCH_2', x: 267, y: 571, component: 'WEST' },
+      { code: 'F2_E_TOP_L', x: 650, y: 405, component: 'EAST' },
+      { code: 'F2_E_TOP_M', x: 735, y: 405, component: 'EAST' },
+      { code: 'F2_E_TOP_R', x: 835, y: 405, component: 'EAST' },
+      { code: 'F2_E_RIGHT_TOP', x: 835, y: 370, component: 'EAST' },
+      { code: 'F2_E_RIGHT_LOW', x: 835, y: 540, component: 'EAST' },
+      { code: 'F2_E_LOW_M', x: 735, y: 540, component: 'EAST' },
+      { code: 'F2_E_LOW_L', x: 650, y: 540, component: 'EAST' },
     ],
     links: [
-      ...chain(['F2_W_MAIN_1', 'F2_W_MAIN_2', 'F2_W_MAIN_3', 'F2_W_MAIN_4', 'F2_W_MAIN_5']),
-      ['F2_W_MAIN_4', 'F2_W_UP_1'], ['F2_W_UP_1', 'F2_W_UP_2'],
-      ...chain(['F2_W_LOW_1', 'F2_W_LOW_2', 'F2_W_LOW_3', 'F2_W_LOW_4', 'F2_W_LOW_5']),
-      ['F2_W_MAIN_1', 'F2_W_LOW_1'], ['F2_W_MAIN_3', 'F2_W_LOW_3'], ['F2_W_MAIN_5', 'F2_W_LOW_5'],
-      ...chain(['F2_E_TOP_1', 'F2_E_TOP_2', 'F2_E_TOP_3']),
-      ['F2_E_TOP_1', 'F2_E_MID_L'], ['F2_E_MID_L', 'F2_E_LOW_1'],
-      ['F2_E_TOP_3', 'F2_E_MID_R'], ['F2_E_MID_R', 'F2_E_LOW_3'],
-      ...chain(['F2_E_LOW_1', 'F2_E_LOW_2', 'F2_E_LOW_3']),
+      ...chain(['F2_W_START', 'F2_W_FORK', 'F2_W_MAIN_1', 'F2_W_MAIN_2', 'F2_W_CURVE_1', 'F2_W_CURVE_2', 'F2_W_TOP_1', 'F2_W_TOP_2']),
+      ...chain(['F2_W_FORK', 'F2_W_BRANCH_1', 'F2_W_BRANCH_2']),
+      ...chain(['F2_E_RIGHT_TOP', 'F2_E_TOP_R', 'F2_E_TOP_M', 'F2_E_TOP_L', 'F2_E_LOW_L', 'F2_E_LOW_M', 'F2_E_RIGHT_LOW', 'F2_E_TOP_R']),
     ],
   },
   {
     floorNumber: 3,
     points: [
-      ...[110, 250, 390, 530, 670].map((x, index) => ({ code: `F3_TOP_${index + 1}`, x, y: 200 })),
-      { code: 'F3_RIGHT_1', x: 670, y: 300 }, { code: 'F3_RIGHT_2', x: 670, y: 400 }, { code: 'F3_RIGHT_3', x: 670, y: 500 },
-      ...[530, 390, 250, 110].map((x, index) => ({ code: `F3_BOTTOM_${index + 1}`, x, y: 500 })),
-      { code: 'F3_LEFT_1', x: 110, y: 400 }, { code: 'F3_LEFT_2', x: 110, y: 300 },
+      { code: 'F3_LEFT_TOP', x: 180, y: 185 }, { code: 'F3_LEFT_MID', x: 180, y: 330 }, { code: 'F3_LEFT_LOW', x: 180, y: 480 },
+      { code: 'F3_BOTTOM_1', x: 320, y: 480 }, { code: 'F3_BOTTOM_2', x: 500, y: 480 }, { code: 'F3_BOTTOM_3', x: 680, y: 480 },
+      { code: 'F3_RIGHT_MID', x: 680, y: 330 }, { code: 'F3_RIGHT_TOP', x: 680, y: 175 },
     ],
-    links: chain(['F3_TOP_1', 'F3_TOP_2', 'F3_TOP_3', 'F3_TOP_4', 'F3_TOP_5', 'F3_RIGHT_1', 'F3_RIGHT_2', 'F3_RIGHT_3', 'F3_BOTTOM_1', 'F3_BOTTOM_2', 'F3_BOTTOM_3', 'F3_BOTTOM_4', 'F3_LEFT_1', 'F3_LEFT_2', 'F3_TOP_1']),
+    links: chain(['F3_LEFT_TOP', 'F3_LEFT_MID', 'F3_LEFT_LOW', 'F3_BOTTOM_1', 'F3_BOTTOM_2', 'F3_BOTTOM_3', 'F3_RIGHT_MID', 'F3_RIGHT_TOP']),
   },
   {
     floorNumber: 4,
     points: [
-      ...[180, 310, 440, 570, 700].map((x, index) => ({ code: `F4_TOP_${index + 1}`, x, y: 170 })),
-      { code: 'F4_RIGHT_1', x: 700, y: 280 }, { code: 'F4_RIGHT_2', x: 700, y: 390 }, { code: 'F4_RIGHT_3', x: 700, y: 500 },
-      ...[570, 440, 310, 180].map((x, index) => ({ code: `F4_BOTTOM_${index + 1}`, x, y: 500 })),
-      { code: 'F4_LEFT_1', x: 180, y: 390 }, { code: 'F4_LEFT_2', x: 180, y: 280 },
+      { code: 'F4_LEFT_TOP', x: 180, y: 45 }, { code: 'F4_LEFT_MID', x: 190, y: 260 }, { code: 'F4_LEFT_LOW', x: 200, y: 450 },
+      { code: 'F4_BOTTOM_1', x: 350, y: 450 }, { code: 'F4_BOTTOM_2', x: 520, y: 450 }, { code: 'F4_BOTTOM_3', x: 700, y: 450 },
+      { code: 'F4_RIGHT_MID', x: 700, y: 260 }, { code: 'F4_RIGHT_TOP', x: 690, y: 100 }, { code: 'F4_TOP_SPUR', x: 610, y: 100 },
     ],
-    links: chain(['F4_TOP_1', 'F4_TOP_2', 'F4_TOP_3', 'F4_TOP_4', 'F4_TOP_5', 'F4_RIGHT_1', 'F4_RIGHT_2', 'F4_RIGHT_3', 'F4_BOTTOM_1', 'F4_BOTTOM_2', 'F4_BOTTOM_3', 'F4_BOTTOM_4', 'F4_LEFT_1', 'F4_LEFT_2', 'F4_TOP_1']),
+    links: [
+      ...chain(['F4_LEFT_TOP', 'F4_LEFT_MID', 'F4_LEFT_LOW', 'F4_BOTTOM_1', 'F4_BOTTOM_2', 'F4_BOTTOM_3', 'F4_RIGHT_MID', 'F4_RIGHT_TOP']),
+      ['F4_RIGHT_TOP', 'F4_TOP_SPUR'],
+    ],
   },
 ];
 
@@ -214,8 +224,10 @@ async function main() {
           const from = created.get(fromPointOnSegment)!;
           const to = created.get(toPointOnSegment)!;
           const d = distance(from, to);
-          await tx.routeEdge.create({
-            data: { floorId: floor.id, fromNodeId: from.id, toNodeId: to.id, type: RouteEdgeType.WALKWAY, distance: d, weight: d, isBidirectional: true, isActive: true, metadata: { source: 'aligned-grid', importBatch: IMPORT_BATCH, corridor: `${fromCode}:${toCode}` } },
+          await tx.routeEdge.upsert({
+            where: { fromNodeId_toNodeId: { fromNodeId: from.id, toNodeId: to.id } },
+            update: { floorId: floor.id, type: RouteEdgeType.WALKWAY, distance: d, weight: d, isBidirectional: true, isActive: true, metadata: { source: 'aligned-grid', importBatch: IMPORT_BATCH, corridor: `${fromCode}:${toCode}` } },
+            create: { floorId: floor.id, fromNodeId: from.id, toNodeId: to.id, type: RouteEdgeType.WALKWAY, distance: d, weight: d, isBidirectional: true, isActive: true, metadata: { source: 'aligned-grid', importBatch: IMPORT_BATCH, corridor: `${fromCode}:${toCode}` } },
           });
         }
       }
@@ -229,8 +241,10 @@ async function main() {
           const from = connectorNodes[index];
           const to = connectorNodes[index + 1];
           const d = distance(from, to);
-          await tx.routeEdge.create({
-            data: { floorId: floor.id, fromNodeId: from.id, toNodeId: to.id, type: RouteEdgeType.WALKWAY, distance: d, weight: d, isBidirectional: true, isActive: true, metadata: { source: 'aligned-grid', importBatch: IMPORT_BATCH, connection: projection.elbow ? 'orthogonal-elbow' : 'perpendicular-projection' } },
+          await tx.routeEdge.upsert({
+            where: { fromNodeId_toNodeId: { fromNodeId: from.id, toNodeId: to.id } },
+            update: { floorId: floor.id, type: RouteEdgeType.WALKWAY, distance: d, weight: d, isBidirectional: true, isActive: true, metadata: { source: 'aligned-grid', importBatch: IMPORT_BATCH, connection: projection.elbow ? 'orthogonal-elbow' : 'perpendicular-projection' } },
+            create: { floorId: floor.id, fromNodeId: from.id, toNodeId: to.id, type: RouteEdgeType.WALKWAY, distance: d, weight: d, isBidirectional: true, isActive: true, metadata: { source: 'aligned-grid', importBatch: IMPORT_BATCH, connection: projection.elbow ? 'orthogonal-elbow' : 'perpendicular-projection' } },
           });
         }
       }
