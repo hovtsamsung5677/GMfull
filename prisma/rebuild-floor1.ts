@@ -52,9 +52,9 @@ const shops: Shop[] = [
   { name: "O'juvi parfum", slug: 'ojuvi-parfum', category: 'beauty-and-health', x: 777, y: 460, anchorX: 750, anchorY: 460 },
   { name: 'МТС', slug: 'mts', category: 'electronics', x: 762, y: 517, anchorX: 762, anchorY: 480 },
   { name: 'Банк ВТБ', slug: 'bank-vtb', category: 'atms', x: 821, y: 509, anchorX: 790, anchorY: 509 },
-  { name: '9:41', slug: '9-41', category: 'electronics', x: 689, y: 570, anchorX: 689, anchorY: 510 },
+  { name: '9:41', slug: '9-41', category: 'electronics', x: 689, y: 570, anchorX: 675, anchorY: 500 },
   { name: 'АКВАРЕЛЬКА', slug: 'akvarelka', category: 'kids-goods', x: 735, y: 581, anchorX: 735, anchorY: 510 },
-  { name: 'Студия шаров Пати декор', slug: 'pati-dekor', category: 'entertainment', x: 689, y: 590, anchorX: 689, anchorY: 510 },
+  { name: 'Студия шаров Пати декор', slug: 'pati-dekor', category: 'entertainment', x: 689, y: 590, anchorX: 705, anchorY: 510 },
   { name: 'ArtGold', slug: 'artgold', category: 'beauty-and-health', x: 654, y: 464, anchorX: 654, anchorY: 440 },
   { name: 'Hohoro coffee', slug: 'hohoro-coffee', category: 'cafes-and-restaurants', x: 736, y: 562, anchorX: 736, anchorY: 500 },
 ];

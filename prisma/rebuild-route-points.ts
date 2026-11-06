@@ -6,6 +6,8 @@ const IMPORT_BATCH = 'aligned-route-points-2026-11-06';
 type Point = { code: string; x: number; y: number; component?: 'WEST' | 'EAST' };
 type FloorPlan = { floorNumber: number; points: Point[]; links: [string, string][] };
 
+type Projection = { x: number; y: number; distance: number; t: number; within: boolean };
+
 function chain(codes: string[]): [string, string][] {
   return codes.slice(0, -1).map((code, index) => [code, codes[index + 1]]);
 }
@@ -94,6 +96,23 @@ function nodeComponent(node: { x: number; metadata: unknown }): 'WEST' | 'EAST' 
   return node.x < 600 ? 'WEST' : 'EAST';
 }
 
+function projectToSegment(
+  point: { x: number; y: number },
+  start: Point,
+  end: Point,
+): Projection {
+  const dx = end.x - start.x;
+  const dy = end.y - start.y;
+  const lengthSquared = dx * dx + dy * dy;
+  const rawT = lengthSquared === 0
+    ? 0
+    : ((point.x - start.x) * dx + (point.y - start.y) * dy) / lengthSquared;
+  const t = Math.max(0, Math.min(1, rawT));
+  const x = Math.round(start.x + dx * t);
+  const y = Math.round(start.y + dy * t);
+  return { x, y, t, within: rawT >= 0 && rawT <= 1, distance: Math.hypot(point.x - x, point.y - y) };
+}
+
 async function main() {
   console.log(JSON.stringify({
     mode: process.env.APPLY_ROUTE_POINTS_REBUILD === 'YES' ? 'apply' : 'dry-run',
@@ -116,8 +135,53 @@ async function main() {
       });
       await tx.routeNode.deleteMany({ where: { id: { in: oldPointIds } } });
 
+      const destinations = await tx.routeNode.findMany({
+        where: { floorId: floor.id, isActive: true, type: { not: RouteNodeType.ROUTE_POINT } },
+      });
+      const pointByCode = new Map(plan.points.map((point) => [point.code, point]));
+      const projections = destinations.map((destination) => {
+        const component = plan.floorNumber === 2 ? nodeComponent(destination) : null;
+        const candidates = plan.links
+          .map(([fromCode, toCode], linkIndex) => {
+            const from = pointByCode.get(fromCode)!;
+            const to = pointByCode.get(toCode)!;
+            return { fromCode, toCode, from, to, linkIndex, projection: projectToSegment(destination, from, to) };
+          })
+          .filter(({ from, to }) => component === null || (from.component === component && to.component === component));
+        const perpendicularCandidates = candidates.filter((candidate) => candidate.projection.within);
+        const best = (perpendicularCandidates.length ? perpendicularCandidates : candidates).reduce((current, candidate) =>
+          candidate.projection.distance < current.projection.distance ? candidate : current,
+        );
+        const existingPoint = plan.points.find((point) =>
+          point.x === best.projection.x && point.y === best.projection.y &&
+          (component === null || point.component === component),
+        );
+        const segmentIsHorizontal = best.from.y === best.to.y;
+        const elbow = best.projection.within ? null : {
+          code: `ELBOW_${component ?? 'ALL'}_${segmentIsHorizontal ? destination.x : best.projection.x}_${segmentIsHorizontal ? best.projection.y : destination.y}`,
+          x: segmentIsHorizontal ? destination.x : best.projection.x,
+          y: segmentIsHorizontal ? best.projection.y : destination.y,
+        };
+        return {
+          destination,
+          code: existingPoint?.code ?? `PROJ_${component ?? 'ALL'}_${best.projection.x}_${best.projection.y}`,
+          fromCode: best.fromCode,
+          toCode: best.toCode,
+          linkIndex: best.linkIndex,
+          elbow,
+          ...best.projection,
+        };
+      });
+
+      const generatedPoints: Point[] = [...new Map(projections.flatMap((projection) => {
+        const component = plan.floorNumber === 2 ? nodeComponent(projection.destination) : undefined;
+        const points: Point[] = [{ code: projection.code, x: projection.x, y: projection.y, component }];
+        if (projection.elbow) points.push({ ...projection.elbow, component });
+        return points.map((point) => [point.code, point] as const);
+      })).values()].filter((point) => !pointByCode.has(point.code));
+      const allPoints = [...plan.points, ...generatedPoints];
       const created = new Map<string, Awaited<ReturnType<typeof tx.routeNode.create>>>();
-      for (const [index, point] of plan.points.entries()) {
+      for (const [index, point] of allPoints.entries()) {
         const node = await tx.routeNode.create({
           data: {
             floorId: floor.id,
@@ -135,27 +199,40 @@ async function main() {
         created.set(point.code, node);
       }
 
-      for (const [fromCode, toCode] of plan.links) {
-        const from = created.get(fromCode)!;
-        const to = created.get(toCode)!;
-        const d = distance(from, to);
-        await tx.routeEdge.create({
-          data: { floorId: floor.id, fromNodeId: from.id, toNodeId: to.id, type: RouteEdgeType.WALKWAY, distance: d, weight: d, isBidirectional: true, isActive: true, metadata: { source: 'aligned-grid', importBatch: IMPORT_BATCH } },
-        });
+      for (const [linkIndex, [fromCode, toCode]] of plan.links.entries()) {
+        const pointsOnSegment = [
+          { code: fromCode, t: 0 },
+          ...projections
+            .filter((projection) => projection.linkIndex === linkIndex)
+            .map((projection) => ({ code: projection.code, t: projection.t })),
+          { code: toCode, t: 1 },
+        ].sort((a, b) => a.t - b.t);
+        const uniquePoints = pointsOnSegment.filter((point, index, items) =>
+          index === 0 || created.get(point.code)!.x !== created.get(items[index - 1].code)!.x || created.get(point.code)!.y !== created.get(items[index - 1].code)!.y,
+        );
+        for (const [fromPointOnSegment, toPointOnSegment] of chain(uniquePoints.map((point) => point.code))) {
+          const from = created.get(fromPointOnSegment)!;
+          const to = created.get(toPointOnSegment)!;
+          const d = distance(from, to);
+          await tx.routeEdge.create({
+            data: { floorId: floor.id, fromNodeId: from.id, toNodeId: to.id, type: RouteEdgeType.WALKWAY, distance: d, weight: d, isBidirectional: true, isActive: true, metadata: { source: 'aligned-grid', importBatch: IMPORT_BATCH, corridor: `${fromCode}:${toCode}` } },
+          });
+        }
       }
 
-      const destinations = await tx.routeNode.findMany({
-        where: { floorId: floor.id, isActive: true, type: { not: RouteNodeType.ROUTE_POINT } },
-      });
-      for (const destination of destinations) {
-        const component = plan.floorNumber === 2 ? nodeComponent(destination) : null;
-        const candidates = plan.points.filter((point) => component === null || point.component === component);
-        const nearestPoint = candidates.reduce((best, point) => distance(destination, point) < distance(destination, best) ? point : best);
-        const nearestNode = created.get(nearestPoint.code)!;
-        const d = distance(destination, nearestNode);
-        await tx.routeEdge.create({
-          data: { floorId: floor.id, fromNodeId: destination.id, toNodeId: nearestNode.id, type: RouteEdgeType.WALKWAY, distance: d, weight: d, isBidirectional: true, isActive: true, metadata: { source: 'aligned-grid', importBatch: IMPORT_BATCH } },
-        });
+      for (const projection of projections) {
+        const projectionNode = created.get(projection.code)!;
+        const connectorNodes = projection.elbow
+          ? [projection.destination, created.get(projection.elbow.code)!, projectionNode]
+          : [projection.destination, projectionNode];
+        for (let index = 0; index < connectorNodes.length - 1; index += 1) {
+          const from = connectorNodes[index];
+          const to = connectorNodes[index + 1];
+          const d = distance(from, to);
+          await tx.routeEdge.create({
+            data: { floorId: floor.id, fromNodeId: from.id, toNodeId: to.id, type: RouteEdgeType.WALKWAY, distance: d, weight: d, isBidirectional: true, isActive: true, metadata: { source: 'aligned-grid', importBatch: IMPORT_BATCH, connection: projection.elbow ? 'orthogonal-elbow' : 'perpendicular-projection' } },
+          });
+        }
       }
     }
   }, { timeout: 120_000 });
