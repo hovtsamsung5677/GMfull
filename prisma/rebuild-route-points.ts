@@ -130,6 +130,10 @@ async function main() {
   }, null, 2));
   if (process.env.APPLY_ROUTE_POINTS_REBUILD !== 'YES') return;
 
+  if (await prisma.routeNode.findFirst({ where: { isActive: true, code: { startsWith: 'model-verified-corridors-' } } })) {
+    throw new Error('Verified corridor layout exists. Use prisma/apply-verified-routes.ts; nearest-segment rebuilding can cross walls.');
+  }
+
   await prisma.$transaction(async (tx) => {
     for (const plan of floorPlans) {
       const floor = await tx.floor.findUniqueOrThrow({ where: { number: plan.floorNumber } });
