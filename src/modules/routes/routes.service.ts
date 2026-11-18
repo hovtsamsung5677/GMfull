@@ -566,7 +566,9 @@ export class RoutesService {
     const exact = await this.prisma.routeNode.findMany({
       where: {
         isActive: true,
-        type: RouteNodeType.STORE_ANCHOR,
+        type: {
+          in: [RouteNodeType.STORE_ANCHOR, RouteNodeType.ELEVATOR, RouteNodeType.TOILET],
+        },
         ...(floorId ? { floorId } : {}),
         mapObject: {
           isActive: true,
