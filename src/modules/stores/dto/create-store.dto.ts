@@ -101,6 +101,12 @@ export class CreateStoreDto {
   @IsOptional()
   coverAssetId?: string | null;
 
+  @ApiPropertyOptional({ description: 'Equirectangular image used by the 360-degree viewer.' })
+  @Nullable()
+  @IsIdentifier()
+  @IsOptional()
+  panoramaAssetId?: string | null;
+
   @ApiPropertyOptional({
     type: [String],
     maxItems: 200,

@@ -64,6 +64,18 @@ const storeInclude = {
       isActive: true,
     },
   },
+  panoramaAsset: {
+    select: {
+      id: true,
+      filename: true,
+      originalName: true,
+      url: true,
+      mimeType: true,
+      size: true,
+      kind: true,
+      isActive: true,
+    },
+  },
 } satisfies Prisma.StoreInclude;
 
 type StoreWithRelations = Prisma.StoreGetPayload<{
@@ -246,6 +258,7 @@ export class StoresService {
             searchKeywords: dto.searchKeywords,
             logoAssetId: dto.logoAssetId,
             coverAssetId: dto.coverAssetId,
+            panoramaAssetId: dto.panoramaAssetId,
             isActive: dto.isActive ?? true,
             isVisible: dto.isVisible ?? true,
           },
@@ -319,6 +332,7 @@ export class StoresService {
             searchKeywords: dto.searchKeywords,
             logoAssetId: dto.logoAssetId,
             coverAssetId: dto.coverAssetId,
+            panoramaAssetId: dto.panoramaAssetId,
             isActive: dto.isActive,
             isVisible: dto.isVisible,
           },
@@ -478,7 +492,12 @@ export class StoresService {
   private async ensureReferencesExist(
     dto: Pick<
       CreateStoreDto,
-      'tenantId' | 'categoryId' | 'floorId' | 'logoAssetId' | 'coverAssetId'
+      | 'tenantId'
+      | 'categoryId'
+      | 'floorId'
+      | 'logoAssetId'
+      | 'coverAssetId'
+      | 'panoramaAssetId'
     >,
     requireActiveTenant = false,
     isSuperAdmin = false,
@@ -528,6 +547,7 @@ export class StoresService {
 
     await this.ensureActiveFileAssetExists(dto.logoAssetId, 'Store logo asset');
     await this.ensureActiveFileAssetExists(dto.coverAssetId, 'Store cover asset');
+    await this.ensureActiveFileAssetExists(dto.panoramaAssetId, 'Store panorama asset');
   }
 
   private async ensureTenantChangeAllowed(storeId: string): Promise<void> {
@@ -993,8 +1013,10 @@ export class StoresService {
       searchKeywords: store.searchKeywords,
       logoAssetId: store.logoAssetId,
       coverAssetId: store.coverAssetId,
+      panoramaAssetId: store.panoramaAssetId,
       logoAsset: store.logoAsset,
       coverAsset: store.coverAsset,
+      panoramaAsset: store.panoramaAsset,
       isActive: store.isActive,
       isVisible: store.isVisible,
       tenant: store.tenant,

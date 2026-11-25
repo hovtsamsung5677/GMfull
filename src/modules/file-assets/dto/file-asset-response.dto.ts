@@ -59,6 +59,11 @@ export class FileAssetResponseDto {
   storesCoverCount!: number;
 
   @ApiProperty({
+    description: 'Active stores using this asset as their 360-degree panorama.',
+  })
+  storesPanoramaCount!: number;
+
+  @ApiProperty({
     description: 'Active tenants using this asset as their logo.',
   })
   tenantsLogoCount!: number;

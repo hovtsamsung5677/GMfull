@@ -105,6 +105,7 @@ model Store {
   searchKeywords       String?
   logoAssetId          String?
   coverAssetId         String?
+  panoramaAssetId      String?
   isActive             Boolean          @default(true)
   isVisible            Boolean          @default(true)
   createdAt            DateTime         @default(now())
@@ -119,12 +120,14 @@ model Store {
   coverAsset           FileAsset?       @relation("StoreCoverAsset", fields: [coverAssetId], references: [id])
   floor                Floor?           @relation(fields: [floorId], references: [id])
   logoAsset            FileAsset?       @relation("StoreLogoAsset", fields: [logoAssetId], references: [id])
+  panoramaAsset        FileAsset?       @relation("StorePanoramaAsset", fields: [panoramaAssetId], references: [id])
   tenant               Tenant?          @relation(fields: [tenantId], references: [id])
   additionalCategories Category[]       @relation("StoreAdditionalCategories")
 
   @@index([tenantId])
   @@index([categoryId])
   @@index([floorId])
+  @@index([panoramaAssetId])
   @@index([isActive, isVisible])
   @@index([name])
 }
@@ -474,6 +477,7 @@ model FileAsset {
   promotionImages    Promotion[]    @relation("PromotionImageAsset")
   storeCovers        Store[]        @relation("StoreCoverAsset")
   storeLogos         Store[]        @relation("StoreLogoAsset")
+  storePanoramas     Store[]        @relation("StorePanoramaAsset")
   tenantLogos        Tenant[]       @relation("TenantLogoAsset")
 
   @@index([uploadedById])

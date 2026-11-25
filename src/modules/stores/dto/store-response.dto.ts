@@ -93,11 +93,17 @@ export class StoreResponseDto {
   @ApiPropertyOptional({ nullable: true })
   coverAssetId!: string | null;
 
+  @ApiPropertyOptional({ nullable: true })
+  panoramaAssetId!: string | null;
+
   @ApiPropertyOptional({ type: StoreFileAssetResponseDto, nullable: true })
   logoAsset!: StoreFileAssetResponseDto | null;
 
   @ApiPropertyOptional({ type: StoreFileAssetResponseDto, nullable: true })
   coverAsset!: StoreFileAssetResponseDto | null;
+
+  @ApiPropertyOptional({ type: StoreFileAssetResponseDto, nullable: true })
+  panoramaAsset!: StoreFileAssetResponseDto | null;
 
   @ApiProperty()
   isActive!: boolean;

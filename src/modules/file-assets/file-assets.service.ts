@@ -16,6 +16,7 @@ const buildFileAssetWithActiveUsage = (now: Date) =>
         floorModels: { where: { isActive: true } },
         storeLogos: { where: { isActive: true } },
         storeCovers: { where: { isActive: true } },
+        storePanoramas: { where: { isActive: true } },
         tenantLogos: { where: { isActive: true } },
         adCreativeAssets: { where: { isActive: true } },
       },
@@ -223,6 +224,7 @@ export class FileAssetsService {
       asset._count.floorModels +
       asset._count.storeLogos +
       asset._count.storeCovers +
+      asset._count.storePanoramas +
       asset._count.tenantLogos +
       this.getBlockingPromotionImageCount(asset) +
       asset._count.adCreativeAssets
@@ -266,6 +268,7 @@ export class FileAssetsService {
       floorsModelCount: asset._count.floorModels,
       storesLogoCount: asset._count.storeLogos,
       storesCoverCount: asset._count.storeCovers,
+      storesPanoramaCount: asset._count.storePanoramas,
       tenantsLogoCount: asset._count.tenantLogos,
       promotionsImageCount: this.getBlockingPromotionImageCount(asset),
       adCreativesCount: asset._count.adCreativeAssets,
